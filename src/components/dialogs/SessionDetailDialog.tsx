@@ -7,7 +7,6 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
-import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import Popover from "@mui/material/Popover";
 import Typography from "@mui/material/Typography";
@@ -29,11 +28,6 @@ const GROUP_STATS = [
   { label: "Learners", value: "25" },
 ];
 
-const GROUP_STATS = [
-  { label: "Learners", value: "24" },
-  { label: "Avg. attendance", value: "88%" },
-  { label: "Sessions completed", value: "6 / 12" },
-];
 
 export function SessionDetailDialog() {
   const dispatch = useAppDispatch();
