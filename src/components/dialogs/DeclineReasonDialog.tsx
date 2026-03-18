@@ -3,9 +3,7 @@ import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import Typography from "@mui/material/Typography";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -19,23 +17,14 @@ import {
 } from "@/store/slices/sessionsSlice";
 import { setOpenDeclineReason, setOpenSession } from "@/store/slices/uiSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
-import { toYmd, dateTimeMs } from "@/lib/helpers";
+import { fmtDateNice, fmtTime12, toYmd } from "@/lib/helpers";
 import { demoNow } from "@/lib/constants";
-import { SessionCard } from "@/components/shared/SessionCard";
-
-const CLOSE_THRESHOLD_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 export function DeclineReasonDialog() {
   const dispatch = useAppDispatch();
   const open = useAppSelector((s) => s.ui.openDeclineReason);
   const declineSessionFocus = useAppSelector((s) => s.sessions.declineSessionFocus);
   const declineReason = useAppSelector((s) => s.sessions.declineReason);
-
-  const nowMs = demoNow.getTime();
-  const sessionStartMs = declineSessionFocus
-    ? dateTimeMs(declineSessionFocus.dateYmd, declineSessionFocus.start)
-    : 0;
-  const isTooClose = declineSessionFocus ? (sessionStartMs - nowMs) < CLOSE_THRESHOLD_MS : false;
 
   const handleClose = () => {
     dispatch(setOpenDeclineReason(false));
@@ -88,6 +77,7 @@ export function DeclineReasonDialog() {
                 borderColor: "divider",
                 backgroundColor: "hsl(var(--md-surface))",
                 p: 1.5,
+                fontSize: "0.875rem",
               }}
             />
 
@@ -131,8 +121,7 @@ export function DeclineReasonDialog() {
                   </Box>
                 </Stack>
               </Box>
-            )}
-
+            </Box>
             <TextField
               label="Reason"
               value={declineReason}

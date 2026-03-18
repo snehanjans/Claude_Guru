@@ -34,6 +34,7 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Dialog from "@mui/material/Dialog";
+import { SessionCard, STATUS_SCHEDULED, STATUS_CONFIRMED, STATUS_DECLINED } from "@/components/shared/SessionCard";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
@@ -61,6 +62,7 @@ import { removeUnavailableBySessionId, setPatterns } from "@/store/slices/availa
 import {
   setOpenSession,
   setOpenAvailability,
+  setOpenGroupProfile,
   setOpenDeclineReason,
   setOpenLearnerRatings,
   setLearnerRatingsSessionId,
@@ -504,16 +506,15 @@ export default function DashboardPage() {
                                       Confirm
                                     </Button>
                                     <Button
-                                      startIcon={<DoNotDisturbOnOutlinedIcon sx={{ fontSize: 18 }} />}
+                                      variant="text"
                                       size="small"
-                                      variant="soft"
+                                      startIcon={<OpenInNewOutlinedIcon sx={{ fontSize: 16 }} />}
                                       onClick={() => {
-                                        dispatch(setDeclineSessionFocus(s));
-                                        dispatch(setDeclineReason(""));
-                                        dispatch(setOpenDeclineReason(true));
+                                        navigate("/courses");
+                                        dispatch(pushToast({ title: "Course content", description: `Viewing content for ${s.title}` }));
                                       }}
                                     >
-                                      I'm unavailable
+                                      View Course content
                                     </Button>
                                   </>
                                 )}
@@ -692,7 +693,12 @@ export default function DashboardPage() {
                                     onClick={() => {
                                       dispatch(acceptSession(s.id));
                                       dispatch(removeUnavailableBySessionId(s.id));
-                                      dispatch(pushToast({ title: "Session accepted", description: `${s.title} · ${fmtDateNice(s.dateYmd)}` }));
+                                      dispatch(
+                                        pushToast({
+                                          title: "Session accepted",
+                                          description: `${s.title} · ${fmtDateNice(s.dateYmd)}`
+                                        })
+                                      );
                                     }}
                                   >
                                     Accept

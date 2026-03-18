@@ -163,27 +163,14 @@ export const demoSessions: Session[] = [
     program: "PGP-DS",
     cohort: "PGPDS.O.MAR26.A",
     group: "Group 07 (High work, mixed prog)",
-    dateYmd: "2026-03-13",
+    dateYmd: "2026-02-21",
     start: minutes(18),
     end: minutes(20),
     location: "Online",
     sessionType: "Capstone project mentoring session",
     contentReady: true,
     paymentAmountInr: 22000,
-    scheduledByName: "Priya Sharma",
-    scheduledByEmail: "priya.sharma@greatlearning.com",
-    scheduledByPhone: "+91 98765 43210",
-    scheduledOnYmd: "2026-03-09",
-    audienceType: "Group",
-    predictedGroups: ["Group 07 (High work, mixed prog)", "Group 08 (Mixed)"],
-    timeZone: "Asia/Kolkata",
-    linkedCourseId: "c3",
-    prepMaterials: [
-      { id: "pm3", label: "Statistics Deck", url: "#", type: "slides" },
-      { id: "pm4", label: "Practice Problem Set", url: "#", type: "document" },
-      { id: "pm5", label: "Recap Video: Probability", url: "#", type: "video" },
-    ],
-    paymentModel: "fixed",
+    recordingUrl: "https://example.com/recording/s1",
   },
   {
     id: "s2",
@@ -193,25 +180,14 @@ export const demoSessions: Session[] = [
     program: "PGP-AIML",
     cohort: "AIML Online July 25 B",
     group: "Group 05 (Low work, high prog)",
-    dateYmd: "2026-03-18",
+    dateYmd: "2026-02-22",
     start: minutes(10),
     end: minutes(12),
     location: "Online",
     sessionType: "Schedule a call",
     contentReady: true,
     paymentAmountInr: 12000,
-    scheduledByName: "Ravi Kumar",
-    scheduledByEmail: "ravi.kumar@greatlearning.com",
-    scheduledByPhone: "+91 91234 56789",
-    scheduledOnYmd: "2026-03-14",
-    audienceType: "Batch",
-    timeZone: "Asia/Kolkata",
-    linkedCourseId: "c1",
-    prepMaterials: [
-      { id: "pm6", label: "Python Q&A Agenda", url: "#", type: "document" },
-    ],
-    paymentModel: "hourly",
-    hourlyRateInr: 6000,
+    recordingUrl: "https://example.com/recording/s2",
   },
   {
     id: "s3",
@@ -221,25 +197,14 @@ export const demoSessions: Session[] = [
     program: "PGP-DS",
     cohort: "PGPDS.O.JUL25.A",
     group: "Group 09 (Mixed work, mixed prog)",
-    dateYmd: "2026-03-19",
+    dateYmd: "2026-02-23",
     start: minutes(18),
     end: minutes(20),
     location: "Online",
     sessionType: "Industry session",
     contentReady: false,
     paymentAmountInr: 25000,
-    scheduledByName: "Priya Sharma",
-    scheduledByEmail: "priya.sharma@greatlearning.com",
-    scheduledByPhone: "+91 98765 43210",
-    scheduledOnYmd: "2026-03-15",
-    audienceType: "Webinar",
-    timeZone: "Asia/Kolkata",
-    linkedCourseId: "c6",
-    prepMaterials: [
-      { id: "pm7", label: "Data Viz Slides", url: "#", type: "slides" },
-      { id: "pm8", label: "Tableau Dashboard Reference", url: "#", type: "link" },
-    ],
-    paymentModel: "fixed",
+    recordingUrl: "https://example.com/recording/s3",
   },
 ];
 
@@ -385,12 +350,12 @@ export const demoRatingHistory: RatingHistoryEntry[] = [
 ];
 
 export const demoMonthlyEarnings: MonthlyEarning[] = [
-  { key: "2025-10", label: "Oct 25", amount: 62000 },
-  { key: "2025-11", label: "Nov 25", amount: 58000 },
-  { key: "2025-12", label: "Dec 25", amount: 69000 },
-  { key: "2026-01", label: "Jan 26", amount: 64000 },
-  { key: "2026-02", label: "Feb 26", amount: 98000 },
-  { key: "2026-03", label: "Mar 26", amount: 76000 },
+  { key: "2025-09", label: "Sep 25", amount: 62000 },
+  { key: "2025-10", label: "Oct 25", amount: 58000 },
+  { key: "2025-11", label: "Nov 25", amount: 69000 },
+  { key: "2025-12", label: "Dec 25", amount: 64000 },
+  { key: "2026-01", label: "Jan 26", amount: 98000 },
+  { key: "2026-02", label: "Feb 26", amount: 76000 },
 ];
 
 export const demoPreviouslyDeclinedSessions: DeclinedSession[] = [
@@ -404,7 +369,7 @@ export const demoPreviouslyDeclinedSessions: DeclinedSession[] = [
     dateYmd: "2026-02-05",
     start: minutes(10),
     end: minutes(12),
-    declinedOnYmd: "2026-02-01",
+    declinedOnYmd: "2026-01-08",
   },
   {
     id: "pd2",
@@ -416,7 +381,7 @@ export const demoPreviouslyDeclinedSessions: DeclinedSession[] = [
     dateYmd: "2026-02-12",
     start: minutes(18),
     end: minutes(20),
-    declinedOnYmd: "2026-02-08",
+    declinedOnYmd: "2026-01-15",
   },
 ];
 
@@ -1396,16 +1361,16 @@ export const demoExternalBusy: Busy[] = [
   {
     id: "b1",
     title: "Busy (Calendar)",
-    dateYmd: "2026-03-18",
+    dateYmd: "2026-02-22",
     start: minutes(10),
     end: minutes(11, 30),
   },
 ];
 
 export const demoCohortStarts: CohortStart[] = [
-  { id: "cs1", program: "PGP-DS", cohort: "Cohort Apr", dateYmd: "2026-03-26", note: "New PGP cohort starts" },
-  { id: "cs2", program: "PGP-AIML", cohort: "Cohort Apr", dateYmd: "2026-04-02", note: "New PGP cohort starts" },
-  { id: "cs3", program: "PGP-BA", cohort: "Cohort Mar", dateYmd: "2026-03-19", note: "New PGP cohort starts" },
+  { id: "cs1", program: "PGP-DS", cohort: "Cohort Mar", dateYmd: "2026-03-02", note: "New PGP cohort starts" },
+  { id: "cs2", program: "PGP-AIML", cohort: "Cohort Mar", dateYmd: "2026-03-09", note: "New PGP cohort starts" },
+  { id: "cs3", program: "PGP-BA", cohort: "Cohort Feb", dateYmd: "2026-02-23", note: "New PGP cohort starts" },
 ];
 
 export const demoCourseCatalog: CourseCatalogItem[] = [

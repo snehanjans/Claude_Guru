@@ -2,6 +2,7 @@ import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -10,7 +11,7 @@ import { useAppSelector, useAppDispatch } from "@/store";
 import { respondToRequest, setRequestFocus } from "@/store/slices/requestsSlice";
 import { setOpenRequest } from "@/store/slices/uiSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
-import { SessionCard } from "@/components/shared/SessionCard";
+import { fmtDateNice, fmtTime12 } from "@/lib/helpers";
 
 export function RequestDetailDialog() {
   const dispatch = useAppDispatch();
@@ -53,13 +54,7 @@ export function RequestDetailDialog() {
               Confirm if you can take this session. You can still mark yourself unavailable later if plans change.
             </Box>
 
-            <SessionCard
-              title={requestFocus.title}
-              dateYmd={requestFocus.dateYmd}
-              start={requestFocus.start}
-              end={requestFocus.end}
-              locationText={requestFocus.location}
-              chips={[requestFocus.program, requestFocus.cohort, `Group hint: ${requestFocus.groupHint}`].filter(Boolean)}
+            <Box
               sx={{
                 borderRadius: "16px",
                 border: 1,
@@ -86,6 +81,26 @@ export function RequestDetailDialog() {
                   <CancelOutlinedIcon sx={{ mr: 1, fontSize: 16 }} /> I'm unavailable
                 </Button>
               </Box>
+              <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 1 }}>
+                <Chip variant="outlined" size="small" label={requestFocus.program} />
+                <Chip variant="outlined" size="small" label={requestFocus.cohort} />
+                <Chip variant="outlined" size="small" label={`Group hint: ${requestFocus.groupHint}`} />
+              </Box>
+            </Box>
+
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+              <Button
+                variant="contained"
+                onClick={() => handleRespond(requestFocus.id, "available")}
+              >
+                <CheckCircle2 style={{ marginRight: 8, width: 16, height: 16 }} /> Confirm
+              </Button>
+              <Button
+                variant="soft"
+                onClick={() => handleRespond(requestFocus.id, "unavailable")}
+              >
+                <XCircle style={{ marginRight: 8, width: 16, height: 16 }} /> I'm unavailable
+              </Button>
             </Box>
           </Box>
         ) : (

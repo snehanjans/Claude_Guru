@@ -53,7 +53,6 @@ export function ToastViewport() {
               px: 2,
               py: 1.5,
               boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-              animation: "toastSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1.5 }}>
