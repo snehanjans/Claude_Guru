@@ -46,7 +46,7 @@ const initialState: AvailabilityState = {
   patterns: demoPatterns,
   oneOffAvail: [],
   unavailable: [],
-  hasUserConfiguredAvailability: false,
+  hasUserConfiguredAvailability: true,
   userConfiguredPatterns: [],
   maxPerWeek: 6,
   rangeDays: 60,
