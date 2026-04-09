@@ -125,17 +125,21 @@ You are operating under the **Olympus MUI Design System**. Every piece of UI cod
 | `Common/White` | `#FFFFFF` | `theme.palette.common.white` |
 | `Common/Black` | `#000000` | `theme.palette.common.black` |
 
-### 1.10 Other / Dividers / Inputs
+### 1.10 Other (Divider, Borders, Inputs, Misc)
+
+All tokens in this section belong to the **Other** group in Figma. Access via `theme.palette.other.*`.
 
 | Figma Variable Path | Light Mode | Dark Mode | MUI Access |
 |---|---|---|---|
-| `Other/Divider` | `rgba(33,33,33,0.06)` | `rgba(255,255,255,0.12)` | `theme.palette.divider` |
-| `Other/Outlined Border` | `rgba(33,33,33,0.23)` | `rgba(255,255,255,0.23)` | Used on outlined variants |
-| `Other/Backdrop Overlay` | `rgba(33,33,33,0.50)` | `rgba(33,33,33,0.50)` | Modal/drawer backdrops |
-| `Other/Filled Input Background` | `rgba(33,33,33,0.06)` | `rgba(255,255,255,0.09)` | Filled TextField bg |
-| `Other/Standard Input Line` | `rgba(33,33,33,0.42)` | `rgba(255,255,255,0.42)` | Standard TextField underline |
-| `Other/Snackbar` | `#212121` | `#323232` | Snackbar background |
-| `Other/Rating Active` | `#FFB400` | `#FFB400` | Active star rating color |
+| `Other/Divider` | `rgba(33,33,33,0.06)` | `rgba(255,255,255,0.12)` | `theme.palette.other.divider` (also aliased to `theme.palette.divider` for MUI compatibility) |
+| `Other/Outlined Border` | `rgba(33,33,33,0.23)` | `rgba(255,255,255,0.23)` | `theme.palette.other.outlinedBorder` |
+| `Other/Backdrop Overlay` | `rgba(33,33,33,0.50)` | `rgba(33,33,33,0.50)` | `theme.palette.other.backdropOverlay` |
+| `Other/Filled Input Background` | `rgba(33,33,33,0.06)` | `rgba(255,255,255,0.09)` | `theme.palette.other.filledInputBackground` |
+| `Other/Standard Input Line` | `rgba(33,33,33,0.42)` | `rgba(255,255,255,0.42)` | `theme.palette.other.standardInputLine` |
+| `Other/Snackbar` | `#212121` | `#323232` | `theme.palette.other.snackbar` |
+| `Other/Rating Active` | `#FFB400` | `#FFB400` | `theme.palette.other.ratingActive` |
+
+**Note**: `Other/Divider` is also set as `palette.divider` at the top level for MUI component compatibility (e.g., `<Divider>` component uses it automatically). When referencing the Figma token directly, use `theme.palette.other.divider`.
 
 ### 1.11 Brand Colors
 
@@ -461,7 +465,7 @@ Common usage:
 
 - Header: `tableHeader` typography (14px/500)
 - Body: `body2` typography (14px/400)
-- Dividers: `Other/Divider` token
+- Dividers: `Other/Divider` token → `theme.palette.other.divider`
 
 ### 6.8 Tooltips
 
@@ -509,7 +513,7 @@ When using the MUI `sx` prop, ALWAYS reference theme tokens:
 | Margin | `m: 2` (=8px) | `m: '8px'` |
 | Border radius | `borderRadius: 1` (=4px) | `borderRadius: '4px'` |
 | Shadow | `boxShadow: 1` | `boxShadow: '...'` |
-| Divider border | `borderColor: 'divider'` | `borderColor: 'rgba(...)'` |
+| Divider border | `borderColor: 'divider'` (MUI alias for `Other/Divider`) | `borderColor: 'rgba(...)'` |
 | Font | `typography: 'body2'` | `fontSize: '14px'` |
 
 ---
@@ -537,7 +541,7 @@ When the user says "use the color from Figma" or "map this token", use this look
 | `Text/Secondary` | `theme.palette.text.secondary` or `'text.secondary'` |
 | `Background/Default` | `theme.palette.background.default` or `'background.default'` |
 | `Background/Paper/Elevation 0` | `theme.palette.background.paper` or `'background.paper'` |
-| `Other/Divider` | `theme.palette.divider` or `'divider'` |
+| `Other/Divider` | `theme.palette.other.divider` (or `'divider'` in sx for MUI compat) |
 | `Extended/Grey/N` | `theme.palette.grey[N]` |
 | `Headline 1` | `theme.typography.h1` or `<Typography variant="h1">` |
 | `Headline 2` | `theme.typography.h2` or `<Typography variant="h2">` |

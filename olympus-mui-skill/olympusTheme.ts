@@ -194,6 +194,7 @@ declare module '@mui/material/styles' {
       darker: string;
     };
     other: {
+      divider: string;
       outlinedBorder: string;
       backdropOverlay: string;
       filledInputBackground: string;
@@ -227,6 +228,7 @@ declare module '@mui/material/styles' {
       darker: string;
     };
     other?: {
+      divider: string;
       outlinedBorder: string;
       backdropOverlay: string;
       filledInputBackground: string;
@@ -625,6 +627,7 @@ const lightPalette = {
     darker: '#0E39A9',
   },
   other: {
+    divider: 'rgba(33,33,33,0.06)',
     outlinedBorder: 'rgba(33,33,33,0.23)',
     backdropOverlay: 'rgba(33,33,33,0.50)',
     filledInputBackground: 'rgba(33,33,33,0.06)',
@@ -724,6 +727,7 @@ const darkPalette = {
     darker: '#FFFFFF',
   },
   other: {
+    divider: 'rgba(255,255,255,0.12)',
     outlinedBorder: 'rgba(255,255,255,0.23)',
     backdropOverlay: 'rgba(33,33,33,0.50)',
     filledInputBackground: 'rgba(255,255,255,0.09)',
