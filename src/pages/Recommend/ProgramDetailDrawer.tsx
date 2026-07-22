@@ -35,7 +35,7 @@ import InstagramIcon from "@mui/icons-material/Instagram";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { fmtDateNice, fmtUsd, fmtInr } from "@/lib/helpers";
-import { demoBroadcastCollateral, referralLinkFor } from "@/data/demo-ambassador";
+import { demoBroadcastCollateral, referralLinkFor, GURU_LEARNERS_IMPACTED } from "@/data/demo-ambassador";
 import { useAppDispatch } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import type { AmbassadorProgram } from "@/lib/types";
@@ -106,7 +106,8 @@ export function ProgramDetailDrawer({
           .replace(/\[program name\]/g, program.title)
           .replace(/\[start date\]/g, fmtDateNice(program.nextCohortYmd))
           .replace(/\[scholarship code\]/g, program.scholarshipCode)
-          .replace(/\[percent off\]/g, String(program.scholarshipPct));
+          .replace(/\[percent off\]/g, String(program.scholarshipPct))
+          .replace(/\[N learners mentored\]/g, GURU_LEARNERS_IMPACTED.toLocaleString("en-US"));
 
   const copy = (key: string, value: string, description: string) => {
     navigator.clipboard.writeText(value);
@@ -508,7 +509,7 @@ export function ProgramDetailDrawer({
 
             {/* what you'll learn */}
             <SectionLabel icon={<SchoolOutlinedIcon sx={{ fontSize: 18, color: "primary.main" }} />}>
-              What you&rsquo;ll learn
+              What this course teaches
             </SectionLabel>
             <Grid container columnSpacing={3} rowSpacing={2}>
               {program.curriculum.map((c, i) => (

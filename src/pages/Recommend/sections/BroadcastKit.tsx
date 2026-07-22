@@ -31,6 +31,7 @@ import {
   demoBroadcastCollateral,
   demoBroadcastPerf,
   referralLinkFor,
+  GURU_LEARNERS_IMPACTED,
 } from "@/data/demo-ambassador";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
@@ -147,7 +148,8 @@ export function BroadcastKitSection() {
       .replace(/\[program name\]/g, program.title)
       .replace(/\[start date\]/g, fmtDateNice(program.nextCohortYmd))
       .replace(/\[scholarship code\]/g, program.scholarshipCode)
-      .replace(/\[percent off\]/g, String(program.scholarshipPct)) + `\n\n${link}`;
+      .replace(/\[percent off\]/g, String(program.scholarshipPct))
+      .replace(/\[N learners mentored\]/g, GURU_LEARNERS_IMPACTED.toLocaleString("en-US")) + `\n\n${link}`;
 
   const copyCaption = (id: string, label: string) => {
     copy(fillCaption(captions[id] ?? ""), `${label} caption copied to clipboard.`, () => {

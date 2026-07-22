@@ -79,6 +79,7 @@ import { getCategoriesForRoles, ROLE_TO_CATEGORY } from "@/lib/role-config";
 import type { GuruRoleCategory } from "@/lib/role-config";
 import type { GuruRole } from "@/store/slices/devPanelSlice";
 import { clearRoleSwitching } from "@/store/slices/devPanelSlice";
+import { GURU_LEARNERS_IMPACTED } from "@/data/demo-ambassador";
 
 const borderRotate = keyframes`
   0% { transform: rotate(0deg); }
@@ -120,7 +121,7 @@ function buildCumulative(total: number): number[] {
 
 const demoEngagementCount = buildCumulative(800);
 const demoEngagementHours = buildCumulative(2266);
-const demoLearnersImpacted = buildCumulative(7332);
+const demoLearnersImpacted = buildCumulative(GURU_LEARNERS_IMPACTED);
 
 /* Mid-user engagement: 6 months (Nov 25 → Apr 26), smaller totals */
 const midEngagementMonths = ["Nov 25", "Dec 25", "Jan 26", "Feb 26", "Mar 26", "Apr 26"];
@@ -346,7 +347,7 @@ export default function ProfilePage() {
     {
       title: "Learners Impacted",
       description: "Unique learners you've reached through your sessions.",
-      total: "7,332",
+      total: GURU_LEARNERS_IMPACTED.toLocaleString("en-US"),
       color: "#ff9800",
       data: demoLearnersImpacted,
       infoNote: LEARNERS_IMPACTED_NOTE,

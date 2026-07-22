@@ -16,6 +16,10 @@ export const UNIVERSITY_FLAT_INR = 15000;
 export const AINP_PCT_SELF_CHECKOUT = 20;
 export const AINP_PCT_ASSISTED = 10;
 
+/** Lifetime learners impacted — the Profile "LEARNERS IMPACTED" figure; also fills
+    the [N learners mentored] token in social-media-kit templates. */
+export const GURU_LEARNERS_IMPACTED = 7332;
+
 /** The guru's payout display currency (demo guru is India-based). Referral bonuses are
     still earned in each learner's currency; aggregates convert into this one at FX_USD_TO_INR. */
 export const GURU_CURRENCY: "USD" | "INR" = "INR";
