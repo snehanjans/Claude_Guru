@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
+import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
@@ -397,6 +398,29 @@ export function Sidebar() {
               <NavItemExpanded
                 icon={<AccountBalanceWalletOutlinedIcon fontSize="small" />}
                 label="Payments"
+                isActive={isActive}
+              />
+            )
+          }
+        </NavLink>
+
+        {/* Recommend */}
+        <NavLink to="/recommend" style={{ textDecoration: "none" }}>
+          {({ isActive }) =>
+            isNavCollapsed ? (
+              <Tooltip title="Recommend" placement="right">
+                <span>
+                  <NavItemCollapsed
+                    icon={<CampaignOutlinedIcon fontSize="small" />}
+                    label="Recommend"
+                    isActive={isActive}
+                  />
+                </span>
+              </Tooltip>
+            ) : (
+              <NavItemExpanded
+                icon={<CampaignOutlinedIcon fontSize="small" />}
+                label="Recommend"
                 isActive={isActive}
               />
             )

@@ -8,6 +8,7 @@ const CalendarPage = lazy(() => import("@/pages/Calendar"));
 const AvailabilityPage = lazy(() => import("@/pages/Availability"));
 const NotificationsPage = lazy(() => import("@/pages/Notifications"));
 const PaymentsPage = lazy(() => import("@/pages/Payments"));
+const RecommendPage = lazy(() => import("@/pages/Recommend"));
 const ProfilePage = lazy(() => import("@/pages/Profile"));
 const PreferencesPage = lazy(() => import("@/pages/Preferences"));
 const ComponentsPage = lazy(() => import("@/pages/Components"));
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/availability" element={<Suspense><AvailabilityPage /></Suspense>} />
         <Route path="/notifications" element={<Suspense><NotificationsPage /></Suspense>} />
         <Route path="/payments" element={<Suspense><PaymentsPage /></Suspense>} />
+        <Route path="/recommend" element={<Suspense><RecommendPage /></Suspense>} />
         <Route path="/support" element={<Suspense><SupportPage /></Suspense>} />
         <Route path="/profile" element={<Suspense><ProfilePage /></Suspense>} />
         <Route path="/preferences" element={<Suspense><PreferencesPage /></Suspense>} />

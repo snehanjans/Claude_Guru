@@ -1,0 +1,238 @@
+import { useEffect, useMemo, useState } from "react";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardActionArea from "@mui/material/CardActionArea";
+import CardContent from "@mui/material/CardContent";
+import Chip from "@mui/material/Chip";
+import Grid from "@mui/material/Grid";
+import Skeleton from "@mui/material/Skeleton";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import { alpha } from "@mui/material/styles";
+import { fmtDateNice, fmtUsd, fmtInr } from "@/lib/helpers";
+import { demoAmbassadorPrograms } from "@/data/demo-ambassador";
+import type { AmbassadorProgram } from "@/lib/types";
+import { ProgramDetailDrawer } from "../ProgramDetailDrawer";
+
+const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
+
+const clamp = (lines: number) => ({
+  display: "-webkit-box",
+  WebkitLineClamp: lines,
+  WebkitBoxOrient: "vertical" as const,
+  overflow: "hidden",
+});
+
+/* ── Program card ─────────────────────────────────────────────────────── */
+function ProgramCard({ p, onOpen }: { p: AmbassadorProgram; onOpen: () => void }) {
+  const isGl = p.family === "gl";
+  return (
+    <Card
+      variant="outlined"
+      sx={{
+        height: "100%",
+        borderRadius: "16px",
+        position: "relative",
+        transition: `border-color 180ms ${EASE_OUT}, box-shadow 180ms ${EASE_OUT}`,
+        "@media (hover: hover)": {
+          "&:hover": {
+            borderColor: (t) => alpha(t.palette.primary.main, 0.55),
+            boxShadow: (t) =>
+              `0 0 0 1px ${alpha(t.palette.primary.main, 0.22)}, 0 8px 20px -16px rgba(16,24,40,0.22)`,
+          },
+        },
+      }}
+    >
+      <CardActionArea
+        onClick={onOpen}
+        disableRipple
+        sx={{
+          height: "100%",
+          alignItems: "stretch",
+          borderRadius: "16px",
+          // suppress the default dark hover/press fill — the card border highlights instead
+          "& .MuiCardActionArea-focusHighlight": { opacity: 0 },
+          // keep a visible ring for keyboard focus (a11y)
+          "&.Mui-focusVisible": {
+            outline: (t) => `2px solid ${alpha(t.palette.primary.main, 0.5)}`,
+            outlineOffset: "-2px",
+            borderRadius: "16px",
+          },
+          transition: `transform 130ms ${EASE_OUT}`,
+          "&:active": { transform: "scale(0.97)" },
+          "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+        }}
+      >
+        <CardContent
+          sx={{ p: 2.25, height: "100%", display: "flex", flexDirection: "column", gap: 1 }}
+        >
+          {/* family + new */}
+          <Stack direction="row" spacing={0.75} alignItems="center">
+            <Chip
+              label={isGl ? "GL program" : "University"}
+              size="small"
+              sx={{
+                height: 22,
+                fontSize: "0.68rem",
+                fontWeight: 700,
+                borderRadius: "999px",
+                ...(isGl
+                  ? {
+                      color: "primary.main",
+                      bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                      border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.28)}`,
+                    }
+                  : {
+                      color: "var(--gl-program-default-text)",
+                      bgcolor: "var(--gl-program-default-bg)",
+                      border: "1px solid transparent",
+                    }),
+              }}
+            />
+            {p.isNew && (
+              <Chip
+                label="New"
+                size="small"
+                sx={{
+                  height: 22,
+                  fontSize: "0.68rem",
+                  fontWeight: 700,
+                  borderRadius: "999px",
+                  color: "var(--gl-status-confirmed-text)",
+                  bgcolor: "var(--gl-status-confirmed-bg)",
+                  border: "1px solid var(--gl-status-confirmed-border)",
+                }}
+              />
+            )}
+          </Stack>
+
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.25, ...clamp(2) }}>
+            {p.title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, ...clamp(2) }}>
+            {p.oneLiner}
+          </Typography>
+
+          {/* meta */}
+          <Stack
+            direction="row"
+            alignItems="center"
+            flexWrap="wrap"
+            sx={{ mt: 0.25, rowGap: 0.5, color: "text.secondary" }}
+          >
+            <Typography variant="caption" sx={{ fontWeight: 600 }}>
+              {p.durationLabel}
+            </Typography>
+            <Box component="span" sx={{ mx: 0.75, opacity: 0.5 }}>
+              ·
+            </Box>
+            <Typography variant="caption" sx={{ fontWeight: 600, ...TABULAR }}>
+              {fmtUsd(p.price)}
+            </Typography>
+            <Box component="span" sx={{ mx: 0.75, opacity: 0.5 }}>
+              ·
+            </Box>
+            <Typography variant="caption" sx={{ ...TABULAR }}>
+              {fmtDateNice(p.nextCohortYmd)}
+            </Typography>
+          </Stack>
+
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ ...clamp(1), fontStyle: "italic" }}
+          >
+            {p.audienceLine}
+          </Typography>
+
+          <Box sx={{ flex: 1 }} />
+
+          <Chip
+            label={
+              p.earningModel === "percentage"
+                ? `Earn up to ${p.bonusPctSelfCheckout}%`
+                : `Earn ${fmtUsd(p.flatBonusUsd ?? 0)} / ${fmtInr(p.flatBonusInr ?? 0)}`
+            }
+            size="small"
+            sx={{
+              alignSelf: "flex-start",
+              mt: 0.5,
+              height: 24,
+              fontWeight: 700,
+              fontSize: "0.72rem",
+              ...TABULAR,
+              color: "var(--gl-status-confirmed-text)",
+              bgcolor: "var(--gl-status-confirmed-bg)",
+              border: "1px solid var(--gl-status-confirmed-border)",
+            }}
+          />
+        </CardContent>
+      </CardActionArea>
+    </Card>
+  );
+}
+
+/* ── Section ──────────────────────────────────────────────────────────── */
+export function ProgramsSection() {
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // brief simulated fetch → Skeleton grid matching the real layout
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 420);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Catalog is GL-branded AINP programs only — university programs are not promotable.
+  const programs = useMemo(() => demoAmbassadorPrograms.filter((p) => p.family === "gl"), []);
+
+  const detailProgram = useMemo(
+    () => programs.find((p) => p.id === detailId) ?? null,
+    [programs, detailId],
+  );
+
+  return (
+    <Box>
+      {/* grid */}
+      {loading ? (
+        <Grid container spacing={2}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
+              <Card variant="outlined" sx={{ borderRadius: "16px" }}>
+                <CardContent sx={{ p: 2.25 }}>
+                  <Skeleton
+                    variant="rounded"
+                    width={78}
+                    height={22}
+                    sx={{ borderRadius: 999, mb: 1.25 }}
+                  />
+                  <Skeleton variant="text" width="85%" height={26} />
+                  <Skeleton variant="text" width="70%" height={20} sx={{ mb: 1 }} />
+                  <Skeleton variant="text" width="55%" height={16} />
+                  <Skeleton variant="text" width="45%" height={16} sx={{ mb: 1.5 }} />
+                  <Skeleton
+                    variant="rounded"
+                    width={140}
+                    height={24}
+                    sx={{ borderRadius: 999 }}
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
+        <Grid container spacing={2}>
+          {programs.map((p) => (
+            <Grid key={p.id} size={{ xs: 12, sm: 6, md: 4 }}>
+              <ProgramCard p={p} onOpen={() => setDetailId(p.id)} />
+            </Grid>
+          ))}
+        </Grid>
+      )}
+
+      <ProgramDetailDrawer program={detailProgram} onClose={() => setDetailId(null)} />
+    </Box>
+  );
+}

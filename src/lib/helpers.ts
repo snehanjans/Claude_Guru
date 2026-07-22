@@ -246,3 +246,12 @@ export function fmtDuration(startMins: number, endMins: number): string {
 export function fmtInr(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
+
+export function fmtUsd(amount: number): string {
+  return `$${amount.toLocaleString("en-US")}`;
+}
+
+/** Format a money amount in the given currency ("USD" → $ / en-US, "INR" → ₹ / en-IN). */
+export function fmtMoney(amount: number, currency: "USD" | "INR"): string {
+  return currency === "INR" ? fmtInr(amount) : fmtUsd(amount);
+}

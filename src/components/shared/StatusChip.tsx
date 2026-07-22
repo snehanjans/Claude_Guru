@@ -14,7 +14,10 @@ export type StatusVariant =
   | "confirmed"
   | "scheduled"
   | "pending"
-  | "declined";
+  | "declined"
+  | "disputed"
+  | "completed"
+  | "missed";
 
 export function StatusChip({
   status,

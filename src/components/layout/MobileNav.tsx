@@ -9,6 +9,8 @@ import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumb
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import PersonIcon from "@mui/icons-material/Person";
+import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
+import CampaignIcon from "@mui/icons-material/Campaign";
 import Box from "@mui/material/Box";
 
 /**
@@ -21,6 +23,7 @@ const NAV_ITEMS = [
   { to: "/new-dashboard", end: true, label: "Home", Icon: HomeOutlinedIcon, ActiveIcon: HomeIcon },
   { to: "/courses", end: false, label: "Courses", Icon: DescriptionOutlinedIcon, ActiveIcon: DescriptionIcon },
   { to: "/calendar", end: false, label: "Calendar", Icon: CalendarTodayOutlinedIcon, ActiveIcon: CalendarMonthIcon },
+  { to: "/recommend", end: false, label: "Refer", Icon: CampaignOutlinedIcon, ActiveIcon: CampaignIcon },
   { to: "/support", end: false, label: "Support", Icon: ConfirmationNumberOutlinedIcon, ActiveIcon: ConfirmationNumberIcon },
   { to: "/profile", end: false, label: "Profile", Icon: PersonOutlineOutlinedIcon, ActiveIcon: PersonIcon },
 ] as const;

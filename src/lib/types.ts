@@ -297,6 +297,99 @@ export type DeclinedSession = {
   declineReason?: string;
 };
 
+// ─── GL Ambassador (Referral) Types ────────────────────────────────────────
+
+/**
+ * How a Guru earns on a program.
+ * - "flat": a fixed bonus per enrollment (university certificates) — flatBonusUsd / flatBonusInr.
+ * - "percentage": a % of net program cost that depends on the learner's checkout path
+ *   (self-checkout vs LC-assisted) — bonusPctSelfCheckout / bonusPctAssisted. Used by GL AINP.
+ */
+export type EarningModel = "flat" | "percentage";
+
+export type AmbassadorProgram = {
+  id: string;
+  title: string;
+  university: string;
+  family: "university" | "gl";
+  oneLiner: string; // plain-language outcome, e.g. "Use agentic AI at work"
+  durationLabel: string; // e.g. "6 months"
+  mode: string; // e.g. "Online"
+  price: number; // program fee (USD)
+  priceInr?: number; // net program fee for India-based learners (INR) — drives INR bonus math
+  nextCohortYmd: string; // upcoming cohort start (YYYY-MM-DD)
+  audienceLine: string; // "Best for:" style audience descriptor
+  curriculum: string[]; // 4–6 short module strings
+  prerequisites: string[]; // 1–3 short strings
+  hasTechnicalPrereq: boolean;
+  isNew?: boolean;
+  scholarshipCode: string; // the guru's per-program learner discount code
+  scholarshipPct: number; // per-program discount % the learner receives
+  // ─── Earning model ───
+  earningModel: EarningModel;
+  flatBonusUsd?: number; // "flat" only — bonus per enrollment (USD)
+  flatBonusInr?: number; // "flat" only — bonus per enrollment (INR)
+  bonusPctSelfCheckout?: number; // "percentage" only — % on a self-checkout enrollment
+  bonusPctAssisted?: number; // "percentage" only — % on an LC-assisted enrollment
+  payoutTiming: string; // e.g. "1 month after course start" / "After course completion"
+  blurb: string;
+  message: string;
+};
+
+export type ReferralCurrency = "USD" | "INR";
+
+/** How the learner ultimately enrolled — sets the AINP bonus rate (20% vs 10%). */
+export type ConversionPath = "self_checkout" | "assisted";
+
+export type AmbassadorReferral = {
+  id: string;
+  learner: string;
+  learnerCountry?: string; // learner's country — sets which currency they pay in
+  programId: string;
+  dateYmd: string;
+  status: "sent" | "contacted" | "enrolled" | "confirmed" | "paid" | "not_eligible" | "not_converted";
+  reward: number; // bonus amount, expressed in `currency`
+  currency: ReferralCurrency; // learner's payment currency (by geography)
+  conversionPath?: ConversionPath; // percentage-model (AINP) only — explains 20% vs 10%
+  cohortYmd?: string;
+  paidYmd?: string;
+  notEligibleReason?: string;
+  notConvertedReason?: string; // "not_converted" only — why the LC contact didn't convert
+};
+
+export type WebinarStatus = "draft" | "scheduled" | "live" | "completed";
+
+/** A guru-run marketing webinar promoting one AINP program (GL-branded only). */
+export type AmbassadorWebinar = {
+  id: string;
+  programId: string; // one program per webinar; must be a family: "gl" program
+  title: string;
+  dateYmd: string; // YYYY-MM-DD
+  start: number; // minutes from midnight
+  end: number;
+  description?: string;
+  status: WebinarStatus;
+  registered: number; // demo registration count
+  attended?: number; // demo attendance count (completed webinars)
+};
+
+export type AnnouncementStatus = "pending" | "approved" | "sent";
+
+export type AmbassadorAnnouncement = {
+  id: string;
+  programId: string;
+  segment: string;
+  status: AnnouncementStatus;
+  note: string;
+  templateLines: string[];
+};
+
+export type BroadcastAsset = {
+  id: string;
+  label: string;
+  caption: string;
+};
+
 // ─── Preferences Type ───────────────────────────────────────────────────────
 
 export type Preferences = {

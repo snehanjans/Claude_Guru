@@ -27,6 +27,8 @@ import RestartAltOutlinedIcon from "@mui/icons-material/RestartAltOutlined";
 import Button from "@mui/material/Button";
 import StarOutlinedIcon from "@mui/icons-material/StarOutlined";
 import RocketLaunchOutlinedIcon from "@mui/icons-material/RocketLaunchOutlined";
+import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
+import PodcastsOutlinedIcon from "@mui/icons-material/PodcastsOutlined";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { resetAvailability } from "@/store/slices/availabilitySlice";
 import { setOpenLearnerRatings, setLearnerRatingsSessionId } from "@/store/slices/uiSlice";
@@ -37,6 +39,8 @@ import {
   toggleRole,
   setGuruStage,
   toggleV1Mode,
+  toggleRecommendAnnouncements,
+  toggleRecommendBroadcast,
   GURU_ROLES,
   GURU_STAGES,
   type GuruRole,
@@ -54,6 +58,8 @@ export function DevPanel() {
   const selectedRoles = useAppSelector((s) => s.devPanel.selectedRoles);
   const guruStage = useAppSelector((s) => s.devPanel.guruStage);
   const isV1Mode = useAppSelector((s) => s.devPanel.isV1Mode);
+  const recommendAnnouncements = useAppSelector((s) => s.devPanel.recommendAnnouncements);
+  const recommendBroadcast = useAppSelector((s) => s.devPanel.recommendBroadcast);
 
   // Cmd/Ctrl + K shortcut
   useEffect(() => {
@@ -162,6 +168,68 @@ export function DevPanel() {
             checked={isV1Mode}
             onChange={() => dispatch(toggleV1Mode())}
             inputProps={{ "aria-label": "Toggle Version 1 mode" }}
+          />
+        </Box>
+
+        {/* Recommend: Announcements Toggle */}
+        <Box
+          sx={{
+            px: 2.5,
+            pt: 0.5,
+            pb: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1,
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
+            <CampaignOutlinedIcon sx={{ fontSize: 18, color: recommendAnnouncements ? "primary.main" : "text.secondary" }} />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="body2" fontWeight={600} sx={{ fontSize: "0.8rem", lineHeight: 1.2 }}>
+                Recommend: Announcements
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem", display: "block" }}>
+                Show the Announcements tab
+              </Typography>
+            </Box>
+          </Stack>
+          <Switch
+            size="small"
+            checked={recommendAnnouncements}
+            onChange={() => dispatch(toggleRecommendAnnouncements())}
+            inputProps={{ "aria-label": "Toggle Recommend announcements tab" }}
+          />
+        </Box>
+
+        {/* Recommend: Broadcast kit Toggle */}
+        <Box
+          sx={{
+            px: 2.5,
+            pt: 0.5,
+            pb: 1.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1,
+          }}
+        >
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
+            <PodcastsOutlinedIcon sx={{ fontSize: 18, color: recommendBroadcast ? "primary.main" : "text.secondary" }} />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="body2" fontWeight={600} sx={{ fontSize: "0.8rem", lineHeight: 1.2 }}>
+                Recommend: Broadcast kit
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem", display: "block" }}>
+                Show the Broadcast kit tab
+              </Typography>
+            </Box>
+          </Stack>
+          <Switch
+            size="small"
+            checked={recommendBroadcast}
+            onChange={() => dispatch(toggleRecommendBroadcast())}
+            inputProps={{ "aria-label": "Toggle Recommend broadcast kit tab" }}
           />
         </Box>
 

@@ -37,7 +37,9 @@ const make = (
     createElement(Icon, { sx: { fontSize: size, color } }),
 });
 
-export const ACTIVITY_VISUALS: Record<SessionType, ActivityVisual> = {
+export const ACTIVITY_VISUALS: Record<SessionType | "Webinar", ActivityVisual> = {
+  /* Guru-run marketing webinars (Recommend / GL Guru Collective) */
+  "Webinar": make(VideocamOutlinedIcon, "#0369a1", "#e0f2fe", "Webinar"),
   "Online session": make(VideocamOutlinedIcon, "#2563eb", "#dbeafe", "Online session"),
   "Online class": make(VideocamOutlinedIcon, "#2563eb", "#dbeafe", "Online class"),
   "Mentored Learning session": make(ForumOutlinedIcon, "#7c3aed", "#ede9fe", "Mentored Learning"),

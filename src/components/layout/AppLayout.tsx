@@ -87,6 +87,7 @@ export function AppLayout() {
       <Sidebar />
       <Box
         component="main"
+        className="themed-scrollbar"
         sx={{
           minWidth: 0,
           overflowY: { xs: "visible", md: "auto" },
@@ -94,6 +95,9 @@ export function AppLayout() {
           WebkitOverflowScrolling: "touch",
           overscrollBehavior: "contain",
           scrollbarWidth: { xs: "none", md: "thin" },
+          // Reserve the scrollbar gutter on desktop so content doesn't shift
+          // when a tab/page is too short to scroll (e.g. Recommend tabs).
+          scrollbarGutter: { md: "stable" },
           "&::-webkit-scrollbar": { display: { xs: "none", md: "block" } },
           px: { xs: 2, sm: 2, md: 3 },
           pt: { xs: isAccountPage ? "env(safe-area-inset-top)" : "calc(56px + 12px + env(safe-area-inset-top))", md: 3 },
