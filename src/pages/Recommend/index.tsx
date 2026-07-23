@@ -8,23 +8,20 @@ import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
-import { useAppSelector } from "@/store";
 import { MobilePageHeader } from "@/components/layout/MobilePageHeader";
 import { fmtMoney } from "@/lib/helpers";
 import { GURU_CURRENCY, toGuruCurrency } from "@/data/demo-ambassador";
-import { RecommendProvider, useRecommend, type RecommendTab } from "./RecommendContext";
-import { RecommendFlowDialog } from "./RecommendFlowDialog";
+import { useRecommend, type RecommendTab } from "./RecommendContext";
 import { ProgramsSection } from "./sections/Programs";
 import { MyReferralsSection } from "./sections/MyReferrals";
-import { AnnouncementsSection } from "./sections/Announcements";
-import { BroadcastKitSection } from "./sections/BroadcastKit";
+import { FaqSection } from "./sections/Faq";
 
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 
-function RecommendContent() {
+// Provider + flow dialog live in App.tsx's RecommendScope, shared with the
+// program-detail route so referrals survive navigation between the two.
+export default function RecommendPage() {
   const { referrals, activeTab, setActiveTab } = useRecommend();
-  const showAnnouncements = useAppSelector((s) => s.devPanel.recommendAnnouncements);
-  const showBroadcast = useAppSelector((s) => s.devPanel.recommendBroadcast);
 
   // ── Derived referral stats (live off context referrals) ──
   // Bonuses are earned in each learner's currency; the hero shows ONE total,
@@ -49,8 +46,7 @@ function RecommendContent() {
   const tabs: { label: string; value: RecommendTab }[] = [
     { label: "Programs", value: "programs" },
     { label: "My referrals", value: "referrals" },
-    ...(showAnnouncements ? [{ label: "Announcements", value: "announcements" as const }] : []),
-    ...(showBroadcast ? [{ label: "Broadcast kit", value: "broadcast" as const }] : []),
+    { label: "FAQ", value: "faq" },
   ];
 
   return (
@@ -147,19 +143,8 @@ function RecommendContent() {
       <Box sx={{ mb: 4 }}>
         {activeTab === "programs" && <ProgramsSection />}
         {activeTab === "referrals" && <MyReferralsSection />}
-        {activeTab === "announcements" && showAnnouncements && <AnnouncementsSection />}
-        {activeTab === "broadcast" && showBroadcast && <BroadcastKitSection />}
+        {activeTab === "faq" && <FaqSection />}
       </Box>
-
-      <RecommendFlowDialog />
     </>
-  );
-}
-
-export default function RecommendPage() {
-  return (
-    <RecommendProvider>
-      <RecommendContent />
-    </RecommendProvider>
   );
 }

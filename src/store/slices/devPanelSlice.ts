@@ -43,8 +43,6 @@ interface DevPanelState {
   isRoleSwitching: boolean;
   guruStage: GuruStage;
   isV1Mode: boolean;
-  recommendAnnouncements: boolean;
-  recommendBroadcast: boolean;
 }
 
 const savedRole =
@@ -70,11 +68,6 @@ const parseSavedV1Mode = (): boolean => {
   return window.localStorage.getItem("guru-dev-v1-mode") === "true";
 };
 
-const parseSavedFlag = (key: string): boolean => {
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(key) === "true";
-};
-
 const initialState: DevPanelState = {
   isOpen: false,
   selectedRole: resolvedRole,
@@ -82,8 +75,6 @@ const initialState: DevPanelState = {
   isRoleSwitching: false,
   guruStage: "experienced",
   isV1Mode: parseSavedV1Mode(),
-  recommendAnnouncements: parseSavedFlag("guru-recommend-announcements"),
-  recommendBroadcast: parseSavedFlag("guru-recommend-broadcast"),
 };
 
 const devPanelSlice = createSlice({
@@ -148,32 +139,8 @@ const devPanelSlice = createSlice({
         window.localStorage.setItem("guru-dev-v1-mode", String(state.isV1Mode));
       }
     },
-    setRecommendAnnouncements(state, action: PayloadAction<boolean>) {
-      state.recommendAnnouncements = action.payload;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("guru-recommend-announcements", String(action.payload));
-      }
-    },
-    toggleRecommendAnnouncements(state) {
-      state.recommendAnnouncements = !state.recommendAnnouncements;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("guru-recommend-announcements", String(state.recommendAnnouncements));
-      }
-    },
-    setRecommendBroadcast(state, action: PayloadAction<boolean>) {
-      state.recommendBroadcast = action.payload;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("guru-recommend-broadcast", String(action.payload));
-      }
-    },
-    toggleRecommendBroadcast(state) {
-      state.recommendBroadcast = !state.recommendBroadcast;
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("guru-recommend-broadcast", String(state.recommendBroadcast));
-      }
-    },
   },
 });
 
-export const { toggleDevPanel, setDevPanelOpen, setSelectedRole, setSelectedRoles, toggleRole, clearRoleSwitching, setGuruStage, setV1Mode, toggleV1Mode, setRecommendAnnouncements, toggleRecommendAnnouncements, setRecommendBroadcast, toggleRecommendBroadcast } = devPanelSlice.actions;
+export const { toggleDevPanel, setDevPanelOpen, setSelectedRole, setSelectedRoles, toggleRole, clearRoleSwitching, setGuruStage, setV1Mode, toggleV1Mode } = devPanelSlice.actions;
 export default devPanelSlice.reducer;

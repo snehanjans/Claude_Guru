@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardActionArea from "@mui/material/CardActionArea";
@@ -12,7 +13,6 @@ import { alpha } from "@mui/material/styles";
 import { fmtDateNice, fmtUsd, fmtInr } from "@/lib/helpers";
 import { demoAmbassadorPrograms } from "@/data/demo-ambassador";
 import type { AmbassadorProgram } from "@/lib/types";
-import { ProgramDetailDrawer } from "../ProgramDetailDrawer";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
@@ -175,7 +175,7 @@ function ProgramCard({ p, onOpen }: { p: AmbassadorProgram; onOpen: () => void }
 
 /* ── Section ──────────────────────────────────────────────────────────── */
 export function ProgramsSection() {
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
   // brief simulated fetch → Skeleton grid matching the real layout
@@ -186,11 +186,6 @@ export function ProgramsSection() {
 
   // Catalog is GL-branded AINP programs only — university programs are not promotable.
   const programs = useMemo(() => demoAmbassadorPrograms.filter((p) => p.family === "gl"), []);
-
-  const detailProgram = useMemo(
-    () => programs.find((p) => p.id === detailId) ?? null,
-    [programs, detailId],
-  );
 
   return (
     <Box>
@@ -226,13 +221,11 @@ export function ProgramsSection() {
         <Grid container spacing={2}>
           {programs.map((p) => (
             <Grid key={p.id} size={{ xs: 12, sm: 6, md: 4 }}>
-              <ProgramCard p={p} onOpen={() => setDetailId(p.id)} />
+              <ProgramCard p={p} onOpen={() => navigate(`/recommend/program/${p.id}`)} />
             </Grid>
           ))}
         </Grid>
       )}
-
-      <ProgramDetailDrawer program={detailProgram} onClose={() => setDetailId(null)} />
     </Box>
   );
 }

@@ -1,7 +1,6 @@
 import type {
   AmbassadorProgram,
   AmbassadorReferral,
-  AmbassadorAnnouncement,
   BroadcastAsset,
   AmbassadorWebinar,
 } from "@/lib/types";
@@ -371,46 +370,6 @@ export const demoAmbassadorReferrals: AmbassadorReferral[] = [
   },
 ];
 
-export const demoAnnouncements: AmbassadorAnnouncement[] = [
-  {
-    id: "ann-01",
-    programId: "no-code-agentic-ai",
-    segment: "AI alumni → advanced",
-    status: "sent",
-    note: "Sent to 128 alumni who completed an AI foundations course with you.",
-    templateLines: [
-      "You finished AI foundations with me — MIT's No Code and Agentic AI is the natural next step.",
-      "The next cohort starts Sep 7, 2026, and I'm mentoring it personally.",
-      "Use scholarship code shome-nocode-gl for 15% off the fee.",
-      "Reply here and I'll walk you through whether it's the right fit.",
-    ],
-  },
-  {
-    id: "ann-02",
-    programId: "ai-native-professional",
-    segment: "Working professionals → productivity",
-    status: "approved",
-    note: "Approved by program office — ready to send to 96 alumni.",
-    templateLines: [
-      "If you want to put AI to work day-to-day, the AI-Native Professional program is a strong fit.",
-      "The next cohort starts Aug 17, 2026, and I mentor on this program.",
-      "Apply scholarship code shome-ainp-gl for 20% off.",
-    ],
-  },
-  {
-    id: "ann-03",
-    programId: "pg-ai-ml",
-    segment: "DS/ML alumni → deep credential",
-    status: "pending",
-    note: "Awaiting program-office approval before it can be sent.",
-    templateLines: [
-      "If you're ready to go deep on AI, the PG Program in AI & Machine Learning is the strongest on-ramp.",
-      "The next cohort starts Sep 14, 2026, and I mentor learners through it.",
-      "Scholarship code shome-aiml-gl takes 12% off the fee.",
-    ],
-  },
-];
-
 export const demoBroadcastCollateral: BroadcastAsset[] = [
   {
     id: "asset-01",
@@ -438,7 +397,6 @@ export const demoBroadcastCollateral: BroadcastAsset[] = [
   },
 ];
 
-export const demoBroadcastPerf = { clicks: 342, signups: 48, enrollments: 12 };
 
 // Guru-run live webinars for AINP (GL family) programs — university programs don't have these.
 export const demoAmbassadorWebinars: AmbassadorWebinar[] = [

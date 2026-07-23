@@ -373,17 +373,6 @@ export type AmbassadorWebinar = {
   attended?: number; // demo attendance count (completed webinars)
 };
 
-export type AnnouncementStatus = "pending" | "approved" | "sent";
-
-export type AmbassadorAnnouncement = {
-  id: string;
-  programId: string;
-  segment: string;
-  status: AnnouncementStatus;
-  note: string;
-  templateLines: string[];
-};
-
 export type BroadcastAsset = {
   id: string;
   label: string;

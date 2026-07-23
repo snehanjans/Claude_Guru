@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
-import Drawer from "@mui/material/Drawer";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -14,7 +14,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
@@ -34,12 +34,16 @@ import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import type { SvgIconComponent } from "@mui/icons-material";
-import { fmtDateNice, fmtUsd, fmtInr } from "@/lib/helpers";
-import { demoBroadcastCollateral, referralLinkFor, GURU_LEARNERS_IMPACTED } from "@/data/demo-ambassador";
+import { fmtDateNice, fmtUsd } from "@/lib/helpers";
+import {
+  demoAmbassadorPrograms,
+  demoBroadcastCollateral,
+  referralLinkFor,
+  GURU_LEARNERS_IMPACTED,
+} from "@/data/demo-ambassador";
 import { useAppDispatch } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
-import type { AmbassadorProgram } from "@/lib/types";
-import { useRecommend } from "./RecommendContext";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
@@ -55,7 +59,7 @@ const COLLATERAL_MEDIA: Record<
   "asset-04": { icon: InstagramIcon, ratio: "9 / 16", size: "1080 × 1920", centered: true, maxWidth: 150 }, // IG story
 };
 
-/* Small uppercase section header with a leading icon — used across the detail dialog. */
+/* Small uppercase section header with a leading icon — used across the detail page. */
 function SectionLabel({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
     <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
@@ -76,38 +80,58 @@ function SectionLabel({ icon, children }: { icon: ReactNode; children: ReactNode
   );
 }
 
-/* ── Program detail drawer ────────────────────────────────────────────── */
-export function ProgramDetailDrawer({
-  program,
-  onClose,
-}: {
-  program: AmbassadorProgram | null;
-  onClose: () => void;
-}) {
-  const { openFlow } = useRecommend();
+/* ── Program detail page ──────────────────────────────────────────────── */
+export default function ProgramDetailPage() {
+  const { programId } = useParams<{ programId: string }>();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [drawerTab, setDrawerTab] = useState<"overview" | "collaterals">("overview");
+  const [tab, setTab] = useState<"overview" | "collaterals">("overview");
 
-  const open = Boolean(program);
+  const program = demoAmbassadorPrograms.find((p) => p.id === programId) ?? null;
   const link = program ? referralLinkFor(program.scholarshipCode) : "";
 
   // Reset to Overview whenever a different program opens.
   useEffect(() => {
-    if (program) setDrawerTab("overview");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [program?.id]);
+    setTab("overview");
+  }, [programId]);
+
+  if (!program) {
+    return (
+      <Box sx={{ maxWidth: 840, mx: "auto" }}>
+        <EmptyState
+          icon={<SchoolOutlinedIcon />}
+          title="Program not found"
+          subtitle="This program may have been removed or the link is out of date."
+          action={
+            <Button
+              variant="contained"
+              onClick={() => navigate("/recommend")}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: "10px",
+                transition: `transform 130ms ${EASE_OUT}`,
+                "&:active": { transform: "scale(0.97)" },
+                "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+              }}
+            >
+              Back to programs
+            </Button>
+          }
+        />
+      </Box>
+    );
+  }
 
   // Fill a collateral template with this program's details (link appended for the copy payload).
   const fillCollateral = (caption: string) =>
-    !program
-      ? caption
-      : caption
-          .replace(/\[program name\]/g, program.title)
-          .replace(/\[start date\]/g, fmtDateNice(program.nextCohortYmd))
-          .replace(/\[scholarship code\]/g, program.scholarshipCode)
-          .replace(/\[percent off\]/g, String(program.scholarshipPct))
-          .replace(/\[N learners mentored\]/g, GURU_LEARNERS_IMPACTED.toLocaleString("en-US"));
+    caption
+      .replace(/\[program name\]/g, program.title)
+      .replace(/\[start date\]/g, fmtDateNice(program.nextCohortYmd))
+      .replace(/\[scholarship code\]/g, program.scholarshipCode)
+      .replace(/\[percent off\]/g, String(program.scholarshipPct))
+      .replace(/\[N learners mentored\]/g, GURU_LEARNERS_IMPACTED.toLocaleString("en-US"));
 
   const copy = (key: string, value: string, description: string) => {
     navigator.clipboard.writeText(value);
@@ -116,14 +140,7 @@ export function ProgramDetailDrawer({
     window.setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1600);
   };
 
-  const recommend = () => {
-    if (!program) return;
-    openFlow(program.id);
-    onClose();
-  };
-
   const downloadCurriculum = () => {
-    if (!program) return;
     dispatch(
       pushToast({
         title: "Curriculum download started",
@@ -133,7 +150,6 @@ export function ProgramDetailDrawer({
   };
 
   const downloadBrochure = () => {
-    if (!program) return;
     dispatch(
       pushToast({
         title: "Brochure download started",
@@ -143,115 +159,98 @@ export function ProgramDetailDrawer({
   };
 
   return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={onClose}
-      sx={{
-        "& .MuiDrawer-paper": {
-          width: { xs: "100vw", sm: 480 },
-          maxWidth: "100vw",
-          boxShadow: "-4px 0 24px rgba(0,0,0,0.06)",
-          borderLeft: "1px solid",
-          borderColor: "divider",
-        },
-      }}
-    >
-      {program && (
-        <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-          {/* header */}
-          <Box
-            sx={{
-              position: "relative",
-              px: { xs: 2.5, sm: 3 },
-              pt: { xs: 3, sm: 3.5 },
-              pb: 2.5,
-            }}
-          >
-            <IconButton
-              onClick={onClose}
-              size="small"
-              aria-label="Close"
-              sx={{
-                position: "absolute",
-                top: 14,
-                right: 14,
-                color: "text.secondary",
-                transition: `transform 130ms ${EASE_OUT}`,
-                "&:hover": { bgcolor: "action.hover" },
-                "&:active": { transform: "scale(0.92)" },
-              }}
-            >
-              <CloseRoundedIcon fontSize="small" />
-            </IconButton>
+    <Box sx={{ maxWidth: 840, mx: "auto" }}>
+      {/* back to catalog */}
+      <Button
+        variant="text"
+        startIcon={<ArrowBackRoundedIcon sx={{ fontSize: 18 }} />}
+        onClick={() => navigate("/recommend")}
+        sx={{
+          ml: -1,
+          mb: 1.5,
+          textTransform: "none",
+          fontWeight: 600,
+          color: "text.secondary",
+          borderRadius: "8px",
+          transition: `transform 130ms ${EASE_OUT}`,
+          "&:hover": { color: "text.primary" },
+          "&:active": { transform: "scale(0.97)" },
+          "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+        }}
+      >
+        All programs
+      </Button>
 
-            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5 }}>
+      {/* header */}
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        spacing={2}
+        sx={{ pb: 2.5 }}
+      >
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5 }}>
+            <Chip
+              label={program.family === "gl" ? "GL program" : "University"}
+              size="small"
+              sx={{
+                height: 22,
+                fontSize: "0.68rem",
+                fontWeight: 700,
+                borderRadius: "999px",
+                color: "text.secondary",
+                bgcolor: "action.hover",
+              }}
+            />
+            {program.isNew && (
               <Chip
-                label={program.family === "gl" ? "GL program" : "University"}
+                label="New"
                 size="small"
                 sx={{
                   height: 22,
                   fontSize: "0.68rem",
                   fontWeight: 700,
                   borderRadius: "999px",
-                  color: "text.secondary",
-                  bgcolor: "action.hover",
+                  color: "primary.main",
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
                 }}
               />
-              {program.isNew && (
-                <Chip
-                  label="New"
-                  size="small"
-                  sx={{
-                    height: 22,
-                    fontSize: "0.68rem",
-                    fontWeight: 700,
-                    borderRadius: "999px",
-                    color: "primary.main",
-                    bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
-                  }}
-                />
-              )}
-            </Stack>
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em", pr: 4 }}
-            >
-              {program.title}
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 0.5, color: "text.secondary" }}>
-              {program.university}
-            </Typography>
-          </Box>
+            )}
+          </Stack>
+          <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}>
+            {program.title}
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.75, color: "text.secondary" }}>
+            {program.university}
+          </Typography>
+        </Box>
+      </Stack>
 
-          {/* section tabs */}
-          <Box sx={{ borderBottom: 1, borderColor: "divider", px: { xs: 2.5, sm: 3 } }}>
-            <Tabs
-              value={drawerTab}
-              onChange={(_e, v) => setDrawerTab(v as "overview" | "collaterals")}
-              aria-label="Program detail sections"
-              sx={{
-                minHeight: 44,
-                "& .MuiTab-root": {
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: "0.875rem",
-                  minHeight: 44,
-                },
-                "& .MuiTabs-indicator": { height: 3, borderRadius: "3px 3px 0 0" },
-              }}
-            >
-              <Tab label="Overview" value="overview" />
-              <Tab label="Social Media Kit" value="collaterals" />
-            </Tabs>
-          </Box>
+      {/* section tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Tabs
+          value={tab}
+          onChange={(_e, v) => setTab(v as "overview" | "collaterals")}
+          aria-label="Program detail sections"
+          sx={{
+            minHeight: 44,
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              minHeight: 44,
+            },
+            "& .MuiTabs-indicator": { height: 3, borderRadius: "3px 3px 0 0" },
+          }}
+        >
+          <Tab label="Overview" value="overview" />
+          <Tab label="Social Media Kit" value="collaterals" />
+        </Tabs>
+      </Box>
 
-          <Box
-            className="themed-scrollbar"
-            sx={{ flex: 1, minHeight: 0, overflowY: "auto", px: { xs: 2.5, sm: 3 }, py: { xs: 2.5, sm: 3 } }}
-          >
-            {drawerTab === "overview" && (
-              <>
+      <Box sx={{ py: 3, mb: 2 }}>
+        {tab === "overview" && (
+          <>
             {/* lead */}
             <Typography sx={{ fontSize: 15, lineHeight: 1.65, color: "text.secondary" }}>
               {program.blurb}
@@ -436,7 +435,7 @@ export function ProgramDetailDrawer({
               <Button
                 variant="text"
                 endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 18 }} />}
-                onClick={() => setDrawerTab("collaterals")}
+                onClick={() => setTab("collaterals")}
                 sx={{
                   ml: -1,
                   textTransform: "none",
@@ -511,7 +510,7 @@ export function ProgramDetailDrawer({
             <SectionLabel icon={<SchoolOutlinedIcon sx={{ fontSize: 18, color: "primary.main" }} />}>
               What this course teaches
             </SectionLabel>
-            <Grid container columnSpacing={3} rowSpacing={2}>
+            <Grid container columnSpacing={3} rowSpacing={2} sx={{ maxWidth: 640 }}>
               {program.curriculum.map((c, i) => (
                 <Grid key={i} size={{ xs: 12, sm: 6 }}>
                   <Stack direction="row" spacing={1.25} alignItems="center">
@@ -610,11 +609,11 @@ export function ProgramDetailDrawer({
                 />
               ))}
             </Stack>
-              </>
-            )}
+          </>
+        )}
 
-            {drawerTab === "collaterals" && (
-              <>
+        {tab === "collaterals" && (
+          <>
             {/* collaterals — program-specific, pre-filled with the guru's code + link */}
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
               Ready-to-share posts for {program.title}, pre-filled with your code and link.
@@ -713,73 +712,10 @@ export function ProgramDetailDrawer({
                 );
               })}
             </Stack>
-              </>
-            )}
+          </>
+        )}
+      </Box>
 
-          </Box>
-
-          {/* footer action bar */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              px: { xs: 2.5, sm: 3 },
-              py: 2,
-              gap: 1.5,
-              bgcolor: "background.paper",
-              borderTop: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <Box sx={{ mr: "auto", minWidth: 0 }}>
-              <Typography
-                sx={{
-                  fontSize: "0.66rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase",
-                  color: "text.secondary",
-                  lineHeight: 1,
-                }}
-              >
-                You earn
-              </Typography>
-              <Typography
-                sx={{
-                  mt: 0.4,
-                  fontWeight: 800,
-                  fontSize: 15,
-                  lineHeight: 1.2,
-                  color: "var(--gl-status-confirmed-text)",
-                  ...TABULAR,
-                }}
-              >
-                {program.earningModel === "percentage"
-                  ? `Up to ${program.bonusPctSelfCheckout}% of the program fee`
-                  : `${fmtUsd(program.flatBonusUsd ?? 0)} / ${fmtInr(program.flatBonusInr ?? 0)} per enrollment`}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {program.payoutTiming}
-              </Typography>
-            </Box>
-            <Button
-              variant="contained"
-              onClick={recommend}
-              sx={{
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: "10px",
-                flexShrink: 0,
-                transition: `transform 130ms ${EASE_OUT}`,
-                "&:active": { transform: "scale(0.97)" },
-                "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
-              }}
-            >
-              Recommend this program
-            </Button>
-          </Box>
-        </Box>
-      )}
-    </Drawer>
+    </Box>
   );
 }

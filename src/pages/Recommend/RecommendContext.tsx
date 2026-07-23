@@ -9,11 +9,7 @@ import {
   setWebinarStatus as setWebinarStatusAction,
 } from "@/store/slices/webinarsSlice";
 
-export type RecommendTab =
-  | "programs"
-  | "referrals"
-  | "announcements"
-  | "broadcast";
+export type RecommendTab = "programs" | "referrals" | "faq";
 
 export interface RecommendContextValue {
   referrals: AmbassadorReferral[];
