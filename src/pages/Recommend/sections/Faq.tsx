@@ -89,7 +89,10 @@ export function FaqSection() {
 
       {FAQ_GROUPS.map((group, g) => (
         <Box key={group.title} sx={{ mb: g < FAQ_GROUPS.length - 1 ? 3.5 : 0 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.25 }}>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, fontSize: "1.15rem", letterSpacing: "-0.01em", mb: 1.5 }}
+          >
             {group.title}
           </Typography>
           {group.items.map((f, i) => {
@@ -120,7 +123,7 @@ export function FaqSection() {
                     "& .MuiAccordionSummary-content": { my: 1.25 },
                   }}
                 >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.4 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 500, lineHeight: 1.4 }}>
                     {f.q}
                   </Typography>
                 </AccordionSummary>

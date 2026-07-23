@@ -6,6 +6,9 @@ import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
+import Modal from "@mui/material/Modal";
+import Fade from "@mui/material/Fade";
+import Backdrop from "@mui/material/Backdrop";
 import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
@@ -33,6 +36,8 @@ import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+import ZoomOutMapRoundedIcon from "@mui/icons-material/ZoomOutMapRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { fmtDateNice, fmtUsd } from "@/lib/helpers";
 import {
@@ -87,6 +92,10 @@ export default function ProgramDetailPage() {
   const dispatch = useAppDispatch();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [tab, setTab] = useState<"overview" | "collaterals">("overview");
+  // Which collateral is expanded in the lightbox (asset id + label + filled caption), or null.
+  const [lightbox, setLightbox] = useState<{ id: string; label: string; caption: string } | null>(
+    null,
+  );
 
   const program = demoAmbassadorPrograms.find((p) => p.id === programId) ?? null;
   const link = program ? referralLinkFor(program.scholarshipCode) : "";
@@ -94,6 +103,7 @@ export default function ProgramDetailPage() {
   // Reset to Overview whenever a different program opens.
   useEffect(() => {
     setTab("overview");
+    setLightbox(null);
   }, [programId]);
 
   if (!program) {
@@ -674,10 +684,31 @@ export default function ProgramDetailPage() {
                       </Button>
                     </Stack>
 
-                    {/* platform-appropriate placeholder image */}
+                    {/* platform-appropriate placeholder image — click to expand */}
                     {media && (
                       <Box
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Expand ${asset.label} preview`}
+                        onClick={() =>
+                          setLightbox({
+                            id: asset.id,
+                            label: asset.label,
+                            caption: fillCollateral(asset.caption),
+                          })
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setLightbox({
+                              id: asset.id,
+                              label: asset.label,
+                              caption: fillCollateral(asset.caption),
+                            });
+                          }
+                        }}
                         sx={{
+                          position: "relative",
                           mb: 1.5,
                           mx: media.centered ? "auto" : 0,
                           width: "100%",
@@ -693,8 +724,40 @@ export default function ProgramDetailPage() {
                           justifyContent: "center",
                           gap: 0.75,
                           color: "text.disabled",
+                          cursor: "pointer",
+                          outline: "none",
+                          transition: `border-color 160ms ${EASE_OUT}, background-color 160ms ${EASE_OUT}`,
+                          "&:hover, &:focus-visible": {
+                            borderColor: "primary.main",
+                            bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
+                            "& .col-zoom": { opacity: 1, transform: "scale(1)" },
+                          },
                         }}
                       >
+                        <Box
+                          className="col-zoom"
+                          sx={{
+                            position: "absolute",
+                            top: 8,
+                            right: 8,
+                            width: 28,
+                            height: 28,
+                            borderRadius: "8px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            bgcolor: "background.paper",
+                            border: "1px solid",
+                            borderColor: "divider",
+                            color: "text.secondary",
+                            opacity: 0,
+                            transform: "scale(0.9)",
+                            transition: `opacity 160ms ${EASE_OUT}, transform 160ms ${EASE_OUT}`,
+                            "@media (hover: none)": { opacity: 1, transform: "scale(1)" },
+                          }}
+                        >
+                          <ZoomOutMapRoundedIcon sx={{ fontSize: 16 }} />
+                        </Box>
                         <Stack direction="row" alignItems="center" spacing={0.5}>
                           <ImageOutlinedIcon sx={{ fontSize: 18 }} />
                           <media.icon sx={{ fontSize: 20 }} />
@@ -720,6 +783,104 @@ export default function ProgramDetailPage() {
         )}
       </Box>
 
+      {/* collateral image lightbox */}
+      <Modal
+        open={Boolean(lightbox)}
+        onClose={() => setLightbox(null)}
+        closeAfterTransition
+        slots={{ backdrop: Backdrop }}
+        slotProps={{ backdrop: { timeout: 200, sx: { bgcolor: "rgba(0,0,0,0.78)" } } }}
+        sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: { xs: 2, sm: 4 } }}
+      >
+        <Fade in={Boolean(lightbox)} timeout={200}>
+          <Box sx={{ position: "relative", outline: "none", maxWidth: "100%", maxHeight: "100%" }}>
+            <IconButton
+              aria-label="Close preview"
+              onClick={() => setLightbox(null)}
+              sx={{
+                position: "absolute",
+                top: -14,
+                right: -14,
+                zIndex: 1,
+                bgcolor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
+                boxShadow: 2,
+                transition: `transform 130ms ${EASE_OUT}`,
+                "&:hover": { bgcolor: "background.paper" },
+                "&:active": { transform: "scale(0.94)" },
+              }}
+            >
+              <CloseRoundedIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+            {lightbox &&
+              (() => {
+                const media = COLLATERAL_MEDIA[lightbox.id];
+                if (!media) return null;
+                // Fit the image within both a max width and ~62vh tall, whatever the
+                // aspect ratio — portrait (IG story) and landscape (LinkedIn) both fit
+                // without the modal scrolling.
+                const [rw, rh] = media.ratio.split("/").map((n) => parseFloat(n));
+                const ar = rw / rh;
+                const boxWidth = `min(640px, 90vw, ${(62 * ar).toFixed(2)}vh)`;
+                return (
+                  <Box
+                    sx={{
+                      width: boxWidth,
+                      maxHeight: "90vh",
+                      overflowY: "auto",
+                      borderRadius: "14px",
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    {/* enlarged placeholder image */}
+                    <Box
+                      sx={{
+                        width: "100%",
+                        aspectRatio: media.ratio,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 1.5,
+                        color: "text.disabled",
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    >
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <ImageOutlinedIcon sx={{ fontSize: 34 }} />
+                        <media.icon sx={{ fontSize: 38 }} />
+                      </Stack>
+                      <Typography sx={{ fontWeight: 700, fontSize: 18, ...TABULAR }}>{media.size}</Typography>
+                    </Box>
+                    {/* caption — same copy that ships with the post */}
+                    <Box sx={{ p: { xs: 2, sm: 2.5 } }}>
+                      <Typography
+                        sx={{
+                          fontSize: "0.7rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          color: "text.secondary",
+                          mb: 1,
+                        }}
+                      >
+                        {lightbox.label}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "text.primary", lineHeight: 1.6, whiteSpace: "pre-line" }}
+                      >
+                        {lightbox.caption}
+                      </Typography>
+                    </Box>
+                  </Box>
+                );
+              })()}
+          </Box>
+        </Fade>
+      </Modal>
     </Box>
   );
 }
