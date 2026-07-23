@@ -83,10 +83,6 @@ export function FaqSection() {
 
   return (
     <Box sx={{ maxWidth: 760 }}>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3, lineHeight: 1.55 }}>
-        Everything about how referrals, bonuses, and payouts work in the GL Guru Collective.
-      </Typography>
-
       {FAQ_GROUPS.map((group, g) => (
         <Box key={group.title} sx={{ mb: g < FAQ_GROUPS.length - 1 ? 3.5 : 0 }}>
           <Typography

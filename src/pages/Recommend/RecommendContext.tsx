@@ -4,12 +4,33 @@ import type { AmbassadorReferral, AmbassadorWebinar, WebinarStatus } from "@/lib
 import { toYmd } from "@/lib/helpers";
 import { demoAmbassadorReferrals } from "@/data/demo-ambassador";
 import { useAppDispatch, useAppSelector } from "@/store";
+import type { GuruStage } from "@/store/slices/devPanelSlice";
 import {
   addWebinar as addWebinarAction,
   setWebinarStatus as setWebinarStatusAction,
 } from "@/store/slices/webinarsSlice";
 
 export type RecommendTab = "programs" | "referrals" | "faq";
+
+// Base referral seed per guru lifecycle stage — mirrors how Dashboard/Payments/etc.
+// slice their data by `guruStage`. Ids reference rows in demoAmbassadorReferrals.
+const REFERRAL_BY_ID = new Map(demoAmbassadorReferrals.map((r) => [r.id, r]));
+const seedFor = (ids: string[]) => ids.map((id) => REFERRAL_BY_ID.get(id)).filter(Boolean) as AmbassadorReferral[];
+
+// early: in-pipeline only, no locked earnings (₹0 earned) — sent/contacted + one enrolled.
+// mid: building a track record — a couple confirmed/paid, some pipeline, one closed-lost.
+const STAGE_REFERRAL_IDS: Partial<Record<GuruStage, string[]>> = {
+  new: [],
+  empty: [],
+  early: ["ref-07", "ref-09", "ref-10", "ref-11"],
+  mid: ["ref-01", "ref-02", "ref-05", "ref-07", "ref-08", "ref-09", "ref-10", "ref-13"],
+};
+
+function baseReferralsForStage(stage: GuruStage): AmbassadorReferral[] {
+  const ids = STAGE_REFERRAL_IDS[stage];
+  // experienced / onboarding (and any unmapped stage) → the full seed.
+  return ids ? seedFor(ids) : [...demoAmbassadorReferrals];
+}
 
 export interface RecommendContextValue {
   referrals: AmbassadorReferral[];
@@ -38,8 +59,15 @@ export interface RecommendContextValue {
 const RecommendCtx = createContext<RecommendContextValue | null>(null);
 
 export function RecommendProvider({ children }: { children: ReactNode }) {
-  const [referrals, setReferrals] = useState<AmbassadorReferral[]>(
-    () => [...demoAmbassadorReferrals],
+  const guruStage = useAppSelector((s) => s.devPanel.guruStage);
+  // Base seed is derived from the lifecycle stage (reactive, so the Dev Panel
+  // stage switch updates the view live). Referrals sent this session are kept
+  // separate so a brand-new guru's first send still shows above the base seed.
+  const baseReferrals = useMemo(() => baseReferralsForStage(guruStage), [guruStage]);
+  const [addedReferrals, setAddedReferrals] = useState<AmbassadorReferral[]>([]);
+  const referrals = useMemo(
+    () => [...addedReferrals, ...baseReferrals],
+    [addedReferrals, baseReferrals],
   );
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<RecommendTab>("programs");
@@ -61,7 +89,7 @@ export function RecommendProvider({ children }: { children: ReactNode }) {
       currency: "USD",
       reward: 0,
     };
-    setReferrals((prev) => [referral, ...prev]);
+    setAddedReferrals((prev) => [referral, ...prev]);
     setHighlightId(id);
     setActiveTab("referrals");
   }, []);

@@ -8,7 +8,9 @@ import IconButton from "@mui/material/IconButton";
 import Link from "@mui/material/Link";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
+import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
 import type { SxProps, Theme } from "@mui/material/styles";
@@ -16,7 +18,7 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import GroupAddOutlinedIcon from "@mui/icons-material/GroupAddOutlined";
 import { useAppDispatch } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
-import { fmtDateNice, fmtMoney } from "@/lib/helpers";
+import { fmtDateNice, fmtMoney, toYmd } from "@/lib/helpers";
 import { StatusChip, type StatusVariant } from "@/components/shared/StatusChip";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { demoAmbassadorPrograms, GURU_CURRENCY, toGuruCurrency } from "@/data/demo-ambassador";
@@ -25,6 +27,33 @@ import { useRecommend } from "../RecommendContext";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
+
+/* ── Time-window filter for the referral list ─────────────────────────── */
+type Period = "30d" | "3m" | "6m" | "all";
+
+const PERIOD_OPTIONS: { value: Period; label: string }[] = [
+  { value: "30d", label: "Last 30 days" },
+  { value: "3m", label: "Last 3 months" },
+  { value: "6m", label: "Last 6 months" },
+  { value: "all", label: "All time" },
+];
+
+const PERIOD_SUFFIX: Record<Period, string> = {
+  "30d": "in the last 30 days",
+  "3m": "in the last 3 months",
+  "6m": "in the last 6 months",
+  all: "all time",
+};
+
+// Inclusive lower bound (YYYY-MM-DD) for the window, or null for "all".
+// ISO date strings compare lexicographically, so we filter on the string.
+function cutoffYmd(period: Period): string | null {
+  if (period === "all") return null;
+  const d = new Date();
+  if (period === "30d") d.setDate(d.getDate() - 30);
+  else d.setMonth(d.getMonth() - (period === "3m" ? 3 : 6));
+  return toYmd(d);
+}
 
 const PROGRAM_BY_ID = new Map<string, AmbassadorProgram>(demoAmbassadorPrograms.map((p) => [p.id, p]));
 
@@ -237,6 +266,7 @@ function ReferralRow({ r, highlighted }: { r: AmbassadorReferral; highlighted: b
 export function MyReferralsSection() {
   const { referrals, highlightId, setActiveTab } = useRecommend();
   const [glow, setGlow] = useState(false);
+  const [period, setPeriod] = useState<Period>("30d");
 
   // one-shot highlight pulse for a freshly-added referral
   useEffect(() => {
@@ -249,20 +279,35 @@ export function MyReferralsSection() {
     return () => clearTimeout(t);
   }, [highlightId]);
 
-  // Classify referrals: converted (enrolled → confirmed → paid), in progress
-  // (sent / contacted), and closed without a bonus (LC-contacted but not
-  // converted, or not eligible).
+  // Narrow the list to the selected time window (by referral date).
+  const visible = useMemo(() => {
+    const cutoff = cutoffYmd(period);
+    return cutoff ? referrals.filter((r) => r.dateYmd >= cutoff) : referrals;
+  }, [referrals, period]);
+
+  // Learners who actually enrolled in the window (enrolled → confirmed → paid).
+  const enrolledCount = useMemo(
+    () =>
+      visible.filter(
+        (r) => r.status === "enrolled" || r.status === "confirmed" || r.status === "paid",
+      ).length,
+    [visible],
+  );
+
+  // Classify the windowed referrals: converted (enrolled → confirmed → paid), in
+  // progress (sent / contacted), and closed without a bonus (LC-contacted but
+  // not converted, or not eligible).
   const { converted, inProgress, notConverted } = useMemo(
     () => ({
-      converted: referrals.filter(
+      converted: visible.filter(
         (r) => r.status === "enrolled" || r.status === "confirmed" || r.status === "paid",
       ),
-      inProgress: referrals.filter((r) => r.status === "sent" || r.status === "contacted"),
-      notConverted: referrals.filter(
+      inProgress: visible.filter((r) => r.status === "sent" || r.status === "contacted"),
+      notConverted: visible.filter(
         (r) => r.status === "not_converted" || r.status === "not_eligible",
       ),
     }),
-    [referrals],
+    [visible],
   );
 
   if (referrals.length === 0) {
@@ -293,6 +338,50 @@ export function MyReferralsSection() {
 
   return (
     <Box>
+      {/* enrolled-in-period summary + time-window filter */}
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        gap={1.5}
+        flexWrap="wrap"
+        sx={{ mb: 2.5 }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontSize: 20, fontWeight: 800, lineHeight: 1.1, ...TABULAR }}>
+            {enrolledCount} {enrolledCount === 1 ? "learner" : "learners"} enrolled
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {period === "all" ? "across all time" : PERIOD_SUFFIX[period]}
+          </Typography>
+        </Box>
+        <TextField
+          select
+          size="small"
+          value={period}
+          onChange={(e) => setPeriod(e.target.value as Period)}
+          aria-label="Time period"
+          sx={{ minWidth: 150, "& .MuiInputBase-input": { fontSize: "0.85rem", fontWeight: 600 } }}
+        >
+          {PERIOD_OPTIONS.map((o) => (
+            <MenuItem key={o.value} value={o.value} sx={{ fontSize: "0.85rem" }}>
+              {o.label}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Stack>
+
+      {/* no referrals within the selected window (but some exist outside it) */}
+      {visible.length === 0 && (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ py: 4, textAlign: "center" }}
+        >
+          No referrals {PERIOD_SUFFIX[period]}. Try a longer time period.
+        </Typography>
+      )}
+
       {/* in-progress referrals */}
       {inProgress.length > 0 && (
         <Box>

@@ -25,6 +25,7 @@ import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined
 import RestartAltOutlinedIcon from "@mui/icons-material/RestartAltOutlined";
 import Button from "@mui/material/Button";
 import StarOutlinedIcon from "@mui/icons-material/StarOutlined";
+import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { resetAvailability } from "@/store/slices/availabilitySlice";
 import { setOpenLearnerRatings, setLearnerRatingsSessionId } from "@/store/slices/uiSlice";
@@ -42,6 +43,15 @@ import {
 import { ROLE_TO_CATEGORY } from "@/lib/role-config";
 
 const DRAWER_WIDTH = 320;
+
+// One-tap shortcuts for previewing the Recommend dashboard's journey stages.
+// These set the shared `guruStage` that Recommend reads for its zero/early states.
+const RECOMMEND_STAGES: { value: GuruStage; label: string }[] = [
+  { value: "new", label: "New" },
+  { value: "empty", label: "Empty" },
+  { value: "early", label: "Early" },
+  { value: "experienced", label: "Full" },
+];
 
 export function DevPanel() {
   const dispatch = useAppDispatch();
@@ -226,6 +236,40 @@ export function DevPanel() {
               ))}
             </Select>
           </FormControl>
+        </Box>
+
+        {/* Recommend preview — quick stage shortcuts for the Recommend dashboard */}
+        <Box sx={{ px: 2.5, pt: 0.5, pb: 1.5 }}>
+          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.75 }}>
+            <CampaignOutlinedIcon sx={{ fontSize: 14, color: "text.secondary" }} />
+            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.6rem" }}>
+              Recommend preview
+            </Typography>
+          </Stack>
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem", display: "block", mb: 1 }}>
+            Jump to a Recommend dashboard stage
+          </Typography>
+          <Stack direction="row" flexWrap="wrap" gap={0.75}>
+            {RECOMMEND_STAGES.map((s) => {
+              const isActive = guruStage === s.value;
+              return (
+                <Chip
+                  key={s.value}
+                  label={s.label}
+                  size="small"
+                  color={isActive ? "primary" : "default"}
+                  variant={isActive ? "filled" : "outlined"}
+                  onClick={() => dispatch(setGuruStage(s.value))}
+                  sx={{
+                    fontSize: "0.65rem",
+                    height: 24,
+                    cursor: "pointer",
+                    "& .MuiChip-label": { px: 1 },
+                  }}
+                />
+              );
+            })}
+          </Stack>
         </Box>
 
         <Divider sx={{ my: 1.5, mx: 2.5 }} />

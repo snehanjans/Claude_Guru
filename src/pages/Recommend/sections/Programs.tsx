@@ -10,8 +10,10 @@ import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { fmtDateNice, fmtUsd, fmtInr } from "@/lib/helpers";
 import { demoAmbassadorPrograms } from "@/data/demo-ambassador";
+import { EmptyState } from "@/components/shared/EmptyState";
 import type { AmbassadorProgram } from "@/lib/types";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
@@ -217,6 +219,12 @@ export function ProgramsSection() {
             </Grid>
           ))}
         </Grid>
+      ) : programs.length === 0 ? (
+        <EmptyState
+          icon={<SchoolOutlinedIcon />}
+          title="No programs available yet"
+          subtitle="There are no programs open for recommendation right now. Check back soon."
+        />
       ) : (
         <Grid container spacing={2}>
           {programs.map((p) => (

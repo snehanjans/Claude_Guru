@@ -168,6 +168,30 @@ export default function ProgramDetailPage() {
     );
   };
 
+  // Download the collateral image. No real creative in the demo, so we generate a
+  // correctly-sized placeholder SVG and save it — a real asset would drop in here.
+  const downloadImage = (assetId: string, label: string) => {
+    const media = COLLATERAL_MEDIA[assetId];
+    const m = media?.size.match(/(\d+)\s*[×x]\s*(\d+)/);
+    const w = m ? Number(m[1]) : 1200;
+    const h = m ? Number(m[2]) : 675;
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+      `<rect width="100%" height="100%" fill="#eef2f7"/>` +
+      `<text x="50%" y="46%" font-family="sans-serif" font-weight="700" font-size="${Math.round(Math.min(w, h) / 12)}" fill="#94a3b8" text-anchor="middle">${label}</text>` +
+      `<text x="50%" y="58%" font-family="sans-serif" font-size="${Math.round(Math.min(w, h) / 20)}" fill="#cbd5e1" text-anchor="middle">${w} × ${h}</text>` +
+      `</svg>`;
+    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${program.id}-${assetId}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    dispatch(pushToast({ title: "Image downloaded", description: `${label} saved.` }));
+  };
+
   return (
     <Box sx={{ maxWidth: 840, mx: "auto" }}>
       {/* back to catalog */}
@@ -637,6 +661,8 @@ export default function ProgramDetailPage() {
                 const key = `col:${asset.id}`;
                 const done = copiedKey === key;
                 const media = COLLATERAL_MEDIA[asset.id];
+                // Full post the guru shares: the message plus their UTM-tagged link.
+                const body = `${fillCollateral(asset.caption)}\n\n${link}`;
                 return (
                   <Box
                     key={asset.id}
@@ -658,30 +684,44 @@ export default function ProgramDetailPage() {
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                         {asset.label}
                       </Typography>
-                      <Button
-                        size="small"
-                        startIcon={
-                          done ? (
-                            <CheckRoundedIcon sx={{ fontSize: 16 }} />
-                          ) : (
-                            <ContentCopyOutlinedIcon sx={{ fontSize: 16 }} />
-                          )
-                        }
-                        onClick={() =>
-                          copy(key, `${fillCollateral(asset.caption)}\n\n${link}`, `${asset.label} copied to clipboard.`)
-                        }
-                        sx={{
-                          textTransform: "none",
-                          fontWeight: 600,
-                          flexShrink: 0,
-                          color: done ? "success.main" : "primary.main",
-                          transition: `transform 130ms ${EASE_OUT}`,
-                          "&:active": { transform: "scale(0.97)" },
-                          "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
-                        }}
-                      >
-                        {done ? "Copied" : "Copy"}
-                      </Button>
+                      <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+                        <Button
+                          size="small"
+                          startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
+                          onClick={() => downloadImage(asset.id, asset.label)}
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            color: "text.secondary",
+                            transition: `transform 130ms ${EASE_OUT}`,
+                            "&:active": { transform: "scale(0.97)" },
+                            "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+                          }}
+                        >
+                          Download image
+                        </Button>
+                        <Button
+                          size="small"
+                          startIcon={
+                            done ? (
+                              <CheckRoundedIcon sx={{ fontSize: 16 }} />
+                            ) : (
+                              <ContentCopyOutlinedIcon sx={{ fontSize: 16 }} />
+                            )
+                          }
+                          onClick={() => copy(key, body, `${asset.label} copied to clipboard.`)}
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            color: done ? "success.main" : "primary.main",
+                            transition: `transform 130ms ${EASE_OUT}`,
+                            "&:active": { transform: "scale(0.97)" },
+                            "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+                          }}
+                        >
+                          {done ? "Copied" : "Copy text"}
+                        </Button>
+                      </Stack>
                     </Stack>
 
                     {/* platform-appropriate placeholder image — click to expand */}
@@ -694,7 +734,7 @@ export default function ProgramDetailPage() {
                           setLightbox({
                             id: asset.id,
                             label: asset.label,
-                            caption: fillCollateral(asset.caption),
+                            caption: body,
                           })
                         }
                         onKeyDown={(e) => {
@@ -774,6 +814,12 @@ export default function ProgramDetailPage() {
                       sx={{ lineHeight: 1.5, whiteSpace: "pre-line" }}
                     >
                       {fillCollateral(asset.caption)}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ mt: 1, color: "primary.main", fontWeight: 600, wordBreak: "break-all", lineHeight: 1.45 }}
+                    >
+                      {link}
                     </Typography>
                   </Box>
                 );
