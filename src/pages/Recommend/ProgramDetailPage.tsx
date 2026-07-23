@@ -257,13 +257,17 @@ export default function ProgramDetailPage() {
             </Typography>
 
             {/* meta — icon / label row */}
-            <Grid container columnSpacing={2} rowSpacing={2.5} sx={{ mt: 3 }}>
+            <Stack
+              direction="row"
+              spacing={{ xs: 4, sm: 6 }}
+              sx={{ mt: 3, flexWrap: "wrap", rowGap: 2.5 }}
+            >
               {[
                 { k: "Duration", v: program.durationLabel, icon: ScheduleOutlinedIcon },
                 { k: "Program fee", v: fmtUsd(program.price), icon: PaymentsOutlinedIcon },
                 { k: "Format", v: program.mode, icon: PublicOutlinedIcon },
               ].map((f) => (
-                <Grid key={f.k} size={{ xs: 4 }}>
+                <Box key={f.k}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <f.icon sx={{ fontSize: 18, color: "text.primary" }} />
                     <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{f.k}</Typography>
@@ -273,9 +277,9 @@ export default function ProgramDetailPage() {
                   >
                     {f.v}
                   </Typography>
-                </Grid>
+                </Box>
               ))}
-            </Grid>
+            </Stack>
 
             <Divider sx={{ my: 3 }} />
 
