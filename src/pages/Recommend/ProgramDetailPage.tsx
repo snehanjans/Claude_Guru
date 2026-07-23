@@ -920,6 +920,48 @@ export default function ProgramDetailPage() {
                       >
                         {lightbox.caption}
                       </Typography>
+
+                      {/* actions — same as the card */}
+                      <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                        <Button
+                          size="small"
+                          startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
+                          onClick={() => downloadImage(lightbox.id, lightbox.label)}
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            color: "text.secondary",
+                            transition: `transform 130ms ${EASE_OUT}`,
+                            "&:active": { transform: "scale(0.97)" },
+                            "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+                          }}
+                        >
+                          Download image
+                        </Button>
+                        <Button
+                          size="small"
+                          startIcon={
+                            copiedKey === `lightbox:${lightbox.id}` ? (
+                              <CheckRoundedIcon sx={{ fontSize: 16 }} />
+                            ) : (
+                              <ContentCopyOutlinedIcon sx={{ fontSize: 16 }} />
+                            )
+                          }
+                          onClick={() =>
+                            copy(`lightbox:${lightbox.id}`, lightbox.caption, `${lightbox.label} copied to clipboard.`)
+                          }
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            color: copiedKey === `lightbox:${lightbox.id}` ? "success.main" : "primary.main",
+                            transition: `transform 130ms ${EASE_OUT}`,
+                            "&:active": { transform: "scale(0.97)" },
+                            "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+                          }}
+                        >
+                          {copiedKey === `lightbox:${lightbox.id}` ? "Copied" : "Copy text"}
+                        </Button>
+                      </Stack>
                     </Box>
                   </Box>
                 );

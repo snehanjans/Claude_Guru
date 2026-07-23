@@ -10,7 +10,7 @@ import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOu
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
-import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined";
+import HighlightOffOutlinedIcon from "@mui/icons-material/HighlightOffOutlined";
 import { MobilePageHeader } from "@/components/layout/MobilePageHeader";
 import { fmtMoney } from "@/lib/helpers";
 import { GURU_CURRENCY, toGuruCurrency } from "@/data/demo-ambassador";
@@ -48,13 +48,14 @@ export default function RecommendPage() {
   // converted into the guru's own payout currency.
   // Enrollments = learners who actually enrolled (enrolled → confirmed → paid);
   // Confirmed = payout confirmed or paid; Pending = still being worked (sent / contacted).
-  const { pendingCount, enrollments, totalEarned } = useMemo(() => {
+  const { pendingCount, enrollments, rejectedCount, totalEarned } = useMemo(() => {
     const by = (s: string) => referrals.filter((r) => r.status === s).length;
     const locked = referrals.filter((r) => r.status === "confirmed" || r.status === "paid");
     const total = locked.reduce((sum, r) => sum + toGuruCurrency(r.reward, r.currency), 0);
     return {
       pendingCount: by("sent") + by("contacted"),
       enrollments: by("enrolled") + by("confirmed") + by("paid"),
+      rejectedCount: by("not_converted") + by("not_eligible"),
       totalEarned: fmtMoney(total, GURU_CURRENCY),
     };
   }, [referrals]);
@@ -81,8 +82,18 @@ export default function RecommendPage() {
         </Typography>
       </Stack>
 
-      {noActivity ? (
-        /* ── First-run getting-started card ─────────────────────────── */
+      {/* Getting-started card is always shown; when there's activity it narrows
+          into the left column and the KPI stats sit beside it on the right. */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: noActivity ? "1fr" : { xs: "1fr", md: "1fr 1fr" },
+          gap: 2,
+          mb: 2.5,
+          alignItems: "stretch",
+        }}
+      >
+        {/* ── Getting-started card ─────────────────────────────────────── */}
         <Box
           sx={{
             position: "relative",
@@ -92,7 +103,6 @@ export default function RecommendPage() {
             borderColor: (t) => alpha(t.palette.primary.main, 0.16),
             bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
             p: { xs: 2.5, sm: 3 },
-            mb: 2.5,
           }}
         >
           <Box
@@ -117,7 +127,7 @@ export default function RecommendPage() {
             20% of the program fee.
           </Typography>
 
-          {/* how it works */}
+          {/* how it works — always 3-across (stacks on the smallest screens) */}
           <Box
             sx={{
               display: "grid",
@@ -127,134 +137,135 @@ export default function RecommendPage() {
           >
             {(
               [
-                { icon: IosShareOutlinedIcon, step: "1", title: "Share a program", sub: "Send your personalised link or code" },
-                { icon: PeopleAltOutlinedIcon, step: "2", title: "They enroll", sub: "Your learner joins a cohort" },
-                { icon: AccountBalanceWalletOutlinedIcon, step: "3", title: "You earn", sub: "Up to 20% after they complete" },
-              ] as { icon: ComponentType<SvgIconProps>; step: string; title: string; sub: string }[]
+                { step: "1", title: "Share a program", sub: "Send your personalised link or code" },
+                { step: "2", title: "They enroll", sub: "Your learner joins a cohort" },
+                { step: "3", title: "You earn", sub: "Up to 20% after they complete" },
+              ] as { step: string; title: string; sub: string }[]
             ).map((s) => (
-              <Stack key={s.step} direction="row" alignItems="flex-start" spacing={1.25}>
-                <Box
-                  sx={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: "10px",
-                    display: "grid",
-                    placeItems: "center",
-                    color: "primary.main",
-                    bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
-                    flexShrink: 0,
-                  }}
-                >
-                  <s.icon sx={{ fontSize: 20 }} />
-                </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>
-                    <Box component="span" sx={{ color: "primary.main", mr: 0.5, ...TABULAR }}>
-                      {s.step}
-                    </Box>
-                    {s.title}
-                  </Typography>
-                  <Typography sx={{ fontSize: 12.5, color: "text.secondary", lineHeight: 1.4 }}>{s.sub}</Typography>
-                </Box>
-              </Stack>
+              <Box key={s.step} sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>
+                  <Box component="span" sx={{ color: "primary.main", mr: 0.5, ...TABULAR }}>
+                    {s.step}
+                  </Box>
+                  {s.title}
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: "text.secondary", lineHeight: 1.4 }}>{s.sub}</Typography>
+              </Box>
             ))}
           </Box>
         </Box>
-      ) : (
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
-            gap: 2,
-            mb: 2.5,
-          }}
-        >
-          {(
-            [
-              {
-                icon: AccountBalanceWalletOutlinedIcon,
-                title: "Earnings",
-                value: totalEarned,
-                unit: "this year",
-              },
-              {
-                icon: PeopleAltOutlinedIcon,
-                title: "Enrollments",
-                value: String(enrollments),
-                unit: "total",
-              },
-              {
-                icon: TrendingUpOutlinedIcon,
-                title: "Pipeline",
-                value: String(pendingCount),
-                unit: "active",
-              },
-            ] as {
-              icon: ComponentType<SvgIconProps>;
-              title: string;
-              value: string;
-              unit: string;
-            }[]
-          ).map((c) => (
-            <Box
-              key={c.title}
-              sx={{
-                position: "relative",
-                overflow: "hidden",
-                borderRadius: "16px",
-                border: "1px solid",
-                borderColor: "divider",
-                bgcolor: "background.paper",
-                p: 2.25,
-              }}
-            >
-              {/* faint brand corner tint (single-hue, low alpha) */}
-              <Box
-                aria-hidden
-                sx={{
-                  position: "absolute",
-                  top: -50,
-                  right: -40,
-                  width: 150,
-                  height: 150,
-                  borderRadius: "50%",
-                  background: (t) =>
-                    `radial-gradient(closest-side, ${alpha(t.palette.primary.main, 0.07)}, transparent)`,
-                  pointerEvents: "none",
-                }}
-              />
-              {/* icon chip + title */}
-              <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 1.75 }}>
-                <Box
-                  sx={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: "10px",
-                    display: "grid",
-                    placeItems: "center",
-                    color: "primary.main",
-                    bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
-                    flexShrink: 0,
-                  }}
-                >
-                  <c.icon sx={{ fontSize: 20 }} />
-                </Box>
-                <Typography sx={{ fontSize: 14, fontWeight: 600, color: "text.secondary" }}>{c.title}</Typography>
-              </Stack>
 
-              {/* headline metric + unit */}
-              <Stack direction="row" alignItems="baseline" spacing={0.75}>
-                <Typography
-                  sx={{ fontSize: { xs: 28, sm: 32 }, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em", ...TABULAR }}
-                >
-                  {c.value}
-                </Typography>
-                <Typography sx={{ fontSize: 13, color: "text.secondary" }}>{c.unit}</Typography>
-              </Stack>
-            </Box>
-          ))}
-        </Box>
-      )}
+        {/* ── KPI stats — appear once there's activity ─────────────────── */}
+        {!noActivity && (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: 2,
+            }}
+          >
+            {(
+              [
+                {
+                  icon: AccountBalanceWalletOutlinedIcon,
+                  title: "Earnings",
+                  value: totalEarned,
+                  unit: "this year",
+                },
+                {
+                  icon: PeopleAltOutlinedIcon,
+                  title: "Enrollments",
+                  value: String(enrollments),
+                  unit: "total",
+                },
+                {
+                  icon: TrendingUpOutlinedIcon,
+                  title: "Pipeline",
+                  value: String(pendingCount),
+                  unit: "active",
+                },
+                {
+                  icon: HighlightOffOutlinedIcon,
+                  title: "Rejected",
+                  value: String(rejectedCount),
+                  unit: "total",
+                },
+              ] as {
+                icon: ComponentType<SvgIconProps>;
+                title: string;
+                value: string;
+                unit: string;
+              }[]
+            ).map((c) => (
+              <Box
+                key={c.title}
+                sx={{
+                  position: "relative",
+                  overflow: "hidden",
+                  borderRadius: "16px",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  bgcolor: "background.paper",
+                  p: 2.25,
+                }}
+              >
+                {/* faint brand corner tint (single-hue, low alpha) */}
+                <Box
+                  aria-hidden
+                  sx={{
+                    position: "absolute",
+                    top: -50,
+                    right: -40,
+                    width: 150,
+                    height: 150,
+                    borderRadius: "50%",
+                    background: (t) =>
+                      `radial-gradient(closest-side, ${alpha(t.palette.primary.main, 0.07)}, transparent)`,
+                    pointerEvents: "none",
+                  }}
+                />
+                {/* icon chip + title */}
+                <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 1.75 }}>
+                  <Box
+                    sx={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: "10px",
+                      display: "grid",
+                      placeItems: "center",
+                      color: "primary.main",
+                      bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                      flexShrink: 0,
+                    }}
+                  >
+                    <c.icon sx={{ fontSize: 20 }} />
+                  </Box>
+                  <Typography sx={{ fontSize: 14, fontWeight: 600, color: "text.secondary" }}>{c.title}</Typography>
+                </Stack>
+
+                {/* headline metric + unit */}
+                <Stack direction="row" alignItems="baseline" spacing={0.75} sx={{ flexWrap: "nowrap" }}>
+                  <Typography
+                    sx={{
+                      fontSize: { xs: 26, sm: 30 },
+                      fontWeight: 800,
+                      lineHeight: 1,
+                      letterSpacing: "-0.02em",
+                      whiteSpace: "nowrap",
+                      ...TABULAR,
+                    }}
+                  >
+                    {c.value}
+                  </Typography>
+                  <Typography sx={{ fontSize: 13, color: "text.secondary", whiteSpace: "nowrap" }}>
+                    {c.unit}
+                  </Typography>
+                </Stack>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
 
       {/* ── Tabs ────────────────────────────────────────────────────── */}
       <Tabs
