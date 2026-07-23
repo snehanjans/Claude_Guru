@@ -170,7 +170,7 @@ export default function RecommendPage() {
                   icon: AccountBalanceWalletOutlinedIcon,
                   title: "Earnings",
                   value: totalEarned,
-                  unit: "this year",
+                  unit: "all time",
                 },
                 {
                   icon: PeopleAltOutlinedIcon,
