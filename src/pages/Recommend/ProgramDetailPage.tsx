@@ -1,5 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -38,6 +41,7 @@ import InstagramIcon from "@mui/icons-material/Instagram";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import ZoomOutMapRoundedIcon from "@mui/icons-material/ZoomOutMapRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { fmtDateNice, fmtUsd } from "@/lib/helpers";
 import {
@@ -62,6 +66,368 @@ const COLLATERAL_MEDIA: Record<
   "asset-02": { icon: WhatsAppIcon, ratio: "1 / 1", size: "1080 × 1080", centered: true, maxWidth: 200 }, // WhatsApp
   "asset-03": { icon: EmailOutlinedIcon, ratio: "3 / 1", size: "600 × 200 banner" }, // Email header
   "asset-04": { icon: InstagramIcon, ratio: "9 / 16", size: "1080 × 1920", centered: true, maxWidth: 150 }, // IG story
+};
+
+/* Program-page FAQ per AINP program (from each program's mygreatlearning.com page),
+   grouped as listed there. Learner-facing — distinct from the guru referral FAQ. */
+type FaqGroup = { title: string; items: { q: string; a: string }[] };
+const PROGRAM_FAQ: Record<string, FaqGroup[]> = {
+  "ai-native-professional": [
+  {
+    title: "Program details",
+    items: [
+      {
+        q: "How can working professionals use AI agents and workflow automation to reduce repetitive work and improve productivity?",
+        a: "Working professionals can use AI agents and workflow automation to eliminate repetitive tasks, streamline daily operations, and focus more on strategic, high-value work. By combining AI tools with no-code automation platforms, professionals can automate reporting, research, email drafting, meeting summaries, document analysis, and cross-functional workflows. This structured 6-week online program takes you from basic AI usage to building and deploying autonomous AI agents through a hands-on, build-first approach.",
+      },
+      {
+        q: "I have a full-time job. Can I realistically complete this without it taking over my personal life?",
+        a: "Yes. The program is delivered entirely online through a combination of live expert sessions and project work. You should expect to spend approximately 3–4 hours per week.",
+      },
+      {
+        q: "What happens if I miss a live session?",
+        a: "All live sessions are recorded and made available within 24 hours. Live attendance is recommended for the build-along experience, but recordings let you stay on track.",
+      },
+      {
+        q: "How long will I have access to the materials?",
+        a: "You retain access to all learning and project files for one year after graduation, and you receive curriculum updates even after your term ends so you stay current with the latest AI tools.",
+      },
+      {
+        q: "Will I receive a certificate?",
+        a: "Yes. Upon successful completion you earn a Professional Certificate from Great Learning.",
+      },
+      {
+        q: "How is this different from a typical AI automation course?",
+        a: "It focuses on autonomous agents rather than just basic automation, follows a build-first “portfolio over paper” philosophy with functional weekly deliverables, teaches multi-tool orchestration (chaining tools like ChatGPT, Claude, Perplexity, NotebookLM, Activepieces, and Gamma), and prioritises transferable frameworks over fleeting features so your skills don't go stale as tools change.",
+      },
+    ],
+  },
+  {
+    title: "Faculty, curriculum & projects",
+    items: [
+      {
+        q: "Who will be teaching the program?",
+        a: "The program is led by Dr. Pavankumar Gurazada, Director of Academics for AI at Great Learning.",
+      },
+      {
+        q: "Which AI tools will I learn, and how do they work together?",
+        a: "You'll take a tool-agnostic approach — no single ecosystem lock-in. Logic & drafting: ChatGPT, Claude, Gemini. Research: NotebookLM, Perplexity AI. Automation: Activepieces, Google Workspace. Production: Gamma, Google Vids, Lovable. You learn to chain these into real agentic systems.",
+      },
+      {
+        q: "How do I build a portfolio in 6 weeks?",
+        a: "Your portfolio grows weekly: Week 1 — a library of reliable prompt templates; Week 2 — a searchable knowledge base from your own documents; Week 3 — chained tools that turn one input into multiple outputs; Week 4 — a trigger-based system that monitors attachments, summarises, and posts to chat; Week 5 — a deployed agent that synthesises documents into a one-page brief; Week 6 — a capstone that solves a real pain point from your working life.",
+      },
+      {
+        q: "What are the requirements for the capstone project?",
+        a: "It must solve a real, recurring problem in your professional, academic, or personal life; be a functioning multi-step automated system (built on the Week 4 automation skills); include a live demonstration on Demo Day in Week 6; and follow the development timeline — you receive the brief in Week 4 and refine it with structured mentor guidance over three weeks.",
+      },
+    ],
+  },
+  {
+    title: "Eligibility & admission",
+    items: [
+      {
+        q: "I have no coding background. Is this course right for me?",
+        a: "Yes. This is an AI automation course for beginners with zero coding requirements — designed to help anyone start building AI workflows and agents without prior technical experience.",
+      },
+      {
+        q: "Can HR, Marketing, or Finance professionals take this course?",
+        a: "Yes. It's designed for functional professionals across HR, Marketing, Finance, and Operations, with zero technical prerequisites. You apply each week's skills to your own professional context to solve real, everyday problems.",
+      },
+      {
+        q: "When does the next cohort start?",
+        a: "Cohorts run on a rolling schedule. Contact a Program Advisor for exact dates and to reserve your seat.",
+      },
+    ],
+  },
+  {
+    title: "Fees & payment",
+    items: [
+      {
+        q: "What is the cost of this course?",
+        a: "The fee is $999 in the US or ₹50,000 + GST in India.",
+      },
+      {
+        q: "Are there additional costs for the AI tools?",
+        a: "Most tools covered have free tiers that support the coursework. Reach out to your Program Advisor for details on any additional tool costs.",
+      },
+      {
+        q: "What if I'm not sure it's right for me before committing?",
+        a: "There's a 2-week money-back guarantee. If, during the first two weeks, you decide the program isn't relevant to your role, productivity goals, or career objectives, you can request a full refund (100% back), subject to the applicable terms and conditions.",
+      },
+    ],
+  },
+  {
+    title: "Career",
+    items: [
+      {
+        q: "Will automating my own work make me more replaceable?",
+        a: "Avoiding AI is increasingly the bigger career risk. Automating parts of your work raises your ability to operate at a higher strategic level. You graduate with a portfolio of working AI systems — tangible proof of the AI fluency 55% of leaders now expect as a baseline — and learn to showcase these projects to hiring managers in a dedicated career session.",
+      },
+      {
+        q: "What will I actually build to automate tasks at work?",
+        a: "You move beyond basic prompts to build agent-driven workflows that connect AI models with workplace tools like Gmail, Slack, and Google Sheets. Using no-code platforms like Activepieces, you create trigger-and-action workflows and combine tools such as Perplexity (live research) and NotebookLM (document analysis) to automate reporting, research, and communication — shipping a functional project every week.",
+      },
+    ],
+  },
+  {
+    title: "General",
+    items: [
+      {
+        q: "What are Agentic AI applications, and how are they used?",
+        a: "Agentic AI applications are systems that plan, decide, and execute tasks autonomously. You'll learn to design agents for research automation, content generation, workflow execution, and decision support.",
+      },
+      {
+        q: "Can I connect Gmail, Slack, and Google Sheets without writing any code?",
+        a: "Yes. Using platforms like Activepieces with ChatGPT, you can build no-code workflows that summarise emails, update spreadsheets, generate reports, and send Slack notifications — running on triggers or schedules while you focus on higher-value work.",
+      },
+      {
+        q: "Which AI tools should I learn first as a non-tech professional?",
+        a: "Start with foundational tools like ChatGPT, Claude, and Gemini for prompting and everyday productivity. Then progress to research tools (NotebookLM, Perplexity), followed by no-code automation platforms (Activepieces, Google Workspace). The program's step-by-step approach builds you up to creating autonomous agents with no coding experience.",
+      },
+    ],
+  },
+  ],
+
+  "ainp-hr": [
+    {
+      title: "Program details",
+      items: [
+        {
+          q: "How long does it take to complete the program?",
+          a: "About 30 hours over 6 weeks — roughly 4–5 hours per week, designed to fit around a full-time work schedule.",
+        },
+        {
+          q: "Will I learn to build AI agents for HR operations?",
+          a: "Yes. You'll construct practical agents for workforce monitoring, task automation, document creation, and decision support — each with mandatory human-review checkpoints before any employee-facing action.",
+        },
+        {
+          q: "How can AI improve HR productivity?",
+          a: "AI streamlines repetitive work like interview prep, performance documentation, onboarding communications, policy research, and workforce reporting, freeing HR teams to focus on strategic initiatives.",
+        },
+        {
+          q: "Does the program cover AI candidate and CV screening?",
+          a: "Yes. You build AI-assisted resume-evaluation workflows using consistent structured prompts, while final hiring decisions stay with HR professionals.",
+        },
+      ],
+    },
+    {
+      title: "Curriculum & projects",
+      items: [
+        {
+          q: "Which AI tools will HR professionals learn?",
+          a: "Hands-on with ChatGPT, Claude, Gemini, NotebookLM, Gamma, Activepieces, Microsoft Excel, and Google Sheets for building HR workflows and automations.",
+        },
+        {
+          q: "What projects will I complete?",
+          a: "An HR Documentation Engine, Attrition Risk Analysis tool, Onboarding Intelligence Pack, HR Workflow Automation Suite, and Workforce Intelligence Agent — culminating in a capstone and a governance audit.",
+        },
+        {
+          q: "Does the program cover AI in talent management?",
+          a: "Yes — workforce analytics, attrition-risk assessment, employee development, onboarding, performance documentation, and workforce intelligence.",
+        },
+      ],
+    },
+    {
+      title: "Eligibility & admission",
+      items: [
+        {
+          q: "Is this suitable for HR professionals without coding experience?",
+          a: "Yes. The curriculum emphasises no-code automation and workflow design using accessible tools that require no programming knowledge.",
+        },
+        {
+          q: "Is it suitable for experienced HR professionals?",
+          a: "Yes — it's tailored for HR domain experts looking to integrate AI into hiring, operations, engagement, and workforce management.",
+        },
+      ],
+    },
+    {
+      title: "Fees & payment",
+      items: [
+        {
+          q: "What is the program fee?",
+          a: "$999 in the US or ₹50,000 + GST in India, with a 2-week money-back guarantee.",
+        },
+        {
+          q: "What's included in the fee?",
+          a: "Live sessions, hands-on projects, mentorship, learning support, feedback, and a Professional Certificate on completion. Most tools have free tiers; Claude needs a personal subscription.",
+        },
+      ],
+    },
+    {
+      title: "Career & general",
+      items: [
+        {
+          q: "Is AI replacing HR professionals?",
+          a: "No. AI changes how HR work gets done rather than eliminating roles. The program emphasises human-in-the-loop practices — AI handles repetitive tasks while professionals make the people and compliance decisions.",
+        },
+        {
+          q: "What roles does this support?",
+          a: "HR Business Partners, Talent Acquisition specialists, HR Operations, L&D, People Analytics, Employee Relations, and HR leadership.",
+        },
+      ],
+    },
+  ],
+
+  "ainp-marketing": [
+    {
+      title: "Program details",
+      items: [
+        {
+          q: "Will learning AI agents actually improve my day-to-day marketing work?",
+          a: "Yes. You'll automate repetitive tasks — like building agents that flag underperforming campaigns and streamlining competitor and market research — so you spend more time on strategy while AI handles execution and analysis.",
+        },
+        {
+          q: "How does this differ from other AI agent courses for marketing?",
+          a: "It's built specifically for marketers: marketing-specific learning across content, SEO, performance, email, brand, and market research, plus no-code AI agents and responsible-AI practices covering brand safety, copyright, and FTC compliance.",
+        },
+        {
+          q: "How long is the program and what's the weekly commitment?",
+          a: "6 weeks, about 30 hours total — roughly 4–5 hours per week, including live mentorship sessions.",
+        },
+        {
+          q: "Can this help me create AI marketing campaigns?",
+          a: "Yes — workflows spanning campaign planning, content creation, analytics, performance monitoring, and reporting.",
+        },
+      ],
+    },
+    {
+      title: "Curriculum & projects",
+      items: [
+        {
+          q: "Which AI tools do marketers actually use here?",
+          a: "Claude, ChatGPT, and Gemini for content; Perplexity for research; Excel/Sheets for analysis; and Activepieces for workflow automation.",
+        },
+        {
+          q: "What projects will I complete?",
+          a: "Five hands-on projects plus a capstone: Brand Content Engine, Campaign Analytics & Action Intelligence, CMO Marketing Dashboard, Marketing Workflow Automation Suite, and a Campaign Performance Monitoring Agent.",
+        },
+        {
+          q: "Will I learn AI agents for SEO and marketing?",
+          a: "Yes — you'll build AI workflows that automate SEO content production, campaign analysis, and performance monitoring, and connect tools via Activepieces for reporting, email workflows, and competitive intelligence.",
+        },
+      ],
+    },
+    {
+      title: "Eligibility & admission",
+      items: [
+        {
+          q: "Do I need coding experience to build AI marketing agents?",
+          a: "No. The program is designed for marketers with no programming background — you'll use no-code tools throughout.",
+        },
+        {
+          q: "Can beginners in AI join?",
+          a: "Yes. No prior AI or coding experience is required; the program starts with AI foundations.",
+        },
+      ],
+    },
+    {
+      title: "Fees & payment",
+      items: [
+        {
+          q: "What is the program fee?",
+          a: "$999 in the US or ₹50,000 + GST in India, with a 2-week money-back guarantee.",
+        },
+        {
+          q: "Do I need to buy AI software separately?",
+          a: "Most tools used are available on free tiers. Claude requires your own subscription.",
+        },
+      ],
+    },
+    {
+      title: "Career & general",
+      items: [
+        {
+          q: "Will I build a portfolio during the program?",
+          a: "Yes — every week you create reusable assets like prompt libraries, automation workflows, dashboards, and AI marketing agents.",
+        },
+        {
+          q: "How will AI change the future of marketing?",
+          a: "AI is shifting marketers from manual execution to AI-assisted decision-making. Professionals who combine marketing expertise with AI-powered workflows are better positioned for what's next.",
+        },
+      ],
+    },
+  ],
+
+  "ainp-finance": [
+    {
+      title: "Program details",
+      items: [
+        {
+          q: "What AI agents and finance workflows will I build?",
+          a: "Practical assets including a Multi-Audience Variance Commentary Engine, Tax Law Research Intelligence Pack, Customer Revenue Intelligence Model, Invoice Processing Automation, and an Earnings Intelligence Agent — plus a capstone solving a real challenge from your own role, with a governance audit.",
+        },
+        {
+          q: "How long is the program and what's the weekly commitment?",
+          a: "6 weeks at roughly 4–5 hours per week, designed to fit a full-time schedule.",
+        },
+        {
+          q: "Will I learn to build AI agents for finance teams?",
+          a: "Yes — agents that automate reporting, research, invoice processing, and earnings monitoring, all with human-oversight mechanisms.",
+        },
+        {
+          q: "How is this different from other AI agent courses for finance?",
+          a: "It emphasises individual productivity with no-code tools rather than enterprise deployments. You leave each week with functional, reusable assets like research pipelines and intelligence agents.",
+        },
+      ],
+    },
+    {
+      title: "Curriculum & projects",
+      items: [
+        {
+          q: "Which AI finance tools are covered?",
+          a: "ChatGPT, Claude, Gemini, Perplexity, NotebookLM, Activepieces, Microsoft Excel, and Google Sheets, applied to practical finance use cases.",
+        },
+        {
+          q: "What real-world finance applications does it cover?",
+          a: "Variance reporting, invoice-processing automation, customer revenue analysis, tax research, earnings intelligence, and AI-assisted financial communication.",
+        },
+        {
+          q: "Does it cover modern agent-building frameworks?",
+          a: "Yes — agentic AI, no-code automation, workflow design, Task-Context-Reference prompting, Retrieval-Augmented Generation, and human-in-the-loop governance.",
+        },
+      ],
+    },
+    {
+      title: "Eligibility & admission",
+      items: [
+        {
+          q: "Is this beginner-friendly for finance professionals with no coding experience?",
+          a: "Yes. It explicitly targets non-programmers and requires no coding or complex-formula knowledge.",
+        },
+        {
+          q: "Is prior AI knowledge required?",
+          a: "No. It begins with AI fundamentals before advancing to workflow automation, agents, and finance-specific applications.",
+        },
+      ],
+    },
+    {
+      title: "Fees & payment",
+      items: [
+        {
+          q: "What is the program fee?",
+          a: "$999 in the US or ₹50,000 + GST in India, with a 2-week money-back guarantee. Flexible payment and EMI options are available through program advisors.",
+        },
+        {
+          q: "Does the program require paid AI software?",
+          a: "Most activities use free tool versions. Claude requires a personal subscription.",
+        },
+      ],
+    },
+    {
+      title: "Career & general",
+      items: [
+        {
+          q: "Is accounting going to be replaced by AI?",
+          a: "No. AI automates repetitive tasks while accountants provide professional judgment, regulatory interpretation, analysis, and strategic decisions. The program focuses on working effectively alongside AI, not replacement.",
+        },
+        {
+          q: "How does AI improve finance productivity?",
+          a: "It automates financial reporting, budgeting, variance analysis, invoice processing, research, audit documentation, and compliance monitoring — freeing you to concentrate on strategic decision-making.",
+        },
+      ],
+    },
+  ],
 };
 
 /* Small uppercase section header with a leading icon — used across the detail page. */
@@ -91,7 +457,8 @@ export default function ProgramDetailPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [tab, setTab] = useState<"overview" | "collaterals">("overview");
+  const [tab, setTab] = useState<"overview" | "collaterals" | "faq">("overview");
+  const [faqExpanded, setFaqExpanded] = useState<string | false>("0-0");
   // Which collateral is expanded in the lightbox (asset id + label + filled caption), or null.
   const [lightbox, setLightbox] = useState<{ id: string; label: string; caption: string } | null>(
     null,
@@ -104,6 +471,7 @@ export default function ProgramDetailPage() {
   useEffect(() => {
     setTab("overview");
     setLightbox(null);
+    setFaqExpanded("0-0");
   }, [programId]);
 
   if (!program) {
@@ -264,7 +632,7 @@ export default function ProgramDetailPage() {
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
         <Tabs
           value={tab}
-          onChange={(_e, v) => setTab(v as "overview" | "collaterals")}
+          onChange={(_e, v) => setTab(v as "overview" | "collaterals" | "faq")}
           aria-label="Program detail sections"
           sx={{
             minHeight: 44,
@@ -279,6 +647,7 @@ export default function ProgramDetailPage() {
         >
           <Tab label="Overview" value="overview" />
           <Tab label="Social Media Kit" value="collaterals" />
+          <Tab label="Program FAQ" value="faq" />
         </Tabs>
       </Box>
 
@@ -826,6 +1195,57 @@ export default function ProgramDetailPage() {
               })}
             </Stack>
           </>
+        )}
+
+        {tab === "faq" && (
+          <Box sx={{ maxWidth: 760 }}>
+            {(PROGRAM_FAQ[program.id] ?? PROGRAM_FAQ["ai-native-professional"]).map((group, g) => (
+              <Box key={group.title} sx={{ mb: 3.5, "&:last-of-type": { mb: 0 } }}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, fontSize: "1.05rem", letterSpacing: "-0.01em", mb: 1.5 }}
+                >
+                  {group.title}
+                </Typography>
+                {group.items.map((f, i) => {
+                  const id = `${g}-${i}`;
+                  return (
+                    <Accordion
+                      key={id}
+                      disableGutters
+                      elevation={0}
+                      expanded={faqExpanded === id}
+                      onChange={(_e, isExpanded) => setFaqExpanded(isExpanded ? id : false)}
+                      sx={{
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderRadius: "12px !important",
+                        overflow: "hidden",
+                        mb: 1.25,
+                        "&::before": { display: "none" },
+                        transition: `border-color 180ms ${EASE_OUT}`,
+                        ...(faqExpanded === id && { borderColor: "primary.main" }),
+                      }}
+                    >
+                      <AccordionSummary
+                        expandIcon={<ExpandMoreIcon sx={{ fontSize: 20 }} />}
+                        sx={{ px: 2, minHeight: 52, "& .MuiAccordionSummary-content": { my: 1.25 } }}
+                      >
+                        <Typography variant="subtitle2" sx={{ fontWeight: 500, lineHeight: 1.4 }}>
+                          {f.q}
+                        </Typography>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ px: 2, pt: 0, pb: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                          {f.a}
+                        </Typography>
+                      </AccordionDetails>
+                    </Accordion>
+                  );
+                })}
+              </Box>
+            ))}
+          </Box>
         )}
       </Box>
 
