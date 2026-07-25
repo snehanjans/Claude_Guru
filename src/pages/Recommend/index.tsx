@@ -78,7 +78,7 @@ export default function RecommendPage() {
       <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.75 }}>
         <WorkspacePremiumOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />
         <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: "primary.main" }}>
-          GL GURU COLLECTIVE
+          GURU AMBASSADORS
         </Typography>
       </Stack>
 

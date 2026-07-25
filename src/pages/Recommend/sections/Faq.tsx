@@ -13,7 +13,7 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     title: "Joining and eligibility",
     items: [
       {
-        q: "What is GL Guru Collective?",
+        q: "What is the Guru Ambassadors program?",
         a: "A program where you promote GL's AINP to your own network and earn on the enrollments, and can also run and teach your own cohort.",
       },
       {

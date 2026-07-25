@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
+import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
@@ -27,7 +28,7 @@ import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
-import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
@@ -42,6 +43,19 @@ import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import ZoomOutMapRoundedIcon from "@mui/icons-material/ZoomOutMapRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
+import PublicRoundedIcon from "@mui/icons-material/PublicRounded";
+import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import ThumbUpRoundedIcon from "@mui/icons-material/ThumbUpRounded";
+import FavoriteRoundedIcon from "@mui/icons-material/FavoriteRounded";
+import ThumbUpOffAltIcon from "@mui/icons-material/ThumbUpOffAlt";
+import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
+import RepeatRoundedIcon from "@mui/icons-material/RepeatRounded";
+import SendRoundedIcon from "@mui/icons-material/SendRounded";
+import DoneAllRoundedIcon from "@mui/icons-material/DoneAllRounded";
+import FavoriteBorderRoundedIcon from "@mui/icons-material/FavoriteBorderRounded";
 import type { SvgIconComponent } from "@mui/icons-material";
 import { fmtDateNice, fmtUsd } from "@/lib/helpers";
 import {
@@ -66,6 +80,24 @@ const COLLATERAL_MEDIA: Record<
   "asset-02": { icon: WhatsAppIcon, ratio: "1 / 1", size: "1080 × 1080", centered: true, maxWidth: 200 }, // WhatsApp
   "asset-03": { icon: EmailOutlinedIcon, ratio: "3 / 1", size: "600 × 200 banner" }, // Email header
   "asset-04": { icon: InstagramIcon, ratio: "9 / 16", size: "1080 × 1920", centered: true, maxWidth: 150 }, // IG story
+};
+
+/* Program brochure links (mygreatlearning.com). Programs without one fall back to
+   their personalised program page. */
+const BROCHURE_URLS: Record<string, string> = {
+  "ai-native-professional": "https://www.mygreatlearning.com/brochures/ai-native-professional",
+  "ainp-hr": "https://www.mygreatlearning.com/brochures/ai-native-professional-for-hr",
+  "ainp-marketing": "https://www.mygreatlearning.com/brochures/ai-native-professional-for-marketing",
+  "ainp-finance": "https://www.mygreatlearning.com/brochures/ai-native-professional-for-finance",
+};
+
+/* Personalised program-page links shared in the Social Media Kit — the guru's
+   handle rides along as ?id=shome so visits/enrollments attribute back to them. */
+const PROGRAM_PAGE_URLS: Record<string, string> = {
+  "ai-native-professional": "https://www.mygreatlearning.com/ai-native-professional?id=shome",
+  "ainp-hr": "https://www.mygreatlearning.com/ai-native-professional-for-hr?id=shome",
+  "ainp-marketing": "https://www.mygreatlearning.com/ai-native-professional-for-marketing?id=shome",
+  "ainp-finance": "https://www.mygreatlearning.com/ai-native-professional-for-finance?id=shome",
 };
 
 /* Program-page FAQ per AINP program (from each program's mygreatlearning.com page),
@@ -465,7 +497,9 @@ export default function ProgramDetailPage() {
   );
 
   const program = demoAmbassadorPrograms.find((p) => p.id === programId) ?? null;
-  const link = program ? referralLinkFor(program.scholarshipCode) : "";
+  const link = program
+    ? (PROGRAM_PAGE_URLS[program.id] ?? referralLinkFor(program.scholarshipCode))
+    : "";
 
   // Reset to Overview whenever a different program opens.
   useEffect(() => {
@@ -511,29 +545,63 @@ export default function ProgramDetailPage() {
       .replace(/\[percent off\]/g, String(program.scholarshipPct))
       .replace(/\[N learners mentored\]/g, GURU_LEARNERS_IMPACTED.toLocaleString("en-US"));
 
+  // Same fill, but the actionable bits (program, start date, code, % off) render
+  // bold for the on-screen preview. The copied text (via fillCollateral) stays plain.
+  const renderCaption = (caption: string): ReactNode => {
+    const parts = caption.split(
+      /(\[program name\]|\[start date\]|\[scholarship code\]|\[percent off\]%|\[N learners mentored\]|\[first name\])/g,
+    );
+    const bold = (node: ReactNode, i: number) => (
+      <Box key={i} component="span" sx={{ fontWeight: 700 }}>
+        {node}
+      </Box>
+    );
+    return parts.map((part, i) => {
+      switch (part) {
+        case "[program name]":
+          return bold(program.title, i);
+        case "[start date]":
+          return bold(fmtDateNice(program.nextCohortYmd), i);
+        case "[scholarship code]":
+          return bold(program.scholarshipCode, i);
+        case "[percent off]%":
+          return bold(`${program.scholarshipPct}%`, i);
+        case "[N learners mentored]":
+          return GURU_LEARNERS_IMPACTED.toLocaleString("en-US");
+        default:
+          return part;
+      }
+    });
+  };
+
+  // Bold the actionable values inside an already-filled string (used for the
+  // truncated LinkedIn preview text, where placeholders are already replaced).
+  const renderRichText = (text: string): ReactNode => {
+    const values = [
+      program.title,
+      fmtDateNice(program.nextCohortYmd),
+      program.scholarshipCode,
+      `${program.scholarshipPct}%`,
+    ].filter(Boolean);
+    const boldSet = new Set(values);
+    const escaped = values.map((v) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const re = new RegExp(`(${escaped.join("|")})`, "g");
+    return text.split(re).map((part, i) =>
+      boldSet.has(part) ? (
+        <Box key={i} component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        part
+      ),
+    );
+  };
+
   const copy = (key: string, value: string, description: string) => {
     navigator.clipboard.writeText(value);
     dispatch(pushToast({ title: "Copied", description }));
     setCopiedKey(key);
     window.setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1600);
-  };
-
-  const downloadCurriculum = () => {
-    dispatch(
-      pushToast({
-        title: "Curriculum download started",
-        description: `${program.title} — full syllabus (PDF).`,
-      }),
-    );
-  };
-
-  const downloadBrochure = () => {
-    dispatch(
-      pushToast({
-        title: "Brochure download started",
-        description: `${program.title} — program brochure (PDF).`,
-      }),
-    );
   };
 
   // Download the collateral image. No real creative in the demo, so we generate a
@@ -559,6 +627,277 @@ export default function ProgramDetailPage() {
     URL.revokeObjectURL(url);
     dispatch(pushToast({ title: "Image downloaded", description: `${label} saved.` }));
   };
+
+  type Collateral = { id: string; label: string; caption: string };
+
+  // Per-platform hint shown in the message panel's info box.
+  const INFO_TEXT: Record<string, string> = {
+    "asset-01": "Copy this text and paste it into a new LinkedIn post.",
+    "asset-02": "Copy this text and send it as a WhatsApp broadcast.",
+    "asset-03": "Copy this text and paste it into your email.",
+    "asset-04": "Copy this caption and add it to your Instagram story.",
+  };
+  const brandGradient = (t: import("@mui/material/styles").Theme) =>
+    `linear-gradient(135deg, ${t.palette.primary.main}, ${alpha(t.palette.primary.main, 0.6)})`;
+
+  // Shared right-hand "message to post" panel used by every collateral.
+  const renderMessagePanel = (asset: Collateral, key: string, done: boolean, body: string) => (
+    <Box
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        p: 2,
+        borderRadius: "14px",
+        border: "1px solid",
+        borderColor: "divider",
+        bgcolor: (t) => (t.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : t.palette.grey[50]),
+      }}
+    >
+      <Typography
+        sx={{
+          fontSize: "0.7rem",
+          fontWeight: 700,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          color: "text.secondary",
+          mb: 1,
+        }}
+      >
+        Message to post
+      </Typography>
+      <Typography variant="body2" sx={{ lineHeight: 1.55, whiteSpace: "pre-line", color: "text.primary" }}>
+        {renderCaption(asset.caption)}
+      </Typography>
+      <Typography
+        variant="body2"
+        sx={{ mt: 1, color: "primary.main", fontWeight: 600, wordBreak: "break-all", lineHeight: 1.45 }}
+      >
+        {link}
+      </Typography>
+      <Box sx={{ mt: "auto", pt: 2.5 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            p: 1.25,
+            mb: 1.5,
+            borderRadius: "10px",
+            bgcolor: (t) => (t.palette.mode === "dark" ? "rgba(251,191,36,0.12)" : "rgba(217,119,6,0.09)"),
+            border: "1px solid",
+            borderColor: (t) => (t.palette.mode === "dark" ? "rgba(251,191,36,0.35)" : "rgba(217,119,6,0.28)"),
+          }}
+        >
+          <InfoOutlinedIcon sx={{ fontSize: 18, color: "var(--gl-warning-icon)", flexShrink: 0, mt: "1px" }} />
+          <Typography variant="body2" sx={{ fontSize: 13, lineHeight: 1.5, color: "text.secondary" }}>
+            {INFO_TEXT[asset.id]}
+          </Typography>
+        </Stack>
+        <Button
+          fullWidth
+          disableElevation
+          startIcon={
+            done ? <CheckRoundedIcon sx={{ fontSize: 18 }} /> : <ContentCopyOutlinedIcon sx={{ fontSize: 18 }} />
+          }
+          onClick={() => copy(key, body, `${asset.label} copied to clipboard.`)}
+          sx={{
+            py: 1,
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: "10px",
+            color: done ? "success.main" : "primary.main",
+            bgcolor: (t) =>
+              done ? alpha(t.palette.success.main, 0.1) : alpha(t.palette.primary.main, 0.1),
+            "&:hover": {
+              bgcolor: (t) =>
+                done ? alpha(t.palette.success.main, 0.16) : alpha(t.palette.primary.main, 0.16),
+            },
+            transition: `transform 130ms ${EASE_OUT}, background-color 130ms ${EASE_OUT}`,
+            "&:active": { transform: "scale(0.99)" },
+            "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+          }}
+        >
+          {done ? "Copied" : "Copy text"}
+        </Button>
+      </Box>
+    </Box>
+  );
+
+  // ── WhatsApp broadcast preview ──
+  const renderWhatsApp = (asset: Collateral) => (
+    <Box sx={{ borderRadius: "10px", overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 1.25, py: 1, bgcolor: "#075e54", color: "#fff" }}>
+        <Avatar sx={{ width: 32, height: 32, bgcolor: "rgba(255,255,255,0.2)", color: "#fff" }}>
+          <PersonRoundedIcon sx={{ fontSize: 18 }} />
+        </Avatar>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontSize: 13, fontWeight: 700, lineHeight: 1.2 }}>Broadcast</Typography>
+          <Typography sx={{ fontSize: 11, opacity: 0.8 }}>Broadcast list · 128 recipients</Typography>
+        </Box>
+      </Stack>
+      <Box
+        sx={{
+          p: 1.5,
+          minHeight: 220,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-end",
+          bgcolor: (t) => (t.palette.mode === "dark" ? "#0b141a" : "#efeae2"),
+        }}
+      >
+        <Box
+          sx={{
+            alignSelf: "flex-end",
+            maxWidth: "92%",
+            p: 1,
+            borderRadius: "8px",
+            borderTopRightRadius: 0,
+            boxShadow: 1,
+            bgcolor: (t) => (t.palette.mode === "dark" ? "#005c4b" : "#d9fdd3"),
+            color: (t) => (t.palette.mode === "dark" ? "#e9edef" : "#111b21"),
+          }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75, p: 0.75, borderRadius: "6px", bgcolor: "rgba(0,0,0,0.06)" }}>
+            <Box sx={{ width: 40, height: 40, flexShrink: 0, borderRadius: "4px", display: "grid", placeItems: "center", background: brandGradient }}>
+              <Typography sx={{ fontSize: 9, fontWeight: 800, color: "#fff", letterSpacing: "0.05em" }}>GL</Typography>
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {program.title}
+              </Typography>
+              <Typography sx={{ fontSize: 10, opacity: 0.7 }}>mygreatlearning.com</Typography>
+            </Box>
+          </Stack>
+          <Typography sx={{ fontSize: 13, lineHeight: 1.45 }}>{renderRichText(fillCollateral(asset.caption))}</Typography>
+          <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5} sx={{ mt: 0.25 }}>
+            <Typography sx={{ fontSize: 10, opacity: 0.6 }}>12:24 PM</Typography>
+            <DoneAllRoundedIcon sx={{ fontSize: 15, color: "#53bdeb" }} />
+          </Stack>
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  // ── Email intro preview ──
+  const renderEmail = (asset: Collateral) => (
+    <Box sx={{ borderRadius: "10px", overflow: "hidden", border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
+      <Box sx={{ p: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
+        <Typography sx={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>An AI program I think you&apos;d like</Typography>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: (t) => alpha(t.palette.primary.main, 0.15), color: "primary.main" }}>
+            <PersonRoundedIcon sx={{ fontSize: 18 }} />
+          </Avatar>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>
+              You{" "}
+              <Box component="span" sx={{ color: "text.secondary", fontWeight: 400 }}>
+                &lt;you@greatlearning.in&gt;
+              </Box>
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: "text.secondary" }}>to [first name]</Typography>
+          </Box>
+          <Typography sx={{ fontSize: 12, color: "text.secondary" }}>9:41 AM</Typography>
+        </Stack>
+      </Box>
+      <Box sx={{ p: 1.5 }}>
+        <Typography variant="body2" sx={{ lineHeight: 1.55, whiteSpace: "pre-line" }}>
+          {renderCaption(asset.caption)}
+        </Typography>
+        <Typography variant="body2" sx={{ mt: 1, color: "primary.main", fontWeight: 600, wordBreak: "break-all" }}>
+          {link}
+        </Typography>
+      </Box>
+    </Box>
+  );
+
+  // ── Instagram story preview ──
+  const renderInstagram = (asset: Collateral) => (
+    <Box
+      sx={{
+        mx: "auto",
+        width: "100%",
+        maxWidth: 250,
+        aspectRatio: "9 / 16",
+        borderRadius: "16px",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        p: 1.5,
+        color: "#fff",
+        background: (t) => `linear-gradient(160deg, ${t.palette.primary.main}, #7c3aed 65%, #db2777)`,
+      }}
+    >
+      <Stack direction="row" spacing={0.5} sx={{ mb: 1 }}>
+        <Box sx={{ flex: 1, height: 2.5, borderRadius: 2, bgcolor: "rgba(255,255,255,0.85)" }} />
+        <Box sx={{ flex: 1, height: 2.5, borderRadius: 2, bgcolor: "rgba(255,255,255,0.35)" }} />
+      </Stack>
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <Avatar sx={{ width: 26, height: 26, border: "2px solid #fff", bgcolor: "rgba(255,255,255,0.25)", color: "#fff" }}>
+          <PersonRoundedIcon sx={{ fontSize: 15 }} />
+        </Avatar>
+        <Typography sx={{ fontSize: 12, fontWeight: 700 }}>your_handle</Typography>
+        <Typography sx={{ fontSize: 11, opacity: 0.85 }}>5h</Typography>
+        <MoreHorizRoundedIcon sx={{ fontSize: 18, ml: "auto" }} />
+      </Stack>
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", py: 2 }}>
+        <Typography sx={{ fontSize: 15, fontWeight: 700, lineHeight: 1.4, textShadow: "0 1px 8px rgba(0,0,0,0.35)" }}>
+          {renderRichText(fillCollateral(asset.caption))}
+        </Typography>
+      </Box>
+      <Box
+        sx={{
+          alignSelf: "center",
+          mb: 1.25,
+          px: 1.25,
+          py: 0.5,
+          borderRadius: "999px",
+          bgcolor: "#fff",
+          color: "#111",
+          display: "flex",
+          alignItems: "center",
+          gap: 0.5,
+        }}
+      >
+        <LinkOutlinedIcon sx={{ fontSize: 14 }} />
+        <Typography sx={{ fontSize: 11, fontWeight: 700 }}>mygreatlearning.com</Typography>
+      </Box>
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <Box sx={{ flex: 1, border: "1px solid rgba(255,255,255,0.6)", borderRadius: "999px", px: 1.25, py: 0.5 }}>
+          <Typography sx={{ fontSize: 11, opacity: 0.9 }}>Send message</Typography>
+        </Box>
+        <FavoriteBorderRoundedIcon sx={{ fontSize: 20 }} />
+        <SendRoundedIcon sx={{ fontSize: 20 }} />
+      </Stack>
+    </Box>
+  );
+
+  // Highlight panel wrapper + message panel — shared two-pane for non-LinkedIn platforms.
+  const renderTwoPane = (asset: Collateral, key: string, done: boolean, body: string, preview: ReactNode) => (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) minmax(0, 1fr)" },
+        gap: 2,
+        alignItems: "stretch",
+      }}
+    >
+      <Box
+        sx={{
+          p: { xs: 1.5, sm: 2 },
+          borderRadius: "14px",
+          border: "1px solid",
+          borderColor: (t) => alpha(t.palette.primary.main, 0.2),
+          bgcolor: (t) => alpha(t.palette.primary.main, 0.05),
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
+        {preview}
+      </Box>
+      {renderMessagePanel(asset, key, done, body)}
+    </Box>
+  );
 
   return (
     <Box sx={{ maxWidth: 840, mx: "auto" }}>
@@ -725,7 +1064,7 @@ export default function ProgramDetailPage() {
                 />
               </Stack>
 
-              {/* 1 — personalised program page (UTM-tagged) */}
+              {/* 1 — personalised program page (id-tagged) */}
               <Typography
                 sx={{
                   fontSize: "0.7rem",
@@ -775,7 +1114,7 @@ export default function ProgramDetailPage() {
                 }}
               />
               <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
-                UTM-tagged — every visit and enrollment is tracked back to you.
+                Tagged with your ID — every visit and enrollment is tracked back to you.
               </Typography>
 
               {/* 2 — learner discount code */}
@@ -838,25 +1177,29 @@ export default function ProgramDetailPage() {
 
               <Divider sx={{ my: 1.75 }} />
 
-              {/* 3 — collaterals shortcut */}
+              {/* 3 — collaterals shortcut (tonal CTA) */}
               <Button
                 variant="text"
+                disableElevation
                 endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 18 }} />}
                 onClick={() => setTab("collaterals")}
                 sx={{
-                  ml: -1,
                   textTransform: "none",
-                  fontWeight: 600,
+                  fontWeight: 700,
                   color: "primary.main",
-                  borderRadius: "8px",
-                  transition: `transform 130ms ${EASE_OUT}`,
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                  borderRadius: "10px",
+                  px: 1.75,
+                  py: 0.75,
+                  "&:hover": { bgcolor: (t) => alpha(t.palette.primary.main, 0.16) },
+                  transition: `transform 130ms ${EASE_OUT}, background-color 130ms ${EASE_OUT}`,
                   "&:active": { transform: "scale(0.97)" },
                   "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
                 }}
               >
                 Social media kit
               </Button>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", ml: 0 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
                 Ready-to-post assets for LinkedIn, WhatsApp, email, and Instagram.
               </Typography>
             </Box>
@@ -937,40 +1280,24 @@ export default function ProgramDetailPage() {
                 </Grid>
               ))}
             </Grid>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center" sx={{ mt: 2, ml: -0.75 }}>
+            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center" sx={{ mt: 2.5 }}>
               <Button
-                variant="text"
-                startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 18 }} />}
-                onClick={downloadCurriculum}
+                variant="contained"
+                component="a"
+                href={BROCHURE_URLS[program.id] ?? link}
+                target="_blank"
+                rel="noopener noreferrer"
+                endIcon={<OpenInNewRoundedIcon sx={{ fontSize: 16 }} />}
                 sx={{
                   textTransform: "none",
-                  fontWeight: 600,
-                  color: "primary.main",
-                  borderRadius: "8px",
-                  px: 1,
+                  fontWeight: 700,
+                  borderRadius: "10px",
                   transition: `transform 130ms ${EASE_OUT}`,
                   "&:active": { transform: "scale(0.97)" },
                   "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
                 }}
               >
-                Download Curriculum
-              </Button>
-              <Button
-                variant="text"
-                startIcon={<MenuBookOutlinedIcon sx={{ fontSize: 18 }} />}
-                onClick={downloadBrochure}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  color: "primary.main",
-                  borderRadius: "8px",
-                  px: 1,
-                  transition: `transform 130ms ${EASE_OUT}`,
-                  "&:active": { transform: "scale(0.97)" },
-                  "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
-                }}
-              >
-                Download Brochure
+                View brochure
               </Button>
             </Stack>
 
@@ -1030,8 +1357,12 @@ export default function ProgramDetailPage() {
                 const key = `col:${asset.id}`;
                 const done = copiedKey === key;
                 const media = COLLATERAL_MEDIA[asset.id];
-                // Full post the guru shares: the message plus their UTM-tagged link.
+                // Full post the guru shares: the message plus their id-tagged link.
                 const body = `${fillCollateral(asset.caption)}\n\n${link}`;
+                // LinkedIn-style truncation of the post text for the preview.
+                const postText = fillCollateral(asset.caption);
+                const liIsLong = postText.length > 160;
+                const liText = liIsLong ? postText.slice(0, 160).replace(/\s+\S*$/, "") : postText;
                 return (
                   <Box
                     key={asset.id}
@@ -1053,143 +1384,395 @@ export default function ProgramDetailPage() {
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                         {asset.label}
                       </Typography>
-                      <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
-                        <Button
-                          size="small"
-                          startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
-                          onClick={() => downloadImage(asset.id, asset.label)}
-                          sx={{
-                            textTransform: "none",
-                            fontWeight: 600,
-                            color: "text.secondary",
-                            transition: `transform 130ms ${EASE_OUT}`,
-                            "&:active": { transform: "scale(0.97)" },
-                            "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
-                          }}
-                        >
-                          Download image
-                        </Button>
-                        <Button
-                          size="small"
-                          startIcon={
-                            done ? (
-                              <CheckRoundedIcon sx={{ fontSize: 16 }} />
-                            ) : (
-                              <ContentCopyOutlinedIcon sx={{ fontSize: 16 }} />
-                            )
-                          }
-                          onClick={() => copy(key, body, `${asset.label} copied to clipboard.`)}
-                          sx={{
-                            textTransform: "none",
-                            fontWeight: 600,
-                            color: done ? "success.main" : "primary.main",
-                            transition: `transform 130ms ${EASE_OUT}`,
-                            "&:active": { transform: "scale(0.97)" },
-                            "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
-                          }}
-                        >
-                          {done ? "Copied" : "Copy text"}
-                        </Button>
-                      </Stack>
                     </Stack>
 
-                    {/* platform-appropriate placeholder image — click to expand */}
-                    {media && (
+                    {/* LinkedIn shows a two-pane preview — the post as it will look on the
+                        left, the copyable message on the right — so the guru can visualise
+                        it before posting. Other platforms show a placeholder + message. */}
+                    {asset.id === "asset-01" ? (
                       <Box
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Expand ${asset.label} preview`}
-                        onClick={() =>
-                          setLightbox({
-                            id: asset.id,
-                            label: asset.label,
-                            caption: body,
-                          })
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            setLightbox({
-                              id: asset.id,
-                              label: asset.label,
-                              caption: fillCollateral(asset.caption),
-                            });
-                          }
-                        }}
                         sx={{
-                          position: "relative",
-                          mb: 1.5,
-                          mx: media.centered ? "auto" : 0,
-                          width: "100%",
-                          maxWidth: media.maxWidth,
-                          aspectRatio: media.ratio,
-                          borderRadius: "10px",
-                          border: "1px dashed",
-                          borderColor: "divider",
-                          bgcolor: "action.hover",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 0.75,
-                          color: "text.disabled",
-                          cursor: "pointer",
-                          outline: "none",
-                          transition: `border-color 160ms ${EASE_OUT}, background-color 160ms ${EASE_OUT}`,
-                          "&:hover, &:focus-visible": {
-                            borderColor: "primary.main",
-                            bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
-                            "& .col-zoom": { opacity: 1, transform: "scale(1)" },
-                          },
+                          display: "grid",
+                          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) minmax(0, 1fr)" },
+                          gap: 2,
+                          alignItems: "stretch",
                         }}
                       >
+                        {/* left — LinkedIn post preview inside a brand highlight panel */}
                         <Box
-                          className="col-zoom"
                           sx={{
-                            position: "absolute",
-                            top: 8,
-                            right: 8,
-                            width: 28,
-                            height: 28,
-                            borderRadius: "8px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            bgcolor: "background.paper",
+                            p: { xs: 1.5, sm: 2 },
+                            borderRadius: "14px",
                             border: "1px solid",
-                            borderColor: "divider",
-                            color: "text.secondary",
-                            opacity: 0,
-                            transform: "scale(0.9)",
-                            transition: `opacity 160ms ${EASE_OUT}, transform 160ms ${EASE_OUT}`,
-                            "@media (hover: none)": { opacity: 1, transform: "scale(1)" },
+                            borderColor: (t) => alpha(t.palette.primary.main, 0.2),
+                            bgcolor: (t) => alpha(t.palette.primary.main, 0.05),
                           }}
                         >
-                          <ZoomOutMapRoundedIcon sx={{ fontSize: 16 }} />
-                        </Box>
-                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <ImageOutlinedIcon sx={{ fontSize: 18 }} />
-                          <media.icon sx={{ fontSize: 20 }} />
-                        </Stack>
-                        <Typography variant="caption" sx={{ fontWeight: 600, ...TABULAR }}>
-                          {media.size}
-                        </Typography>
-                      </Box>
-                    )}
+                          <Box
+                            sx={{
+                              border: "1px solid",
+                              borderColor: "divider",
+                              borderRadius: "10px",
+                              overflow: "hidden",
+                              bgcolor: "background.paper",
+                            }}
+                          >
+                          {/* author */}
+                          <Stack direction="row" alignItems="flex-start" spacing={1.25} sx={{ p: 1.5, pb: 1 }}>
+                            <Avatar
+                              sx={{
+                                width: 44,
+                                height: 44,
+                                bgcolor: (t) => alpha(t.palette.primary.main, 0.15),
+                                color: "primary.main",
+                              }}
+                            >
+                              <PersonRoundedIcon />
+                            </Avatar>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Stack direction="row" alignItems="center" spacing={0.5}>
+                                <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.25 }}>You</Typography>
+                                <VerifiedIcon sx={{ fontSize: 15, color: "text.secondary" }} />
+                                <Typography sx={{ fontSize: 13, color: "text.secondary" }}>· 1st</Typography>
+                              </Stack>
+                              <Typography noWrap sx={{ fontSize: 12, color: "text.secondary", lineHeight: 1.3 }}>
+                                AI Mentor · Great Learning
+                              </Typography>
+                              <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.25 }}>
+                                <Typography sx={{ fontSize: 12, color: "text.secondary" }}>1w</Typography>
+                                <Typography sx={{ fontSize: 12, color: "text.secondary" }}>·</Typography>
+                                <PublicRoundedIcon sx={{ fontSize: 13, color: "text.secondary" }} />
+                              </Stack>
+                            </Box>
+                            <MoreHorizRoundedIcon sx={{ color: "text.secondary" }} />
+                          </Stack>
 
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ lineHeight: 1.5, whiteSpace: "pre-line" }}
-                    >
-                      {fillCollateral(asset.caption)}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ mt: 1, color: "primary.main", fontWeight: 600, wordBreak: "break-all", lineHeight: 1.45 }}
-                    >
-                      {link}
-                    </Typography>
+                          {/* post text */}
+                          <Typography variant="body2" sx={{ px: 1.5, pb: 1.5, lineHeight: 1.5 }}>
+                            {renderRichText(liText)}
+                            {liIsLong && (
+                              <Box component="span" sx={{ color: "text.secondary", fontWeight: 500 }}>
+                                …more
+                              </Box>
+                            )}
+                          </Typography>
+
+                          {/* link-preview card — thumbnail + title + domain */}
+                          <Divider />
+                          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ p: 1.5 }}>
+                            <Box
+                              sx={{
+                                width: 112,
+                                height: 90,
+                                flexShrink: 0,
+                                borderRadius: "8px",
+                                boxShadow: 2,
+                                display: "grid",
+                                placeItems: "center",
+                                textAlign: "center",
+                                px: 1,
+                                background: (t) =>
+                                  `linear-gradient(135deg, ${t.palette.primary.main}, ${alpha(
+                                    t.palette.primary.main,
+                                    0.6,
+                                  )})`,
+                              }}
+                            >
+                              <Typography
+                                sx={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "#fff", lineHeight: 1.3 }}
+                              >
+                                GREAT LEARNING
+                              </Typography>
+                            </Box>
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography
+                                sx={{
+                                  fontSize: 15,
+                                  fontWeight: 700,
+                                  lineHeight: 1.3,
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: "vertical",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                {program.title}
+                              </Typography>
+                              <Typography sx={{ mt: 0.5, fontSize: 13, color: "text.secondary" }}>
+                                mygreatlearning.com
+                              </Typography>
+                            </Box>
+                          </Stack>
+
+                          {/* reactions summary */}
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            sx={{ px: 1.5, py: 1, borderTop: "1px solid", borderColor: "divider" }}
+                          >
+                            <Stack direction="row" alignItems="center" spacing={0.75}>
+                              <Stack direction="row">
+                                <Box
+                                  sx={{
+                                    width: 18,
+                                    height: 18,
+                                    borderRadius: "50%",
+                                    bgcolor: "#2f6bff",
+                                    display: "grid",
+                                    placeItems: "center",
+                                    border: "1.5px solid",
+                                    borderColor: "background.paper",
+                                  }}
+                                >
+                                  <ThumbUpRoundedIcon sx={{ fontSize: 10, color: "#fff" }} />
+                                </Box>
+                                <Box
+                                  sx={{
+                                    width: 18,
+                                    height: 18,
+                                    ml: "-5px",
+                                    borderRadius: "50%",
+                                    bgcolor: "#f5455f",
+                                    display: "grid",
+                                    placeItems: "center",
+                                    border: "1.5px solid",
+                                    borderColor: "background.paper",
+                                  }}
+                                >
+                                  <FavoriteRoundedIcon sx={{ fontSize: 10, color: "#fff" }} />
+                                </Box>
+                              </Stack>
+                              <Typography sx={{ fontSize: 12, color: "text.secondary" }}>You and 47 others</Typography>
+                            </Stack>
+                            <Typography sx={{ fontSize: 12, color: "text.secondary" }}>12 comments</Typography>
+                          </Stack>
+
+                          {/* action bar */}
+                          <Stack direction="row" sx={{ borderTop: "1px solid", borderColor: "divider" }}>
+                            {(
+                              [
+                                { icon: ThumbUpOffAltIcon, label: "Like" },
+                                { icon: ChatBubbleOutlineRoundedIcon, label: "Comment" },
+                                { icon: RepeatRoundedIcon, label: "Repost" },
+                                { icon: SendRoundedIcon, label: "Send" },
+                              ] as { icon: SvgIconComponent; label: string }[]
+                            ).map((a) => (
+                              <Stack
+                                key={a.label}
+                                direction="row"
+                                alignItems="center"
+                                justifyContent="center"
+                                spacing={0.75}
+                                sx={{ flex: 1, py: 1, color: "text.secondary" }}
+                              >
+                                <a.icon sx={{ fontSize: 18 }} />
+                                <Typography sx={{ fontSize: 12.5, fontWeight: 600, display: { xs: "none", sm: "block" } }}>
+                                  {a.label}
+                                </Typography>
+                              </Stack>
+                            ))}
+                          </Stack>
+                          </Box>
+                        </Box>
+
+                        {/* right — message to post (matches the post's full height) */}
+                        <Box
+                          sx={{
+                            height: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            p: 2,
+                            borderRadius: "14px",
+                            border: "1px solid",
+                            borderColor: "divider",
+                            bgcolor: (t) =>
+                              t.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : t.palette.grey[50],
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontSize: "0.7rem",
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              color: "text.secondary",
+                              mb: 1,
+                            }}
+                          >
+                            Message to post
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ lineHeight: 1.55, whiteSpace: "pre-line", color: "text.primary" }}
+                          >
+                            {renderCaption(asset.caption)}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ mt: 1, color: "primary.main", fontWeight: 600, wordBreak: "break-all", lineHeight: 1.45 }}
+                          >
+                            {link}
+                          </Typography>
+
+                          <Box sx={{ mt: "auto", pt: 2.5 }}>
+                            {/* info box — how to use the message (yellow note treatment) */}
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              sx={{
+                                p: 1.25,
+                                mb: 1.5,
+                                borderRadius: "10px",
+                                bgcolor: (t) =>
+                                  t.palette.mode === "dark" ? "rgba(251,191,36,0.12)" : "rgba(217,119,6,0.09)",
+                                border: "1px solid",
+                                borderColor: (t) =>
+                                  t.palette.mode === "dark" ? "rgba(251,191,36,0.35)" : "rgba(217,119,6,0.28)",
+                              }}
+                            >
+                              <InfoOutlinedIcon
+                                sx={{ fontSize: 18, color: "var(--gl-warning-icon)", flexShrink: 0, mt: "1px" }}
+                              />
+                              <Typography variant="body2" sx={{ fontSize: 13, lineHeight: 1.5, color: "text.secondary" }}>
+                                Copy this text and paste it into a new LinkedIn post.
+                              </Typography>
+                            </Stack>
+
+                            <Button
+                              fullWidth
+                              disableElevation
+                              startIcon={
+                                done ? (
+                                  <CheckRoundedIcon sx={{ fontSize: 18 }} />
+                                ) : (
+                                  <ContentCopyOutlinedIcon sx={{ fontSize: 18 }} />
+                                )
+                              }
+                              onClick={() => copy(key, body, `${asset.label} copied to clipboard.`)}
+                              sx={{
+                                py: 1,
+                                textTransform: "none",
+                                fontWeight: 700,
+                                borderRadius: "10px",
+                                color: done ? "success.main" : "primary.main",
+                                bgcolor: (t) =>
+                                  done
+                                    ? alpha(t.palette.success.main, 0.1)
+                                    : alpha(t.palette.primary.main, 0.1),
+                                "&:hover": {
+                                  bgcolor: (t) =>
+                                    done
+                                      ? alpha(t.palette.success.main, 0.16)
+                                      : alpha(t.palette.primary.main, 0.16),
+                                },
+                                transition: `transform 130ms ${EASE_OUT}, background-color 130ms ${EASE_OUT}`,
+                                "&:active": { transform: "scale(0.99)" },
+                                "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+                              }}
+                            >
+                              {done ? "Copied" : "Copy text"}
+                            </Button>
+                          </Box>
+                        </Box>
+                      </Box>
+                    ) : asset.id === "asset-02" ? (
+                      renderTwoPane(asset, key, done, body, renderWhatsApp(asset))
+                    ) : asset.id === "asset-03" ? (
+                      renderTwoPane(asset, key, done, body, renderEmail(asset))
+                    ) : asset.id === "asset-04" ? (
+                      renderTwoPane(asset, key, done, body, renderInstagram(asset))
+                    ) : (
+                      <>
+                        {media && (
+                          <Box
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Expand ${asset.label} preview`}
+                            onClick={() => setLightbox({ id: asset.id, label: asset.label, caption: body })}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setLightbox({ id: asset.id, label: asset.label, caption: body });
+                              }
+                            }}
+                            sx={{
+                              position: "relative",
+                              mb: 1.5,
+                              mx: media.centered ? "auto" : 0,
+                              width: "100%",
+                              maxWidth: media.maxWidth,
+                              aspectRatio: media.ratio,
+                              borderRadius: "10px",
+                              overflow: "hidden",
+                              cursor: "pointer",
+                              outline: "none",
+                              border: "1px dashed",
+                              borderColor: "divider",
+                              bgcolor: "action.hover",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 0.75,
+                              color: "text.disabled",
+                              transition: `border-color 160ms ${EASE_OUT}, background-color 160ms ${EASE_OUT}`,
+                              "&:hover, &:focus-visible": {
+                                borderColor: "primary.main",
+                                bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
+                                "& .col-zoom": { opacity: 1, transform: "scale(1)" },
+                              },
+                            }}
+                          >
+                            <Box
+                              className="col-zoom"
+                              sx={{
+                                position: "absolute",
+                                top: 8,
+                                right: 8,
+                                zIndex: 1,
+                                width: 28,
+                                height: 28,
+                                borderRadius: "8px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                bgcolor: "background.paper",
+                                border: "1px solid",
+                                borderColor: "divider",
+                                color: "text.secondary",
+                                opacity: 0,
+                                transform: "scale(0.9)",
+                                transition: `opacity 160ms ${EASE_OUT}, transform 160ms ${EASE_OUT}`,
+                                "@media (hover: none)": { opacity: 1, transform: "scale(1)" },
+                              }}
+                            >
+                              <ZoomOutMapRoundedIcon sx={{ fontSize: 16 }} />
+                            </Box>
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <ImageOutlinedIcon sx={{ fontSize: 18 }} />
+                              <media.icon sx={{ fontSize: 20 }} />
+                            </Stack>
+                            <Typography variant="caption" sx={{ fontWeight: 600, ...TABULAR }}>
+                              {media.size}
+                            </Typography>
+                          </Box>
+                        )}
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ lineHeight: 1.5, whiteSpace: "pre-line" }}
+                        >
+                          {renderCaption(asset.caption)}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ mt: 1, color: "primary.main", fontWeight: 600, wordBreak: "break-all", lineHeight: 1.45 }}
+                        >
+                          {link}
+                        </Typography>
+                      </>
+                    )}
                   </Box>
                 );
               })}

@@ -381,13 +381,13 @@ export const demoBroadcastCollateral: BroadcastAsset[] = [
     id: "asset-02",
     label: "WhatsApp broadcast",
     caption:
-      "Quick one — [program name] opens [start date]. I teach on it and can vouch for the curriculum. Grab [scholarship code] for [percent off]% off if you enroll through me.",
+      "Quick one — [program name] opens [start date]. I can vouch for the curriculum. Grab [percent off]% off when you enroll using this link and discount coupon code [scholarship code].",
   },
   {
     id: "asset-03",
     label: "Email intro",
     caption:
-      "Hi [first name], based on your background I think [program name] (starts [start date]) would be a great fit. I mentor on this program and can answer anything. Scholarship code [scholarship code] gives you [percent off]% off.",
+      "Based on your background, I think [program name] (starts [start date]) would be a great fit. Happy to answer any questions. Scholarship code [scholarship code] gives you [percent off]% off.",
   },
   {
     id: "asset-04",
