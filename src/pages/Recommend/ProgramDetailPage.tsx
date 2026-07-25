@@ -643,7 +643,8 @@ export default function ProgramDetailPage() {
     "asset-01": "Copy this text and paste it into a new LinkedIn post.",
     "asset-02": "Copy this text and send it as a WhatsApp broadcast.",
     "asset-03": "Copy this text and paste it into your email.",
-    "asset-04": "Copy this caption and add it to your Instagram story.",
+    "asset-04":
+      "Add this caption as text to your story, then attach the link separately with the link sticker.",
   };
   const brandGradient = (t: import("@mui/material/styles").Theme) =>
     `linear-gradient(135deg, ${t.palette.primary.main}, ${alpha(t.palette.primary.main, 0.6)})`;
