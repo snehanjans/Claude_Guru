@@ -71,6 +71,14 @@ import { EmptyState } from "@/components/shared/EmptyState";
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 
+/* Brand logo + colour shown next to each collateral's title. */
+const PLATFORM_LOGO: Record<string, { icon: SvgIconComponent; color: string }> = {
+  "asset-01": { icon: LinkedInIcon, color: "#0a66c2" },
+  "asset-02": { icon: WhatsAppIcon, color: "#25d366" },
+  "asset-03": { icon: EmailOutlinedIcon, color: "#ea4335" },
+  "asset-04": { icon: InstagramIcon, color: "#e1306c" },
+};
+
 /* Placeholder media per collateral, sized to each platform's real image format. */
 const COLLATERAL_MEDIA: Record<
   string,
@@ -1379,11 +1387,17 @@ export default function ProgramDetailPage() {
                       alignItems="center"
                       justifyContent="space-between"
                       spacing={1}
-                      sx={{ mb: 0.75 }}
+                      sx={{ mb: 2 }}
                     >
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                        {asset.label}
-                      </Typography>
+                      <Stack direction="row" alignItems="center" spacing={0.75}>
+                        {(() => {
+                          const logo = PLATFORM_LOGO[asset.id];
+                          return logo ? <logo.icon sx={{ fontSize: 20, color: logo.color }} /> : null;
+                        })()}
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                          {asset.label}
+                        </Typography>
+                      </Stack>
                     </Stack>
 
                     {/* LinkedIn shows a two-pane preview — the post as it will look on the
