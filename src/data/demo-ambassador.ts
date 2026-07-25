@@ -375,25 +375,25 @@ export const demoBroadcastCollateral: BroadcastAsset[] = [
     id: "asset-01",
     label: "LinkedIn post",
     caption:
-      "I've mentored [N learners mentored] learners into AI roles. If you're weighing a move into AI, [program name] starts [start date] — happy to talk it through. Use [scholarship code] for [percent off]% off.",
+      "I've mentored [N learners mentored] learners into AI roles. If you're weighing a move into AI, [program name] is worth a look — happy to talk it through. Use [scholarship code] for [percent off]% off.",
   },
   {
     id: "asset-02",
     label: "WhatsApp broadcast",
     caption:
-      "Quick one — [program name] opens [start date]. I can vouch for the curriculum. Grab [percent off]% off when you enroll using this link and discount coupon code [scholarship code].",
+      "Quick one — [program name]. I can vouch for the curriculum. Grab [percent off]% off when you enroll using this link and discount coupon code [scholarship code].",
   },
   {
     id: "asset-03",
     label: "Email intro",
     caption:
-      "Based on your background, I think [program name] (starts [start date]) would be a great fit. Happy to answer any questions. Scholarship code [scholarship code] gives you [percent off]% off.",
+      "Based on your background, I think [program name] would be a great fit. Happy to answer any questions. Scholarship code [scholarship code] gives you [percent off]% off.",
   },
   {
     id: "asset-04",
     label: "Instagram story",
     caption:
-      "[N learners mentored] learners mentored and counting. [program name] starts [start date] — DM me for the syllabus and [percent off]% off with [scholarship code].",
+      "[N learners mentored] learners mentored and counting. [program name] — DM me for the syllabus and [percent off]% off with [scholarship code].",
   },
 ];
 
