@@ -20,6 +20,7 @@ import Tabs from "@mui/material/Tabs";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
+import type { SxProps, Theme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
@@ -70,6 +71,50 @@ import { EmptyState } from "@/components/shared/EmptyState";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
+
+/* Per-program share/meta image (og:image) shown in link previews. Drop the files
+   into public/og/ with these names; missing files fall back to the brand gradient. */
+const OG_IMAGE: Record<string, string> = {
+  "ai-native-professional": "/og/ai-native-professional.png",
+  "ainp-hr": "/og/ai-native-professional-for-hr.png",
+  "ainp-marketing": "/og/ai-native-professional-for-marketing.png",
+  "ainp-finance": "/og/ai-native-professional-for-finance.png",
+};
+
+/* Share-image thumbnail — renders the og:image, or a branded gradient if absent. */
+function OgThumb({ src, label, sx }: { src?: string; label: string; sx?: SxProps<Theme> }) {
+  const [err, setErr] = useState(false);
+  const showImg = Boolean(src) && !err;
+  return (
+    <Box sx={{ overflow: "hidden", ...sx }}>
+      {showImg ? (
+        <Box
+          component="img"
+          src={src}
+          alt=""
+          onError={() => setErr(true)}
+          sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+      ) : (
+        <Box
+          sx={{
+            width: "100%",
+            height: "100%",
+            display: "grid",
+            placeItems: "center",
+            textAlign: "center",
+            px: 1,
+            background: (t) => `linear-gradient(135deg, ${t.palette.primary.main}, ${alpha(t.palette.primary.main, 0.6)})`,
+          }}
+        >
+          <Typography sx={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "#fff", lineHeight: 1.3 }}>
+            {label}
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+}
 
 /* Brand logo + colour shown next to each collateral's title. */
 const PLATFORM_LOGO: Record<string, { icon: SvgIconComponent; color: string }> = {
@@ -646,8 +691,6 @@ export default function ProgramDetailPage() {
     "asset-04":
       "Add this caption as text to your story, then attach the link separately with the link sticker.",
   };
-  const brandGradient = (t: import("@mui/material/styles").Theme) =>
-    `linear-gradient(135deg, ${t.palette.primary.main}, ${alpha(t.palette.primary.main, 0.6)})`;
 
   // Shared right-hand "message to post" panel used by every collateral.
   const renderMessagePanel = (asset: Collateral, key: string, done: boolean, body: string) => (
@@ -767,9 +810,7 @@ export default function ProgramDetailPage() {
           }}
         >
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75, p: 0.75, borderRadius: "6px", bgcolor: "rgba(0,0,0,0.06)" }}>
-            <Box sx={{ width: 40, height: 40, flexShrink: 0, borderRadius: "4px", display: "grid", placeItems: "center", background: brandGradient }}>
-              <Typography sx={{ fontSize: 9, fontWeight: 800, color: "#fff", letterSpacing: "0.05em" }}>GL</Typography>
-            </Box>
+            <OgThumb src={OG_IMAGE[program.id]} label="GL" sx={{ width: 40, height: 40, flexShrink: 0, borderRadius: "4px" }} />
             <Box sx={{ minWidth: 0 }}>
               <Typography sx={{ fontSize: 11, fontWeight: 700, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {program.title}
@@ -1475,30 +1516,11 @@ export default function ProgramDetailPage() {
                           {/* link-preview card — thumbnail + title + domain */}
                           <Divider />
                           <Stack direction="row" spacing={1.5} alignItems="center" sx={{ p: 1.5 }}>
-                            <Box
-                              sx={{
-                                width: 112,
-                                height: 90,
-                                flexShrink: 0,
-                                borderRadius: "8px",
-                                boxShadow: 2,
-                                display: "grid",
-                                placeItems: "center",
-                                textAlign: "center",
-                                px: 1,
-                                background: (t) =>
-                                  `linear-gradient(135deg, ${t.palette.primary.main}, ${alpha(
-                                    t.palette.primary.main,
-                                    0.6,
-                                  )})`,
-                              }}
-                            >
-                              <Typography
-                                sx={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: "#fff", lineHeight: 1.3 }}
-                              >
-                                GREAT LEARNING
-                              </Typography>
-                            </Box>
+                            <OgThumb
+                              src={OG_IMAGE[program.id]}
+                              label="GREAT LEARNING"
+                              sx={{ width: 112, height: 90, flexShrink: 0, borderRadius: "8px", boxShadow: 2 }}
+                            />
                             <Box sx={{ minWidth: 0 }}>
                               <Typography
                                 sx={{
