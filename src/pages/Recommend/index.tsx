@@ -11,7 +11,6 @@ import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalance
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import HighlightOffOutlinedIcon from "@mui/icons-material/HighlightOffOutlined";
-import { MobilePageHeader } from "@/components/layout/MobilePageHeader";
 import { fmtMoney } from "@/lib/helpers";
 import { GURU_CURRENCY, toGuruCurrency } from "@/data/demo-ambassador";
 import { useRecommend, type RecommendTab } from "./RecommendContext";
@@ -72,8 +71,6 @@ export default function RecommendPage() {
 
   return (
     <>
-      <MobilePageHeader title="Recommend" />
-
       {/* ── Hero — membership KPI cards ─────────────────────────────── */}
       <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.75 }}>
         <WorkspacePremiumOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />

@@ -926,7 +926,7 @@ export default function ProgramDetailPage() {
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) minmax(0, 1fr)" },
+        gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 1fr) minmax(0, 1fr)" },
         gap: 2,
         alignItems: "stretch",
       }}
@@ -1023,6 +1023,9 @@ export default function ProgramDetailPage() {
           value={tab}
           onChange={(_e, v) => setTab(v as "overview" | "collaterals" | "faq")}
           aria-label="Program detail sections"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           sx={{
             minHeight: 44,
             "& .MuiTab-root": {
@@ -1449,7 +1452,7 @@ export default function ProgramDetailPage() {
                       <Box
                         sx={{
                           display: "grid",
-                          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) minmax(0, 1fr)" },
+                          gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 1fr) minmax(0, 1fr)" },
                           gap: 2,
                           alignItems: "stretch",
                         }}
