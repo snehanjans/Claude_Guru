@@ -955,7 +955,7 @@ export default function ProgramDetailPage() {
             mb: 1.5,
           }}
         >
-          Preview · sample post
+          {`Preview · ${asset.label.split(" ")[0]}`}
         </Typography>
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>{preview}</Box>
       </Box>
@@ -1492,7 +1492,7 @@ export default function ProgramDetailPage() {
                               mb: 1.5,
                             }}
                           >
-                            Preview · sample post
+                            {`Preview · ${asset.label.split(" ")[0]}`}
                           </Typography>
                           <Box
                             sx={{
