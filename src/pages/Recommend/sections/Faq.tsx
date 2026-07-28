@@ -35,7 +35,7 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     items: [
       {
         q: "How much do I earn on a referral?",
-        a: "20% of the post-discount price when a learner enrolls on your own message, or 10% when a learning consultant helps close.",
+        a: "20% of the final price (after the promo) when a learner enrolls on your own message, or 10% when a learning consultant helps close.",
       },
       {
         q: "Do I earn for teaching a cohort?",

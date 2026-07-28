@@ -19,6 +19,10 @@ export const AINP_PCT_ASSISTED = 10;
     the [N learners mentored] token in social-media-kit templates. */
 export const GURU_LEARNERS_IMPACTED = 7332;
 
+/** The guru's referral id — rides on the share link as ?ref=<GURU_REF> for
+    attribution. Distinct from the learner-facing promo code (per program). */
+export const GURU_REF = "shome";
+
 /** The guru's payout display currency (demo guru is India-based). Referral bonuses are
     still earned in each learner's currency; aggregates convert into this one at FX_USD_TO_INR. */
 export const GURU_CURRENCY: "USD" | "INR" = "INR";
@@ -45,7 +49,7 @@ export const GL_WEBINAR_DECK = "https://www.mygreatlearning.com/gl-collective/we
 export const demoAmbassadorPrograms: AmbassadorProgram[] = [
   {
     id: "ai-native-professional",
-    scholarshipCode: "shome-ainp-gl",
+    scholarshipCode: "AINP20OFF",
     scholarshipPct: 20,
     earningModel: "percentage",
     bonusPctSelfCheckout: AINP_PCT_SELF_CHECKOUT,
@@ -79,7 +83,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
   },
   {
     id: "ainp-hr",
-    scholarshipCode: "shome-ainp-hr-gl",
+    scholarshipCode: "AINPHR20OFF",
     scholarshipPct: 20,
     earningModel: "percentage",
     bonusPctSelfCheckout: AINP_PCT_SELF_CHECKOUT,
@@ -113,7 +117,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
   },
   {
     id: "ainp-marketing",
-    scholarshipCode: "shome-ainp-mkt-gl",
+    scholarshipCode: "AINPMKT20OFF",
     scholarshipPct: 20,
     earningModel: "percentage",
     bonusPctSelfCheckout: AINP_PCT_SELF_CHECKOUT,
@@ -147,7 +151,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
   },
   {
     id: "ainp-finance",
-    scholarshipCode: "shome-ainp-fin-gl",
+    scholarshipCode: "AINPFIN20OFF",
     scholarshipPct: 20,
     earningModel: "percentage",
     bonusPctSelfCheckout: AINP_PCT_SELF_CHECKOUT,
@@ -381,7 +385,7 @@ export const demoBroadcastCollateral: BroadcastAsset[] = [
     id: "asset-02",
     label: "WhatsApp broadcast",
     caption:
-      "Quick one — [program name]. I can vouch for the curriculum. Grab [percent off]% off when you enroll using this link and discount coupon code [scholarship code].",
+      "Quick one — [program name]. I can vouch for the curriculum. Grab [percent off]% off when you enroll using this link and promo code [scholarship code].",
   },
   {
     id: "asset-03",

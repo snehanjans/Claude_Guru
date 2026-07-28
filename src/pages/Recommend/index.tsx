@@ -119,9 +119,9 @@ export default function RecommendPage() {
           <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 800, letterSpacing: "-0.02em" }}>
             Start earning with your network
           </Typography>
-          <Typography sx={{ mt: 0.75, mb: 2.5, fontSize: 14, color: "text.secondary", maxWidth: 560, lineHeight: 1.55 }}>
-            Recommend an AI-Native Professional program — when someone enrolls with your link or code, you earn up to
-            20% of the program fee.
+          <Typography sx={{ mt: 0.75, mb: 2.5, fontSize: 14, color: "text.secondary", maxWidth: 600, lineHeight: 1.55 }}>
+            Recommend an AI-Native Professional program. When someone enrolls through your link you earn 20% of the
+            program fee — or 10% if a Great Learning advisor helps close the enrollment.
           </Typography>
 
           {/* how it works — always 3-across (stacks on the smallest screens) */}
@@ -134,9 +134,9 @@ export default function RecommendPage() {
           >
             {(
               [
-                { step: "1", title: "Share a program", sub: "Send your personalised link or code" },
+                { step: "1", title: "Share a program", sub: "Share your personalised link" },
                 { step: "2", title: "They enroll", sub: "Your learner joins a cohort" },
-                { step: "3", title: "You earn", sub: "Up to 20% after they complete" },
+                { step: "3", title: "You earn", sub: "20% via your link, 10% if an advisor closes it" },
               ] as { step: string; title: string; sub: string }[]
             ).map((s) => (
               <Box key={s.step} sx={{ minWidth: 0 }}>

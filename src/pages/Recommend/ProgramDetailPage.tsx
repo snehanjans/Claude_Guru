@@ -62,7 +62,8 @@ import { fmtDateNice, fmtUsd } from "@/lib/helpers";
 import {
   demoAmbassadorPrograms,
   demoBroadcastCollateral,
-  referralLinkFor,
+  REFERRAL_BASE,
+  GURU_REF,
   GURU_LEARNERS_IMPACTED,
 } from "@/data/demo-ambassador";
 import { useAppDispatch } from "@/store";
@@ -144,13 +145,13 @@ const BROCHURE_URLS: Record<string, string> = {
   "ainp-finance": "https://www.mygreatlearning.com/brochures/ai-native-professional-for-finance",
 };
 
-/* Personalised program-page links shared in the Social Media Kit — the guru's
-   handle rides along as ?id=shome so visits/enrollments attribute back to them. */
+/* Each program's page URL. The Social Media Kit link appends UTM params
+   (utm_campaign = the guru's code) so visits/enrollments attribute back. */
 const PROGRAM_PAGE_URLS: Record<string, string> = {
-  "ai-native-professional": "https://www.mygreatlearning.com/ai-native-professional?id=shome",
-  "ainp-hr": "https://www.mygreatlearning.com/ai-native-professional-for-hr?id=shome",
-  "ainp-marketing": "https://www.mygreatlearning.com/ai-native-professional-for-marketing?id=shome",
-  "ainp-finance": "https://www.mygreatlearning.com/ai-native-professional-for-finance?id=shome",
+  "ai-native-professional": "https://www.mygreatlearning.com/ai-native-professional",
+  "ainp-hr": "https://www.mygreatlearning.com/ai-native-professional-for-hr",
+  "ainp-marketing": "https://www.mygreatlearning.com/ai-native-professional-for-marketing",
+  "ainp-finance": "https://www.mygreatlearning.com/ai-native-professional-for-finance",
 };
 
 /* Program-page FAQ per AINP program (from each program's mygreatlearning.com page),
@@ -550,9 +551,11 @@ export default function ProgramDetailPage() {
   );
 
   const program = demoAmbassadorPrograms.find((p) => p.id === programId) ?? null;
-  const link = program
-    ? (PROGRAM_PAGE_URLS[program.id] ?? referralLinkFor(program.scholarshipCode))
-    : "";
+  // The guru shares a clean referral link — program page + ?ref=<guru id>. The
+  // destination redirects it to the full utm_source/medium/campaign URL, so the
+  // UTM params never surface. The learner-facing promo code is separate and
+  // shared per program (program.scholarshipCode, e.g. AINP20OFF).
+  const link = program ? `${PROGRAM_PAGE_URLS[program.id] ?? REFERRAL_BASE}?ref=${GURU_REF}` : "";
 
   // Reset to Overview whenever a different program opens.
   useEffect(() => {
@@ -940,10 +943,21 @@ export default function ProgramDetailPage() {
           bgcolor: (t) => alpha(t.palette.primary.main, 0.05),
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
         }}
       >
-        {preview}
+        <Typography
+          sx={{
+            fontSize: "0.7rem",
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "text.secondary",
+            mb: 1.5,
+          }}
+        >
+          Preview · sample post
+        </Typography>
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>{preview}</Box>
       </Box>
       {renderMessagePanel(asset, key, done, body)}
     </Box>
@@ -1078,7 +1092,7 @@ export default function ProgramDetailPage() {
 
             <Divider sx={{ my: 3 }} />
 
-            {/* share & earn — personalised link, discount code, collaterals */}
+            {/* share & earn — personalised link, promo code, collaterals */}
             <Box
               sx={{
                 p: { xs: 2.25, sm: 2.5 },
@@ -1170,7 +1184,7 @@ export default function ProgramDetailPage() {
                 Tagged with your ID — every visit and enrollment is tracked back to you.
               </Typography>
 
-              {/* 2 — learner discount code */}
+              {/* 2 — learner promo code */}
               <Typography
                 sx={{
                   fontSize: "0.7rem",
@@ -1182,7 +1196,7 @@ export default function ProgramDetailPage() {
                   mb: 0.75,
                 }}
               >
-                Learner discount code
+                Learner promo code
               </Typography>
               <TextField
                 fullWidth
@@ -1203,9 +1217,9 @@ export default function ProgramDetailPage() {
                       <Tooltip title={copiedKey === "code" ? "Copied" : "Copy code"}>
                         <IconButton
                           size="small"
-                          aria-label="Copy discount code"
+                          aria-label="Copy promo code"
                           onClick={() =>
-                            copy("code", program.scholarshipCode, "Discount code copied to clipboard.")
+                            copy("code", program.scholarshipCode, "Promo code copied to clipboard.")
                           }
                           sx={{
                             color: copiedKey === "code" ? "success.main" : "primary.main",
@@ -1403,7 +1417,8 @@ export default function ProgramDetailPage() {
           <>
             {/* collaterals — program-specific, pre-filled with the guru's code + link */}
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
-              Ready-to-share posts for {program.title}, pre-filled with your code and link.
+              Each card shows a sample of how your post will look, next to the message to copy —
+              pre-filled with your code and link for {program.title}.
             </Typography>
             <Stack spacing={1.5}>
               {demoBroadcastCollateral.map((asset) => {
@@ -1467,6 +1482,18 @@ export default function ProgramDetailPage() {
                             bgcolor: (t) => alpha(t.palette.primary.main, 0.05),
                           }}
                         >
+                          <Typography
+                            sx={{
+                              fontSize: "0.7rem",
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              color: "text.secondary",
+                              mb: 1.5,
+                            }}
+                          >
+                            Preview · sample post
+                          </Typography>
                           <Box
                             sx={{
                               border: "1px solid",

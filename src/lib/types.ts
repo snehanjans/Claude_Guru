@@ -323,8 +323,8 @@ export type AmbassadorProgram = {
   prerequisites: string[]; // 1–3 short strings
   hasTechnicalPrereq: boolean;
   isNew?: boolean;
-  scholarshipCode: string; // the guru's per-program learner discount code
-  scholarshipPct: number; // per-program discount % the learner receives
+  scholarshipCode: string; // per-program learner promo code (shared, not per-guru)
+  scholarshipPct: number; // per-program promo % the learner receives
   // ─── Earning model ───
   earningModel: EarningModel;
   flatBonusUsd?: number; // "flat" only — bonus per enrollment (USD)
