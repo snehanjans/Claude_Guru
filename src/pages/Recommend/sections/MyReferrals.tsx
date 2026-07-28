@@ -16,6 +16,7 @@ import { alpha } from "@mui/material/styles";
 import type { SxProps, Theme } from "@mui/material/styles";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import GroupAddOutlinedIcon from "@mui/icons-material/GroupAddOutlined";
+import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import { useAppDispatch } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { fmtDateNice, fmtMoney, toYmd } from "@/lib/helpers";
@@ -351,9 +352,18 @@ export function MyReferralsSection() {
           <Typography sx={{ fontSize: 20, fontWeight: 800, lineHeight: 1.1, ...TABULAR }}>
             {enrolledCount} {enrolledCount === 1 ? "learner" : "learners"} enrolled
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {period === "all" ? "across all time" : PERIOD_SUFFIX[period]}
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mt: 0.25, flexWrap: "wrap" }}>
+            <Typography variant="caption" color="text.secondary">
+              {period === "all" ? "across all time" : PERIOD_SUFFIX[period]}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              •
+            </Typography>
+            <AutorenewRoundedIcon sx={{ fontSize: 13, color: "text.secondary" }} />
+            <Typography variant="caption" color="text.secondary">
+              Refreshed every 6 hours
+            </Typography>
+          </Stack>
         </Box>
         <TextField
           select

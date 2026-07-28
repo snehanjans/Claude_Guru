@@ -14,19 +14,19 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     items: [
       {
         q: "What is the Guru Ambassadors program?",
-        a: "A program where you promote GL's AINP to your own network and earn on the enrollments, and can also run and teach your own cohort.",
+        a: "A program where you recommend GL's AINP to your own network and earn on every enrollment.",
       },
       {
         q: "Who can join?",
-        a: "Gurus who have taught GenAI in the last 6 months. The wider set of GL AI Gurus can also refer and opt in.",
-      },
-      {
-        q: "Do I have to teach a cohort, or can I just refer?",
-        a: "Either. You can refer learners, or form and teach your own cohort.",
+        a: "GL's AI mentors. Opt in to start referring.",
       },
       {
         q: "How do I get started?",
-        a: "You are selected, complete a short onboarding on the AINP content and how to teach it, and receive your kit.",
+        a: "You opt in, receive your kit and a unique referral link, and start sharing AINP with your network.",
+      },
+      {
+        q: "Is this exclusive?",
+        a: "No, it is non-exclusive.",
       },
     ],
   },
@@ -36,10 +36,6 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
       {
         q: "How much do I earn on a referral?",
         a: "20% of the final price (after the promo) when a learner enrolls on your own message, or 10% when a learning consultant helps close.",
-      },
-      {
-        q: "Do I earn for teaching a cohort?",
-        a: "Yes, hourly teaching pay per your contract, for the whole cohort you teach.",
       },
       {
         q: "When am I paid?",
@@ -53,6 +49,10 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
         q: "What if a learner drops out?",
         a: "Dropouts before the payout point are not paid.",
       },
+      {
+        q: "Can I offer my learners a discount?",
+        a: "Yes, you get a promo code for your own learners.",
+      },
     ],
   },
   {
@@ -60,11 +60,11 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     items: [
       {
         q: "What does GL provide?",
-        a: "Collaterals to promote, a customisable landing page, the curriculum, platform, payments, and certification.",
+        a: "Collaterals to promote, a customisable landing page, and everything after enrollment: the curriculum, platform, payments, and certification.",
       },
       {
         q: "How are my referrals tracked?",
-        a: "Through your unique referral code and a dedicated lead source, so every enrollment is credited to you.",
+        a: "Through your unique referral link and a dedicated lead source, so every enrollment is credited to you.",
       },
       {
         q: "Does someone help me sell?",
@@ -73,6 +73,10 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
       {
         q: "Who handles learner complaints or refunds?",
         a: "GL does.",
+      },
+      {
+        q: "What if I want to stop?",
+        a: "Just let us know. It is fully opt-in.",
       },
     ],
   },
