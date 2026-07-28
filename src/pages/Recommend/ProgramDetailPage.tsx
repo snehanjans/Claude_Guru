@@ -835,7 +835,7 @@ export default function ProgramDetailPage() {
   const renderEmail = (asset: Collateral) => (
     <Box sx={{ borderRadius: "10px", overflow: "hidden", border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
       <Box sx={{ p: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
-        <Typography sx={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>An AI program I think you&apos;d like</Typography>
+        <Typography sx={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>A program worth a look, if AI is on your radar</Typography>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
           <Avatar sx={{ width: 32, height: 32, bgcolor: (t) => alpha(t.palette.primary.main, 0.15), color: "primary.main" }}>
             <PersonRoundedIcon sx={{ fontSize: 18 }} />
@@ -1417,8 +1417,8 @@ export default function ProgramDetailPage() {
           <>
             {/* collaterals — program-specific, pre-filled with the guru's code + link */}
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
-              Each card shows a sample of how your post will look, next to the message to copy —
-              pre-filled with your code and link for {program.title}.
+              Each card shows a sample of how your post will look, next to the message to copy.
+              Pre-filled with your code and link for {program.title}.
             </Typography>
             <Stack spacing={1.5}>
               {demoBroadcastCollateral.map((asset) => {

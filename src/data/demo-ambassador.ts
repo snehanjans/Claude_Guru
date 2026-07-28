@@ -379,25 +379,25 @@ export const demoBroadcastCollateral: BroadcastAsset[] = [
     id: "asset-01",
     label: "LinkedIn post",
     caption:
-      "I've mentored [N learners mentored] learners into AI roles. If you're weighing a move into AI, [program name] is worth a look — happy to talk it through. Use [scholarship code] for [percent off]% off.",
+      "I've mentored [N learners mentored] learners into AI roles. If you're figuring out how to start with AI, [program name] is worth a look. Happy to talk it through. Use [scholarship code] for [percent off]% off.",
   },
   {
     id: "asset-02",
     label: "WhatsApp broadcast",
     caption:
-      "Quick one — [program name]. I can vouch for the curriculum. Grab [percent off]% off when you enroll using this link and promo code [scholarship code].",
+      "I've mentored [N learners mentored] learners into AI roles, so I get asked this a lot: how do I actually start with AI? My honest answer these days is [program name]. It's hands-on, short, and built for exactly that starting point. If you're curious, here's [percent off]% off with [scholarship code]. Happy to talk you through it if you want a second opinion first.",
   },
   {
     id: "asset-03",
     label: "Email intro",
     caption:
-      "Based on your background, I think [program name] would be a great fit. Happy to answer any questions. Scholarship code [scholarship code] gives you [percent off]% off.",
+      "Hi [first name],\nI've mentored [N learners mentored] learners into AI roles at this point, and one question keeps coming up from people just starting out: where do you actually begin?\nLately my answer has been [program name], Great Learning's program for becoming AI-native. It's short, hands-on, and built for exactly that first step, not a long theory-heavy course.\nIf it's useful, here's [percent off]% off with code [scholarship code].\nHappy to talk it through if you want a second opinion before deciding.\n[Your name]",
   },
   {
     id: "asset-04",
     label: "Instagram story",
     caption:
-      "[N learners mentored] learners mentored and counting. [program name] — DM me for the syllabus and [percent off]% off with [scholarship code].",
+      "\"Where do I even start with AI?\" That's the question I get most. My answer lately has been [program name]. Hands-on, beginner-friendly, built to get you working with AI, not just reading about it. [percent off]% off with code [scholarship code].",
   },
 ];
 
