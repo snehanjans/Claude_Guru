@@ -10,23 +10,15 @@ const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
 const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
   {
-    title: "Joining and eligibility",
+    title: "GL Guru Ambassadors",
     items: [
       {
-        q: "What is the Guru Ambassadors program?",
-        a: "A program where you recommend GL's AINP to your own network and earn on every enrollment.",
-      },
-      {
-        q: "Who can join?",
-        a: "GL's AI mentors. Opt in to start referring.",
+        q: "What is GL Guru Ambassadors?",
+        a: "An exclusive referral program meant for our Gurus, where you can recommend Great Learning's AI-native for professionals program to your own network and earn on every enrolment.",
       },
       {
         q: "How do I get started?",
-        a: "You opt in, receive your kit and a unique referral link, and start sharing AINP with your network.",
-      },
-      {
-        q: "Is this exclusive?",
-        a: "No, it is non-exclusive.",
+        a: "Taking the first step is easy. Share your personalised program page within your network with the social media channel of your choice. You can refer to the social media kit for pre-filled messages.",
       },
     ],
   },
@@ -35,23 +27,23 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     items: [
       {
         q: "How much do I earn on a referral?",
-        a: "20% of the final price (after the promo) when a learner enrolls on your own message, or 10% when a learning consultant helps close.",
+        a: "20% of the post-discount price when a learner enrols on their own without any assistance, or 10% when a learning consultant helps close.",
       },
       {
         q: "When am I paid?",
-        a: "After the learner completes the program.",
+        a: "Once the learner enrols, the cohort starts, and the refund window is closed.",
       },
       {
-        q: "Which learners qualify for a bonus?",
-        a: "New or previously unconverted learners whose GL lead is more than 3 months old.",
+        q: "Which learners qualify for an eligible referral reward?",
+        a: "All prospective leads except an active lead within the system who has been responsive within the recent 1-month window.",
       },
       {
         q: "What if a learner drops out?",
-        a: "Dropouts before the payout point are not paid.",
+        a: "If a learner drops out and is eligible for a refund, no reward is issued.",
       },
       {
         q: "Can I offer my learners a discount?",
-        a: "Yes, you get a promo code for your own learners.",
+        a: "Yes, you get a discount code for your own learners.",
       },
     ],
   },
@@ -59,24 +51,20 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     title: "Support and logistics",
     items: [
       {
-        q: "What does GL provide?",
-        a: "Collaterals to promote, a customisable landing page, and everything after enrollment: the curriculum, platform, payments, and certification.",
+        q: "What does GL provide to support?",
+        a: "We provide you with a unique landing page, ready-to-post messages for your social channels, a discount code for learners and an ability to track the journey of your referred candidates post-expressing interest in the program.",
       },
       {
         q: "How are my referrals tracked?",
-        a: "Through your unique referral link and a dedicated lead source, so every enrollment is credited to you.",
+        a: "Through your unique landing page, to ensure every enrolment is credited to you.",
       },
       {
         q: "Does someone help me sell?",
-        a: "A learning consultant is available when needed, but the aim is for learners to convert on your own message.",
+        a: "A learning consultant is available when needed. A referred candidate has both the options - to self checkout after payment and to schedule a call with an LC before making the payment.",
       },
       {
         q: "Who handles learner complaints or refunds?",
         a: "GL does.",
-      },
-      {
-        q: "What if I want to stop?",
-        a: "Just let us know. It is fully opt-in.",
       },
     ],
   },

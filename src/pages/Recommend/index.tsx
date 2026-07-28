@@ -117,7 +117,7 @@ export default function RecommendPage() {
             }}
           />
           <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 800, letterSpacing: "-0.02em" }}>
-            Start earning with your network
+            Recommend, and earn on every enrollment
           </Typography>
           <Typography sx={{ mt: 0.75, mb: 2.5, fontSize: 14, color: "text.secondary", maxWidth: 600, lineHeight: 1.55 }}>
             Recommend an AI-Native Professional program. When someone enrolls through your link you earn 20% of the
