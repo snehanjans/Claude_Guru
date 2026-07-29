@@ -36,6 +36,7 @@ import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import ScheduleOutlinedIcon from "@mui/icons-material/ScheduleOutlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
+import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
@@ -1074,7 +1075,8 @@ export default function ProgramDetailPage() {
               {[
                 { k: "Duration", v: program.durationLabel, icon: ScheduleOutlinedIcon },
                 { k: "Program fee", v: fmtUsd(program.price), icon: PaymentsOutlinedIcon },
-                { k: "Format", v: program.mode, icon: PublicOutlinedIcon },
+                { k: "Format", v: "Mentored live sessions weekly", icon: PublicOutlinedIcon },
+                { k: "Tools", v: "10+ AI tools", icon: AutoAwesomeOutlinedIcon },
               ].map((f) => (
                 <Box key={f.k}>
                   <Stack direction="row" spacing={1} alignItems="center">

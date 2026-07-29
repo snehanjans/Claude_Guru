@@ -11,7 +11,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import { fmtDateNice, fmtUsd, fmtInr } from "@/lib/helpers";
+import { fmtUsd, fmtInr } from "@/lib/helpers";
 import { demoAmbassadorPrograms } from "@/data/demo-ambassador";
 import { EmptyState } from "@/components/shared/EmptyState";
 import type { AmbassadorProgram } from "@/lib/types";
@@ -112,9 +112,6 @@ function ProgramCard({ p, onOpen }: { p: AmbassadorProgram; onOpen: () => void }
           <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.25, ...clamp(2) }}>
             {p.title}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, ...clamp(2) }}>
-            {p.oneLiner}
-          </Typography>
 
           {/* meta */}
           <Stack
@@ -129,21 +126,21 @@ function ProgramCard({ p, onOpen }: { p: AmbassadorProgram; onOpen: () => void }
             <Box component="span" sx={{ mx: 0.75, opacity: 0.5 }}>
               ·
             </Box>
-            <Typography variant="caption" sx={{ fontWeight: 600, ...TABULAR }}>
-              {fmtUsd(p.price)}
+            <Typography variant="caption" sx={{ fontWeight: 600 }}>
+              10+ AI Tools
             </Typography>
             <Box component="span" sx={{ mx: 0.75, opacity: 0.5 }}>
               ·
             </Box>
-            <Typography variant="caption" sx={{ ...TABULAR }}>
-              {fmtDateNice(p.nextCohortYmd)}
+            <Typography variant="caption" sx={{ fontWeight: 600 }}>
+              Live Sessions
             </Typography>
           </Stack>
 
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ ...clamp(1), fontStyle: "italic" }}
+            sx={{ fontStyle: "italic" }}
           >
             {p.audienceLine}
           </Typography>
