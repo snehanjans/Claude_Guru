@@ -399,7 +399,7 @@ export function MyReferralsSection() {
             In progress
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.25 }}>
-            Sent or being worked by GL — no enrollment yet.
+            Being worked by GL — no enrollment yet.
           </Typography>
           <Card variant="outlined" sx={{ borderRadius: "16px", overflow: "hidden" }}>
             <List disablePadding>
@@ -417,11 +417,8 @@ export function MyReferralsSection() {
       {/* converted referrals */}
       {converted.length > 0 && (
         <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle2" fontWeight={700}>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.25 }}>
             Converted
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.25 }}>
-            Learners who enrolled — bonuses confirmed or on the way.
           </Typography>
           <Card variant="outlined" sx={{ borderRadius: "16px", overflow: "hidden" }}>
             <List disablePadding>
@@ -439,11 +436,8 @@ export function MyReferralsSection() {
       {/* contacted by GL, but never converted (or not eligible) */}
       {notConverted.length > 0 && (
         <Box sx={{ mt: 3 }}>
-          <Typography variant="subtitle2" fontWeight={700}>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.25 }}>
             Contacted by GL — not converted
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.25 }}>
-            These referrals closed without an enrollment. No bonus is due.
           </Typography>
           <Card variant="outlined" sx={{ borderRadius: "16px", overflow: "hidden" }}>
             <List disablePadding>

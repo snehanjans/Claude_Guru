@@ -33,7 +33,7 @@ const TAB_META: Record<RecommendTab, { title: string; subtitle: string }> = {
   },
   faq: {
     title: "Frequently asked questions",
-    subtitle: "How referrals, bonuses, and payouts work.",
+    subtitle: "How referrals, rewards, and payouts work.",
   },
 };
 
@@ -121,7 +121,7 @@ export default function RecommendPage() {
           </Typography>
           <Typography sx={{ mt: 0.75, mb: 2.5, fontSize: 14, color: "text.secondary", maxWidth: 600, lineHeight: 1.55 }}>
             Recommend an AI-Native Professional program. When someone enrolls through your link you earn 20% of the
-            program fee — or 10% if a Great Learning advisor helps close the enrollment.
+            final program fee — or 10% if a Great Learning advisor helps close the enrollment.
           </Typography>
 
           {/* how it works — always 3-across (stacks on the smallest screens) */}
