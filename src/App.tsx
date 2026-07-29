@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RecommendProvider } from "@/pages/Recommend/RecommendContext";
 import { RecommendFlowDialog } from "@/pages/Recommend/RecommendFlowDialog";
@@ -33,7 +33,8 @@ const RecommendScope = () => (
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Suspense><OldDashboardPage /></Suspense>} />
+      {/* Old dashboard removed from the default landing — reach it via the Dev Panel. */}
+      <Route path="/" element={<Navigate to="/new-dashboard" replace />} />
       <Route path="/old-dashboard" element={<Suspense><OldDashboardPage /></Suspense>} />
       <Route path="/marketing-dashboard" element={<Suspense><MarketingDashboardPage /></Suspense>} />
       <Route path="/ninja-availability" element={<Suspense><NinjaAvailabilityPage /></Suspense>} />
