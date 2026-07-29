@@ -20,7 +20,7 @@ import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
 import { useAppDispatch } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { fmtDateNice, fmtMoney, toYmd } from "@/lib/helpers";
-import { StatusChip, type StatusVariant } from "@/components/shared/StatusChip";
+import { type StatusVariant } from "@/components/shared/StatusChip";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { demoAmbassadorPrograms, GURU_CURRENCY, toGuruCurrency } from "@/data/demo-ambassador";
 import type { AmbassadorProgram, AmbassadorReferral } from "@/lib/types";
@@ -58,9 +58,14 @@ function cutoffYmd(period: Period): string | null {
 
 const PROGRAM_BY_ID = new Map<string, AmbassadorProgram>(demoAmbassadorPrograms.map((p) => [p.id, p]));
 
+// A reward and a checkout path only exist once the learner has actually
+// enrolled — before that (sent / contacted) the lead is still in progress.
+const isEnrolled = (r: AmbassadorReferral) =>
+  r.status === "enrolled" || r.status === "confirmed" || r.status === "paid";
+
 /** AINP-only checkout-path label that also explains the rate, e.g. "Self-checkout · 20%". */
 function pathLabel(r: AmbassadorReferral, program?: AmbassadorProgram): string | null {
-  if (!r.conversionPath) return null;
+  if (!isEnrolled(r) || !r.conversionPath) return null;
   const isSelf = r.conversionPath === "self_checkout";
   const pct = isSelf ? program?.bonusPctSelfCheckout : program?.bonusPctAssisted;
   const name = isSelf ? "Self-checkout" : "Assisted";
@@ -122,9 +127,7 @@ const STATUS_META: Record<
 // Bonuses are credited in the guru's base currency (India-based guru → INR),
 // converting from the learner's payment currency.
 const rewardText = (r: AmbassadorReferral) =>
-  r.status === "not_eligible" || r.status === "not_converted" || r.status === "sent"
-    ? "—"
-    : fmtMoney(toGuruCurrency(r.reward, r.currency), GURU_CURRENCY);
+  isEnrolled(r) ? fmtMoney(toGuruCurrency(r.reward, r.currency), GURU_CURRENCY) : "—";
 
 /* ── Referral row ─────────────────────────────────────────────────────── */
 function ReferralRow({ r, highlighted }: { r: AmbassadorReferral; highlighted: boolean }) {
@@ -199,9 +202,6 @@ function ReferralRow({ r, highlighted }: { r: AmbassadorReferral; highlighted: b
         >
           {rewardText(r)}
         </Typography>
-
-        {/* status */}
-        <StatusChip status={meta.variant} label={meta.label(r)} sx={meta.chipSx} />
 
         {/* expand toggle for not-eligible / not-converted reason */}
         {hasReason && (
