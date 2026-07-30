@@ -27,7 +27,7 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     items: [
       {
         q: "How much do I earn on a referral?",
-        a: "20% of the post-discount price when a learner enrols on their own without any assistance, or 10% when a learning consultant helps close.",
+        a: "20% of the post-discount price when a learner enrolls through you without any assistance, or 10% when a GL learning consultant helps close.",
       },
       {
         q: "When am I paid?",
@@ -35,15 +35,15 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
       },
       {
         q: "Which learners qualify for an eligible referral reward?",
-        a: "All prospective leads except an active lead within the system who has been responsive within the recent 1-month window.",
+        a: "All prospecting learners except those who have already been in touch with Great Learning's in the last one month.",
       },
       {
         q: "What if a learner drops out?",
-        a: "If a learner drops out and is eligible for a refund, no reward is issued.",
+        a: "If a learner drops out and is eligible for a refund, no reward is issued",
       },
       {
         q: "Can I offer my learners a discount?",
-        a: "Yes, you get a discount code for your own learners.",
+        a: "Yes, you get a discount code for your network.",
       },
     ],
   },
@@ -59,12 +59,12 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
         a: "Through your unique landing page, to ensure every enrolment is credited to you.",
       },
       {
-        q: "Does someone help me sell?",
-        a: "A learning consultant is available when needed. A referred candidate has both the options - to self checkout after payment and to schedule a call with an LC before making the payment.",
+        q: "Can someone help me sell?",
+        a: "A learning consultant is available when needed. A referred candidate has both the options - to self checkout after payment and to schedule a call with an LC before making the payment",
       },
       {
         q: "Who handles learner complaints or refunds?",
-        a: "GL does.",
+        a: "Great Learning does.",
       },
     ],
   },
