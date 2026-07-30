@@ -19,6 +19,7 @@ import ListItemText from "@mui/material/ListItemText";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
+import Chip from "@mui/material/Chip";
 import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
 import IconButton from "@mui/material/IconButton";
@@ -65,12 +66,14 @@ interface NavItemCollapsedProps {
   icon: React.ReactNode;
   label: string;
   isActive: boolean;
+  isNew?: boolean;
 }
 
-function NavItemCollapsed({ icon, label, isActive }: NavItemCollapsedProps) {
+function NavItemCollapsed({ icon, label, isActive, isNew }: NavItemCollapsedProps) {
   return (
     <Box
       sx={{
+        position: "relative",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -82,6 +85,25 @@ function NavItemCollapsed({ icon, label, isActive }: NavItemCollapsedProps) {
           : "hsl(var(--md-on-surface-variant))",
       }}
     >
+      {isNew && (
+        <Chip
+          label="New"
+          size="small"
+          sx={{
+            position: "absolute",
+            top: -2,
+            right: 8,
+            zIndex: 1,
+            height: 16,
+            fontSize: "0.6rem",
+            fontWeight: 700,
+            borderRadius: "6px",
+            color: "common.white",
+            bgcolor: "error.main",
+            "& .MuiChip-label": { px: 0.6 },
+          }}
+        />
+      )}
       {/* Pill indicator with ripple */}
       <ButtonBase
         sx={{
@@ -127,9 +149,10 @@ interface NavItemExpandedProps {
   icon: React.ReactNode;
   label: string;
   isActive: boolean;
+  isNew?: boolean;
 }
 
-function NavItemExpanded({ icon, label, isActive }: NavItemExpandedProps) {
+function NavItemExpanded({ icon, label, isActive, isNew }: NavItemExpandedProps) {
   return (
     <ButtonBase
       sx={{
@@ -167,6 +190,21 @@ function NavItemExpanded({ icon, label, isActive }: NavItemExpandedProps) {
       >
         {label}
       </Typography>
+      {isNew && (
+        <Chip
+          label="New"
+          size="small"
+          sx={{
+            height: 18,
+            fontSize: "0.6rem",
+            fontWeight: 700,
+            borderRadius: "6px",
+            color: "common.white",
+            bgcolor: "error.main",
+            "& .MuiChip-label": { px: 0.75 },
+          }}
+        />
+      )}
     </ButtonBase>
   );
 }
@@ -414,6 +452,7 @@ export function Sidebar() {
                     icon={<CampaignOutlinedIcon fontSize="small" />}
                     label="Recommend"
                     isActive={isActive}
+                    isNew
                   />
                 </span>
               </Tooltip>
@@ -422,6 +461,7 @@ export function Sidebar() {
                 icon={<CampaignOutlinedIcon fontSize="small" />}
                 label="Recommend"
                 isActive={isActive}
+                isNew
               />
             )
           }

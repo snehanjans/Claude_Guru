@@ -12,6 +12,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
 
 /**
  * Material 3 Navigation Bar - native Android feel.
@@ -97,6 +98,25 @@ export function MobileNav() {
                     ? <ActiveIcon sx={{ fontSize: 22, color: "hsl(var(--md-primary))" }} />
                     : <Icon sx={{ fontSize: 22, color: "hsl(var(--md-on-surface-variant))" }} />
                   }
+                  {to === "/recommend" && (
+                    <Chip
+                      label="New"
+                      size="small"
+                      sx={{
+                        position: "absolute",
+                        top: -9,
+                        right: -6,
+                        zIndex: 1,
+                        height: 15,
+                        fontSize: "0.55rem",
+                        fontWeight: 700,
+                        borderRadius: "6px",
+                        color: "common.white",
+                        bgcolor: "error.main",
+                        "& .MuiChip-label": { px: 0.6 },
+                      }}
+                    />
+                  )}
                 </Box>
 
                 {/* ── Label ── */}
