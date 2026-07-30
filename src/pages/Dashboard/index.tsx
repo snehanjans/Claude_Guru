@@ -21,6 +21,8 @@ import CallMergeOutlinedIcon from "@mui/icons-material/CallMergeOutlined";
 import ViewListOutlinedIcon from "@mui/icons-material/ViewListOutlined";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
+import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
+import ArrowForwardOutlinedIcon from "@mui/icons-material/ArrowForwardOutlined";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Grid from "@mui/material/Grid";
@@ -41,6 +43,7 @@ import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreOutlinedIcon from "@mui/icons-material/ExpandMoreOutlined";
 import IconButton from "@mui/material/IconButton";
 import { keyframes } from "@mui/system";
+import { alpha } from "@mui/material/styles";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
   setSessionFocus,
@@ -563,6 +566,121 @@ export default function DashboardPage() {
         {/* Left column (2/3) */}
         <Grid size={{ xs: 12, md: 8 }} sx={{ ...(isEmpty && { display: "flex", flexDirection: "column", flex: { xs: 1, sm: "unset" } }) }}>
           <Stack sx={{ ...(isEmpty && { flex: 1 }) }}>
+            {/* ── Great Learning Ambassadors promo banner ── */}
+            <Box
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate("/recommend")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate("/recommend");
+                }
+              }}
+              sx={{
+                position: "relative",
+                overflow: "hidden",
+                borderRadius: "16px",
+                p: { xs: 2.25, sm: 2.75 },
+                mb: { xs: 2, md: 3 },
+                cursor: "pointer",
+                color: "common.white",
+                background: (t) => `linear-gradient(120deg, ${t.palette.primary.dark}, ${t.palette.primary.main})`,
+                transition: "transform 140ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 140ms ease",
+                "@media (hover: hover)": {
+                  "&:hover": { transform: "translateY(-1px)", boxShadow: 6 },
+                },
+                "&:active": { transform: "scale(0.995)" },
+                "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+              }}
+            >
+              {/* decorative brand glow */}
+              <Box
+                aria-hidden
+                sx={{
+                  position: "absolute",
+                  top: -90,
+                  right: -50,
+                  width: 260,
+                  height: 260,
+                  borderRadius: "50%",
+                  background: `radial-gradient(closest-side, ${alpha("#fff", 0.16)}, transparent)`,
+                  pointerEvents: "none",
+                }}
+              />
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                alignItems={{ xs: "flex-start", sm: "center" }}
+                justifyContent="space-between"
+                sx={{ position: "relative" }}
+              >
+                <Stack direction="row" spacing={1.75} alignItems="center">
+                  <Box
+                    sx={{
+                      flexShrink: 0,
+                      width: 46,
+                      height: 46,
+                      borderRadius: "12px",
+                      display: "grid",
+                      placeItems: "center",
+                      bgcolor: alpha("#fff", 0.16),
+                    }}
+                  >
+                    <CampaignOutlinedIcon sx={{ fontSize: 24 }} />
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.25 }}>
+                      <Chip
+                        label="New"
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: "0.6rem",
+                          fontWeight: 700,
+                          borderRadius: "6px",
+                          color: "common.white",
+                          bgcolor: "error.main",
+                          "& .MuiChip-label": { px: 0.75 },
+                        }}
+                      />
+                      <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", opacity: 0.85 }}>
+                        GREAT LEARNING AMBASSADORS
+                      </Typography>
+                    </Stack>
+                    <Typography sx={{ fontSize: { xs: 16, sm: 18 }, fontWeight: 800, letterSpacing: "-0.01em", lineHeight: 1.25 }}>
+                      Recommend, and earn on every enrollment
+                    </Typography>
+                    <Typography sx={{ mt: 0.25, fontSize: 13, opacity: 0.85, maxWidth: 520, lineHeight: 1.5 }}>
+                      Share Great Learning's AI-Native Professional programs with your network and earn up to 20% on every enrollment through you.
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Button
+                  variant="contained"
+                  disableElevation
+                  endIcon={<ArrowForwardOutlinedIcon sx={{ fontSize: 18 }} />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate("/recommend");
+                  }}
+                  sx={{
+                    flexShrink: 0,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    borderRadius: "10px",
+                    px: 2.25,
+                    color: "primary.main",
+                    bgcolor: "common.white",
+                    alignSelf: { xs: "stretch", sm: "auto" },
+                    "&:hover": { bgcolor: alpha("#fff", 0.9) },
+                  }}
+                >
+                  Explore programs
+                </Button>
+              </Stack>
+            </Box>
+
             {/* Mobile tasks (horizontal scroll). On xs the card framing is
                 stripped so task items get the full page width; tablets and
                 up keep the original paper card. */}
