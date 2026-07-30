@@ -10,10 +10,10 @@ const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
 const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
   {
-    title: "GL Guru Ambassadors",
+    title: "Great Learning Ambassadors",
     items: [
       {
-        q: "What is GL Guru Ambassadors?",
+        q: "What is the GL Ambassadors program?",
         a: "An exclusive referral program meant for our Gurus, where you can recommend Great Learning's AI-native for professionals program to your own network and earn on every enrolment.",
       },
       {

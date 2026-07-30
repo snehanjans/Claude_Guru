@@ -1066,11 +1066,16 @@ export default function ProgramDetailPage() {
               {program.blurb}
             </Typography>
 
-            {/* meta — icon / label row */}
-            <Stack
-              direction="row"
-              spacing={{ xs: 4, sm: 6 }}
-              sx={{ mt: 3, flexWrap: "wrap", rowGap: 2.5 }}
+            {/* meta — equal-width columns, left-grouped (fixed tracks, not 1fr) */}
+            <Box
+              sx={{
+                mt: 3,
+                display: "grid",
+                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(4, 152px)" },
+                justifyContent: "start",
+                columnGap: { xs: 3, sm: 4 },
+                rowGap: 2.5,
+              }}
             >
               {[
                 { k: "Duration", v: program.durationLabel, icon: ScheduleOutlinedIcon },
@@ -1078,19 +1083,19 @@ export default function ProgramDetailPage() {
                 { k: "Format", v: "Mentored live sessions weekly", icon: PublicOutlinedIcon },
                 { k: "Tools", v: "10+ AI tools", icon: AutoAwesomeOutlinedIcon },
               ].map((f) => (
-                <Box key={f.k}>
+                <Box key={f.k} sx={{ minWidth: 0 }}>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <f.icon sx={{ fontSize: 18, color: "text.primary" }} />
+                    <f.icon sx={{ fontSize: 18, color: "text.primary", flexShrink: 0 }} />
                     <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{f.k}</Typography>
                   </Stack>
                   <Typography
-                    sx={{ mt: 0.5, pl: "26px", color: "text.secondary", fontSize: 14, ...TABULAR }}
+                    sx={{ mt: 0.5, pl: "26px", color: "text.secondary", fontSize: 14, lineHeight: 1.4, ...TABULAR }}
                   >
                     {f.v}
                   </Typography>
                 </Box>
               ))}
-            </Stack>
+            </Box>
 
             <Divider sx={{ my: 3 }} />
 
