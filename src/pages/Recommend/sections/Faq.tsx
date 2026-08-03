@@ -35,7 +35,7 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
       },
       {
         q: "When am I paid?",
-        a: "Once your referral enrols, their cohort has started, and the refund and full course fee payment window has closed in about 3 weeks from the date of the commencement of the cohort, your reward is confirmed. For all such eligible referrals, payments are released once a month, together with your regular Guru payment cycle.",
+        a: "Your reward is confirmed once your referral has enrolled, joined their cohort, and paid the full course fee. This usually takes about 3 weeks from the cohort start. Eligible rewards are paid out monthly, alongside your regular Guru payments.",
       },
       {
         q: "What if a learner drops out?",
