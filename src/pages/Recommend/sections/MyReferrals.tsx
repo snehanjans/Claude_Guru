@@ -399,7 +399,7 @@ export function MyReferralsSection() {
             In progress
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.25 }}>
-            Being worked by GL — no enrollment yet.
+            Learners who have requested more information.
           </Typography>
           <Card variant="outlined" sx={{ borderRadius: "16px", overflow: "hidden" }}>
             <List disablePadding>
@@ -437,7 +437,7 @@ export function MyReferralsSection() {
       {notConverted.length > 0 && (
         <Box sx={{ mt: 3 }}>
           <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.25 }}>
-            Contacted by GL — not converted
+            Not eligible or not converted
           </Typography>
           <Card variant="outlined" sx={{ borderRadius: "16px", overflow: "hidden" }}>
             <List disablePadding>
