@@ -49,7 +49,7 @@ export const GL_WEBINAR_DECK = "https://www.mygreatlearning.com/gl-collective/we
 export const demoAmbassadorPrograms: AmbassadorProgram[] = [
   {
     id: "ai-native-professional",
-    scholarshipCode: "AINP20OFF",
+    scholarshipCode: "GURUAINP20",
     scholarshipPct: 20,
     earningModel: "percentage",
     bonusPctSelfCheckout: AINP_PCT_SELF_CHECKOUT,
@@ -83,7 +83,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
   },
   {
     id: "ainp-hr",
-    scholarshipCode: "AINPHR20OFF",
+    scholarshipCode: "GURUAINPHR20",
     scholarshipPct: 20,
     earningModel: "percentage",
     bonusPctSelfCheckout: AINP_PCT_SELF_CHECKOUT,
@@ -117,7 +117,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
   },
   {
     id: "ainp-marketing",
-    scholarshipCode: "AINPMKT20OFF",
+    scholarshipCode: "GURUAINPMKT20",
     scholarshipPct: 20,
     earningModel: "percentage",
     bonusPctSelfCheckout: AINP_PCT_SELF_CHECKOUT,
@@ -151,7 +151,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
   },
   {
     id: "ainp-finance",
-    scholarshipCode: "AINPFIN20OFF",
+    scholarshipCode: "GURUAINPFIN20",
     scholarshipPct: 20,
     earningModel: "percentage",
     bonusPctSelfCheckout: AINP_PCT_SELF_CHECKOUT,

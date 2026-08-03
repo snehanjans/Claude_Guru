@@ -555,7 +555,7 @@ export default function ProgramDetailPage() {
   // The guru shares a clean referral link — program page + ?ref=<guru id>. The
   // destination redirects it to the full utm_source/medium/campaign URL, so the
   // UTM params never surface. The learner-facing promo code is separate and
-  // shared per program (program.scholarshipCode, e.g. AINP20OFF).
+  // shared per program (program.scholarshipCode, e.g. GURUAINP20).
   const link = program ? `${PROGRAM_PAGE_URLS[program.id] ?? REFERRAL_BASE}?ref=${GURU_REF}` : "";
 
   // Reset to Overview whenever a different program opens.
