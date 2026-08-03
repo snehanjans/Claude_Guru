@@ -399,7 +399,7 @@ export function MyReferralsSection() {
             In progress
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.25 }}>
-            Learners who have requested more information.
+            Speaking with a GL learning consultant.
           </Typography>
           <Card variant="outlined" sx={{ borderRadius: "16px", overflow: "hidden" }}>
             <List disablePadding>
