@@ -5,7 +5,6 @@ import Card from "@mui/material/Card";
 import Collapse from "@mui/material/Collapse";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
-import Link from "@mui/material/Link";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import MenuItem from "@mui/material/MenuItem";
@@ -17,8 +16,6 @@ import type { SxProps, Theme } from "@mui/material/styles";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import GroupAddOutlinedIcon from "@mui/icons-material/GroupAddOutlined";
 import AutorenewRoundedIcon from "@mui/icons-material/AutorenewRounded";
-import { useAppDispatch } from "@/store";
-import { pushToast } from "@/store/slices/toastsSlice";
 import { fmtDateNice, fmtMoney, toYmd } from "@/lib/helpers";
 import { type StatusVariant } from "@/components/shared/StatusChip";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -131,7 +128,6 @@ const rewardText = (r: AmbassadorReferral) =>
 
 /* ── Referral row ─────────────────────────────────────────────────────── */
 function ReferralRow({ r, highlighted }: { r: AmbassadorReferral; highlighted: boolean }) {
-  const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const meta = STATUS_META[r.status];
   const isNotEligible = r.status === "not_eligible";
@@ -238,24 +234,6 @@ function ReferralRow({ r, highlighted }: { r: AmbassadorReferral; highlighted: b
                 ? (r.notEligibleReason ?? "This referral was not eligible for a reward.")
                 : (r.notConvertedReason ?? "The LC reached out, but this learner didn't enroll.")}
             </Typography>
-            {isNotEligible && (
-              <Link
-                component="button"
-                type="button"
-                variant="caption"
-                onClick={() =>
-                  dispatch(
-                    pushToast({
-                      title: "Thanks for flagging",
-                      description: "The program office will take another look.",
-                    }),
-                  )
-                }
-                sx={{ mt: 0.75, fontWeight: 600 }}
-              >
-                Think this is wrong?
-              </Link>
-            )}
           </Box>
         </Collapse>
       )}
