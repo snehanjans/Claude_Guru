@@ -16,6 +16,8 @@ import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
+import Switch from "@mui/material/Switch";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import CodeOutlinedIcon from "@mui/icons-material/CodeOutlined";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
@@ -36,6 +38,7 @@ import {
   setSelectedRole,
   toggleRole,
   setGuruStage,
+  toggleNoPromoCode,
   GURU_ROLES,
   GURU_STAGES,
   type GuruRole,
@@ -61,6 +64,7 @@ export function DevPanel() {
   const selectedRole = useAppSelector((s) => s.devPanel.selectedRole);
   const selectedRoles = useAppSelector((s) => s.devPanel.selectedRoles);
   const guruStage = useAppSelector((s) => s.devPanel.guruStage);
+  const noPromoCode = useAppSelector((s) => s.devPanel.noPromoCode);
 
   // Cmd/Ctrl + K shortcut
   useEffect(() => {
@@ -271,6 +275,36 @@ export function DevPanel() {
               );
             })}
           </Stack>
+        </Box>
+
+        {/* Recommend options — promo-code mode */}
+        <Box sx={{ px: 2.5, pt: 0.5, pb: 1.5 }}>
+          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
+            <CampaignOutlinedIcon sx={{ fontSize: 14, color: "text.secondary" }} />
+            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.6rem" }}>
+              Recommend options
+            </Typography>
+          </Stack>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={noPromoCode}
+                onChange={() => dispatch(toggleNoPromoCode())}
+              />
+            }
+            label={
+              <Box>
+                <Typography variant="body2" sx={{ fontSize: "0.8rem", fontWeight: 500 }}>
+                  No guru promo code
+                </Typography>
+                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem", display: "block" }}>
+                  Referrals use the code on the program page
+                </Typography>
+              </Box>
+            }
+            sx={{ ml: 0, alignItems: "center", "& .MuiFormControlLabel-label": { ml: 0.75 } }}
+          />
         </Box>
 
         <Divider sx={{ my: 1.5, mx: 2.5 }} />

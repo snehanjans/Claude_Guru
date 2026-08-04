@@ -377,6 +377,9 @@ export type BroadcastAsset = {
   id: string;
   label: string;
   caption: string;
+  /** Promo-free variant: no guru-held [scholarship code]; points referrals to
+      the code on the program page. Used when devPanel.noPromoCode is on. */
+  captionNoCode: string;
 };
 
 // ─── Preferences Type ───────────────────────────────────────────────────────

@@ -67,7 +67,7 @@ import {
   GURU_REF,
   GURU_LEARNERS_IMPACTED,
 } from "@/data/demo-ambassador";
-import { useAppDispatch } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { EmptyState } from "@/components/shared/EmptyState";
 
@@ -543,6 +543,7 @@ export default function ProgramDetailPage() {
   const { programId } = useParams<{ programId: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const noPromoCode = useAppSelector((s) => s.devPanel.noPromoCode);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [tab, setTab] = useState<"overview" | "collaterals" | "faq">("overview");
   const [faqExpanded, setFaqExpanded] = useState<string | false>("0-0");
@@ -592,6 +593,11 @@ export default function ProgramDetailPage() {
       </Box>
     );
   }
+
+  // When the guru gets no personal promo code, collateral uses the promo-free
+  // caption variant (points referrals to the code on the program page).
+  const captionFor = (a: (typeof demoBroadcastCollateral)[number]) =>
+    noPromoCode ? a.captionNoCode : a.caption;
 
   // Fill a collateral template with this program's details (link appended for the copy payload).
   const fillCollateral = (caption: string) =>
@@ -685,7 +691,7 @@ export default function ProgramDetailPage() {
     dispatch(pushToast({ title: "Image downloaded", description: `${label} saved.` }));
   };
 
-  type Collateral = { id: string; label: string; caption: string };
+  type Collateral = { id: string; label: string; caption: string; captionNoCode: string };
 
   // Per-platform hint shown in the message panel's info box.
   const INFO_TEXT: Record<string, string> = {
@@ -723,7 +729,7 @@ export default function ProgramDetailPage() {
         Message to post
       </Typography>
       <Typography variant="body2" sx={{ lineHeight: 1.55, whiteSpace: "pre-line", color: "text.primary" }}>
-        {renderCaption(asset.caption)}
+        {renderCaption(captionFor(asset))}
       </Typography>
       <Typography
         variant="body2"
@@ -822,7 +828,7 @@ export default function ProgramDetailPage() {
               <Typography sx={{ fontSize: 10, opacity: 0.7 }}>mygreatlearning.com</Typography>
             </Box>
           </Stack>
-          <Typography sx={{ fontSize: 13, lineHeight: 1.45 }}>{renderRichText(fillCollateral(asset.caption))}</Typography>
+          <Typography sx={{ fontSize: 13, lineHeight: 1.45 }}>{renderRichText(fillCollateral(captionFor(asset)))}</Typography>
           <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5} sx={{ mt: 0.25 }}>
             <Typography sx={{ fontSize: 10, opacity: 0.6 }}>12:24 PM</Typography>
             <DoneAllRoundedIcon sx={{ fontSize: 15, color: "#53bdeb" }} />
@@ -855,7 +861,7 @@ export default function ProgramDetailPage() {
       </Box>
       <Box sx={{ p: 1.5 }}>
         <Typography variant="body2" sx={{ lineHeight: 1.55, whiteSpace: "pre-line" }}>
-          {renderCaption(asset.caption)}
+          {renderCaption(captionFor(asset))}
         </Typography>
         <Typography variant="body2" sx={{ mt: 1, color: "primary.main", fontWeight: 600, wordBreak: "break-all" }}>
           {link}
@@ -895,7 +901,7 @@ export default function ProgramDetailPage() {
       </Stack>
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", py: 2 }}>
         <Typography sx={{ fontSize: 15, fontWeight: 700, lineHeight: 1.4, textShadow: "0 1px 8px rgba(0,0,0,0.35)" }}>
-          {renderRichText(fillCollateral(asset.caption))}
+          {renderRichText(fillCollateral(captionFor(asset)))}
         </Typography>
       </Box>
       <Box
@@ -1188,10 +1194,10 @@ export default function ProgramDetailPage() {
                 }}
               />
               <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
-                Tagged with your ID — every visit and enrollment is tracked back to you.
+                Tagged with your ID, every visit and enrollment is identified as your referral.
               </Typography>
 
-              {/* 2 — learner promo code */}
+              {/* 2 — learner promo code (or, in no-code mode, a page-code note) */}
               <Typography
                 sx={{
                   fontSize: "0.7rem",
@@ -1205,49 +1211,72 @@ export default function ProgramDetailPage() {
               >
                 Learner promo code
               </Typography>
-              <TextField
-                fullWidth
-                value={program.scholarshipCode}
-                InputProps={{
-                  readOnly: true,
-                  sx: {
-                    fontFamily: "monospace",
-                    fontWeight: 800,
-                    fontSize: 18,
-                    letterSpacing: "0.03em",
+              {noPromoCode ? (
+                <Stack
+                  direction="row"
+                  spacing={1.25}
+                  alignItems="flex-start"
+                  sx={{
+                    p: 1.5,
                     borderRadius: "10px",
-                    bgcolor: "background.paper",
-                    ...TABULAR,
-                  },
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Tooltip title={copiedKey === "code" ? "Copied" : "Copy code"}>
-                        <IconButton
-                          size="small"
-                          aria-label="Copy promo code"
-                          onClick={() =>
-                            copy("code", program.scholarshipCode, "Promo code copied to clipboard.")
-                          }
-                          sx={{
-                            color: copiedKey === "code" ? "success.main" : "primary.main",
-                            transition: `transform 130ms ${EASE_OUT}`,
-                            "&:active": { transform: "scale(0.97)" },
-                          }}
-                        >
-                          {copiedKey === "code" ? (
-                            <CheckRoundedIcon fontSize="small" />
-                          ) : (
-                            <ContentCopyOutlinedIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </Tooltip>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
-                Learners apply this at checkout for {program.scholarshipPct}% off.
-              </Typography>
+                    bgcolor: "action.hover",
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <LocalOfferOutlinedIcon sx={{ fontSize: 18, color: "primary.main", mt: 0.25, flexShrink: 0 }} />
+                  <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+                    Your referrals get {program.scholarshipPct}% off with the promo code shown on the
+                    program page.
+                  </Typography>
+                </Stack>
+              ) : (
+                <>
+                  <TextField
+                    fullWidth
+                    value={program.scholarshipCode}
+                    InputProps={{
+                      readOnly: true,
+                      sx: {
+                        fontFamily: "monospace",
+                        fontWeight: 800,
+                        fontSize: 18,
+                        letterSpacing: "0.03em",
+                        borderRadius: "10px",
+                        bgcolor: "background.paper",
+                        ...TABULAR,
+                      },
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip title={copiedKey === "code" ? "Copied" : "Copy code"}>
+                            <IconButton
+                              size="small"
+                              aria-label="Copy promo code"
+                              onClick={() =>
+                                copy("code", program.scholarshipCode, "Promo code copied to clipboard.")
+                              }
+                              sx={{
+                                color: copiedKey === "code" ? "success.main" : "primary.main",
+                                transition: `transform 130ms ${EASE_OUT}`,
+                                "&:active": { transform: "scale(0.97)" },
+                              }}
+                            >
+                              {copiedKey === "code" ? (
+                                <CheckRoundedIcon fontSize="small" />
+                              ) : (
+                                <ContentCopyOutlinedIcon fontSize="small" />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+                    Learners apply this at checkout for {program.scholarshipPct}% off.
+                  </Typography>
+                </>
+              )}
 
               <Divider sx={{ my: 1.75 }} />
 
@@ -1433,9 +1462,9 @@ export default function ProgramDetailPage() {
                 const done = copiedKey === key;
                 const media = COLLATERAL_MEDIA[asset.id];
                 // Full post the guru shares: the message plus their id-tagged link.
-                const body = `${fillCollateral(asset.caption)}\n\n${link}`;
+                const body = `${fillCollateral(captionFor(asset))}\n\n${link}`;
                 // LinkedIn-style truncation of the post text for the preview.
-                const postText = fillCollateral(asset.caption);
+                const postText = fillCollateral(captionFor(asset));
                 const liIsLong = postText.length > 160;
                 const liText = liIsLong ? postText.slice(0, 160).replace(/\s+\S*$/, "") : postText;
                 return (
@@ -1680,7 +1709,7 @@ export default function ProgramDetailPage() {
                             variant="body2"
                             sx={{ lineHeight: 1.55, whiteSpace: "pre-line", color: "text.primary" }}
                           >
-                            {renderCaption(asset.caption)}
+                            {renderCaption(captionFor(asset))}
                           </Typography>
                           <Typography
                             variant="body2"
@@ -1837,7 +1866,7 @@ export default function ProgramDetailPage() {
                           color="text.secondary"
                           sx={{ lineHeight: 1.5, whiteSpace: "pre-line" }}
                         >
-                          {renderCaption(asset.caption)}
+                          {renderCaption(captionFor(asset))}
                         </Typography>
                         <Typography
                           variant="body2"

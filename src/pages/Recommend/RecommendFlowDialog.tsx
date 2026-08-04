@@ -19,7 +19,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { alpha, useTheme } from "@mui/material/styles";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import RedeemOutlinedIcon from "@mui/icons-material/RedeemOutlined";
-import { useAppDispatch } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { fmtDateNice, fmtUsd, fmtInr } from "@/lib/helpers";
 import { demoAmbassadorPrograms } from "@/data/demo-ambassador";
@@ -52,6 +52,7 @@ export function RecommendFlowDialog() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const dispatch = useAppDispatch();
+  const noPromoCode = useAppSelector((s) => s.devPanel.noPromoCode);
   const { flowOpen, flowProgramId, closeFlow, addReferral, referrals } = useRecommend();
 
   const [step, setStep] = useState(0);
@@ -191,7 +192,7 @@ export function RecommendFlowDialog() {
                       tabular
                     />
                   )}
-                  {program && <Row label="Scholarship code" value={program.scholarshipCode} tabular />}
+                  {program && !noPromoCode && <Row label="Scholarship code" value={program.scholarshipCode} tabular />}
                   {program && <Row label="You earn" value={earningValue(program)} tabular />}
                   {program && <Row label="Payout" value={program.payoutTiming} />}
                 </Stack>
@@ -211,15 +212,27 @@ export function RecommendFlowDialog() {
             >
               <RedeemOutlinedIcon sx={{ fontSize: 20, color: "primary.main", mt: 0.25 }} />
               <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-                They will receive your scholarship:{" "}
-                <Box component="span" sx={{ fontWeight: 700 }}>
-                  {program?.scholarshipPct}% off {program?.title}
-                </Box>
-                {" "}with code{" "}
-                <Box component="span" sx={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                  {program?.scholarshipCode}
-                </Box>
-                .
+                {noPromoCode ? (
+                  <>
+                    They get{" "}
+                    <Box component="span" sx={{ fontWeight: 700 }}>
+                      {program?.scholarshipPct}% off {program?.title}
+                    </Box>
+                    {" "}using the promo code on the program page.
+                  </>
+                ) : (
+                  <>
+                    They will receive your scholarship:{" "}
+                    <Box component="span" sx={{ fontWeight: 700 }}>
+                      {program?.scholarshipPct}% off {program?.title}
+                    </Box>
+                    {" "}with code{" "}
+                    <Box component="span" sx={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                      {program?.scholarshipCode}
+                    </Box>
+                    .
+                  </>
+                )}
               </Typography>
             </Stack>
           </Stack>

@@ -5,6 +5,7 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { useAppSelector } from "@/store";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
@@ -42,8 +43,8 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
         a: "If your referral drops out and is eligible for a refund, no reward is issued. Some learners also pay in two installments in such cases, your reward is credited once they've paid the full course fee.",
       },
       {
-        q: "Can I offer my referrals a discount?",
-        a: "Yes, you get a 20% discount code that you can share with all your referrals. They can apply this code during fee payment to get a 20% off in the program fees.",
+        q: "Can I offer my referrals a promo code?",
+        a: "Yes, you get a 20% promo code that you can share with all your referrals. They can apply this code during fee payment to get a 20% off in the program fees.",
       },
     ],
   },
@@ -52,7 +53,7 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     items: [
       {
         q: "What does Great Learning provide to support during the referral process?",
-        a: "We provide you with a personalized program page, ready to share posts and messages; a 20% discount code for all your referrals; and a dashboard where you can track every referral from interest to enrollment.",
+        a: "We provide you with a personalized program page, ready to share posts and messages; a 20% promo code for all your referrals; and a dashboard where you can track every referral from interest to enrollment.",
       },
       {
         q: "How are my referrals tracked?",
@@ -70,13 +71,30 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
   },
 ];
 
+const NO_PROMO_ANSWERS: Record<string, string> = {
+  "Can I offer my referrals a promo code?":
+    "Yes. Your referrals get 20% off by applying the promo code shown on the program page.",
+  "What does Great Learning provide to support during the referral process?":
+    "We provide you with a personalized program page, ready to share posts and messages; a 20% promo code your referrals can claim on the program page; and a dashboard where you can track every referral from interest to enrollment.",
+};
+
 export function FaqSection() {
   const [expanded, setExpanded] = useState<string | false>("0-0");
+  const noPromoCode = useAppSelector((s) => s.devPanel.noPromoCode);
+
+  const groups = noPromoCode
+    ? FAQ_GROUPS.map((group) => ({
+        ...group,
+        items: group.items.map((item) =>
+          NO_PROMO_ANSWERS[item.q] ? { ...item, a: NO_PROMO_ANSWERS[item.q] } : item,
+        ),
+      }))
+    : FAQ_GROUPS;
 
   return (
     <Box sx={{ maxWidth: 760 }}>
-      {FAQ_GROUPS.map((group, g) => (
-        <Box key={group.title} sx={{ mb: g < FAQ_GROUPS.length - 1 ? 3.5 : 0 }}>
+      {groups.map((group, g) => (
+        <Box key={group.title} sx={{ mb: g < groups.length - 1 ? 3.5 : 0 }}>
           <Typography
             variant="h6"
             sx={{ fontWeight: 700, fontSize: "1.15rem", letterSpacing: "-0.01em", mb: 1.5 }}
