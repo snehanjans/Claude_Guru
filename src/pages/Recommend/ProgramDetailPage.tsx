@@ -1197,34 +1197,24 @@ export default function ProgramDetailPage() {
                 Tagged with your ID, every visit and enrollment is identified as your referral.
               </Typography>
 
-              {/* 2 — learner promo code (or, in no-code mode, a page-code note) */}
-              <Typography
-                sx={{
-                  fontSize: "0.7rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  color: "text.secondary",
-                  mt: 2,
-                  mb: 0.75,
-                }}
-              >
-                Learner promo code
-              </Typography>
+              {/* 2 — learner promo code field (or, in no-code mode, a page-code note) */}
               {noPromoCode ? (
                 <Stack
                   direction="row"
                   spacing={1.25}
                   alignItems="flex-start"
                   sx={{
+                    mt: 2,
                     p: 1.5,
                     borderRadius: "10px",
-                    bgcolor: "action.hover",
+                    bgcolor: (t) =>
+                      t.palette.mode === "dark" ? "rgba(251,191,36,0.12)" : "rgba(217,119,6,0.09)",
                     border: "1px solid",
-                    borderColor: "divider",
+                    borderColor: (t) =>
+                      t.palette.mode === "dark" ? "rgba(251,191,36,0.35)" : "rgba(217,119,6,0.28)",
                   }}
                 >
-                  <LocalOfferOutlinedIcon sx={{ fontSize: 18, color: "primary.main", mt: 0.25, flexShrink: 0 }} />
+                  <LocalOfferOutlinedIcon sx={{ fontSize: 18, color: "var(--gl-warning-icon)", mt: 0.25, flexShrink: 0 }} />
                   <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
                     Your referrals get {program.scholarshipPct}% off with the promo code shown on the
                     program page.
@@ -1235,6 +1225,7 @@ export default function ProgramDetailPage() {
                   <TextField
                     fullWidth
                     value={program.scholarshipCode}
+                    sx={{ mt: 2 }}
                     InputProps={{
                       readOnly: true,
                       sx: {
@@ -1282,19 +1273,16 @@ export default function ProgramDetailPage() {
 
               {/* 3 — collaterals shortcut (tonal CTA) */}
               <Button
-                variant="text"
+                variant="contained"
                 disableElevation
                 endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 18 }} />}
                 onClick={() => setTab("collaterals")}
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,
-                  color: "primary.main",
-                  bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
                   borderRadius: "10px",
                   px: 1.75,
                   py: 0.75,
-                  "&:hover": { bgcolor: (t) => alpha(t.palette.primary.main, 0.16) },
                   transition: `transform 130ms ${EASE_OUT}, background-color 130ms ${EASE_OUT}`,
                   "&:active": { transform: "scale(0.97)" },
                   "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
