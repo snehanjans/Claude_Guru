@@ -120,8 +120,8 @@ export default function RecommendPage() {
             Recommend, and earn on every enrollment
           </Typography>
           <Typography sx={{ mt: 0.75, mb: 2.5, fontSize: 14, color: "text.secondary", maxWidth: 600, lineHeight: 1.55 }}>
-            Recommend an AI-Native Professional program. When someone enrolls through your link you earn 20% of the
-            final program fee — or 10% if a Great Learning advisor helps close the enrollment.
+            Recommend an AI-Native Professional program. When someone enrolls through your link you earn up to 20% of the
+            final program fee.
           </Typography>
 
           {/* how it works — always 3-across (stacks on the smallest screens) */}
