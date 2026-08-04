@@ -64,7 +64,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     price: 999,
     priceInr: 50000,
     nextCohortYmd: "2026-08-17",
-    audienceLine: "Best for: professionals automating everyday workflows with AI",
+    audienceLine: "Best for: Professionals Automating Everyday Workflows with AI",
     curriculum: [
       "AI-native work habits",
       "Prompt workflows that scale",
@@ -90,6 +90,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     bonusPctAssisted: AINP_PCT_ASSISTED,
     payoutTiming: "Paid after the refund window closes",
     title: "AI-Native HR Professional: Workflows and Agents for HR Productivity",
+    audience: "HR professional",
     university: "Great Learning",
     family: "gl",
     oneLiner: "Automate recurring HR work with AI",
@@ -98,7 +99,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     price: 999,
     priceInr: 50000,
     nextCohortYmd: "2026-08-31",
-    audienceLine: "Best for: HR business partners, talent acquisition, and L&D professionals",
+    audienceLine: "Best for: HR Business Partners, Talent Acquisition, and L&D Professionals",
     curriculum: [
       "AI foundations & prompt engineering",
       "Workforce analytics & attrition prediction",
@@ -124,6 +125,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     bonusPctAssisted: AINP_PCT_ASSISTED,
     payoutTiming: "Paid after the refund window closes",
     title: "AI-Native Marketing Professional: Workflows and Agents for Marketing Productivity",
+    audience: "marketing professional",
     university: "Great Learning",
     family: "gl",
     oneLiner: "Automate marketing work with AI agents",
@@ -132,7 +134,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     price: 999,
     priceInr: 50000,
     nextCohortYmd: "2026-09-14",
-    audienceLine: "Best for: content, performance, brand, and social-media marketers",
+    audienceLine: "Best for: Content, Performance, Brand, and Social-Media Marketers",
     curriculum: [
       "AI foundations & brand-voice prompts",
       "AI-powered market & competitor research",
@@ -158,6 +160,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     bonusPctAssisted: AINP_PCT_ASSISTED,
     payoutTiming: "Paid after the refund window closes",
     title: "AI-Native Finance Professional: Workflows and Agents for Finance Productivity",
+    audience: "finance professional",
     university: "Great Learning",
     family: "gl",
     oneLiner: "Automate finance work with AI agents",
@@ -166,7 +169,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     price: 999,
     priceInr: 50000,
     nextCohortYmd: "2026-09-28",
-    audienceLine: "Best for: analysts, accountants, controllers, tax specialists, and auditors",
+    audienceLine: "Best for: Analysts, Accountants, Controllers, Tax Specialists, and Auditors",
     curriculum: [
       "AI literacy & prompt engineering",
       "Regulatory research pipelines",
@@ -199,7 +202,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     mode: "Online",
     price: 4500,
     nextCohortYmd: "2026-09-14",
-    audienceLine: "Best for: professionals building a deep, long-term AI/ML career",
+    audienceLine: "Best for: Professionals Building a Deep, Long-Term AI/ML Career",
     curriculum: [
       "Foundations of machine learning",
       "Deep learning & neural networks",
@@ -231,7 +234,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     mode: "Online",
     price: 5000,
     nextCohortYmd: "2026-09-28",
-    audienceLine: "Best for: engineers pursuing a formal AI & data science credential",
+    audienceLine: "Best for: Engineers Pursuing a Formal AI & Data Science Credential",
     curriculum: [
       "Mathematics for AI",
       "Machine learning",
@@ -263,7 +266,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     mode: "Online · Weekend",
     price: 3000,
     nextCohortYmd: "2026-08-24",
-    audienceLine: "Best for: managers and leaders shaping AI strategy",
+    audienceLine: "Best for: Managers and Leaders Shaping AI Strategy",
     curriculum: [
       "AI landscape for leaders",
       "Building an AI roadmap",
@@ -294,7 +297,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     mode: "Online",
     price: 3200,
     nextCohortYmd: "2026-09-07",
-    audienceLine: "Best for: professionals building agentic AI solutions without code",
+    audienceLine: "Best for: Professionals Building Agentic AI Solutions Without Code",
     curriculum: [
       "Agentic AI foundations",
       "No-code agent platforms",
@@ -379,33 +382,33 @@ export const demoBroadcastCollateral: BroadcastAsset[] = [
     id: "asset-01",
     label: "LinkedIn post",
     caption:
-      "I've mentored [N learners mentored] learners into AI roles. If you're figuring out how to start with AI, [program name] is worth a look. Happy to talk it through. Use [scholarship code] for [percent off]% off.",
+      "I've mentored [N learners mentored] learners into AI roles. If you're [audience]figuring out how to start with AI, [program name] is worth a look. Happy to talk it through. Use [scholarship code] for [percent off]% off.",
     captionNoCode:
-      "I've mentored [N learners mentored] learners into AI roles. If you're figuring out how to start with AI, [program name] is worth a look. Happy to talk it through. Use the promo code on the program page for [percent off]% off.",
+      "I've mentored [N learners mentored] learners into AI roles. If you're [audience]figuring out how to start with AI, [program name] is worth a look. Happy to talk it through. Use the promo code on the program page for [percent off]% off.",
   },
   {
     id: "asset-02",
     label: "WhatsApp broadcast",
     caption:
-      "I've mentored [N learners mentored] learners into AI roles, so I get asked this a lot: how do I actually start with AI? My honest answer these days is [program name]. It's hands-on, short, and built for exactly that starting point. If you're curious, here's [percent off]% off with [scholarship code]. Happy to talk you through it if you want a second opinion first.",
+      "I've mentored [N learners mentored] learners into AI roles, so I get asked this a lot: how do I actually start with AI? My honest answer these days is [program name]. It's hands-on, short, and built for exactly that starting point. If you're [audience]curious about where to begin, here's [percent off]% off with [scholarship code]. Happy to talk you through it if you want a second opinion first.",
     captionNoCode:
-      "I've mentored [N learners mentored] learners into AI roles, so I get asked this a lot: how do I actually start with AI? My honest answer these days is [program name]. It's hands-on, short, and built for exactly that starting point. If you're curious, there's a promo code on the program page for [percent off]% off. Happy to talk you through it if you want a second opinion first.",
+      "I've mentored [N learners mentored] learners into AI roles, so I get asked this a lot: how do I actually start with AI? My honest answer these days is [program name]. It's hands-on, short, and built for exactly that starting point. If you're [audience]curious about where to begin, there's a promo code on the program page for [percent off]% off. Happy to talk you through it if you want a second opinion first.",
   },
   {
     id: "asset-03",
     label: "Email intro",
     caption:
-      "Hi [first name],\nI've mentored [N learners mentored] learners into AI roles at this point, and one question keeps coming up from people just starting out: where do you actually begin?\nLately my answer has been [program name], Great Learning's program for becoming AI-native. It's short, hands-on, and built for exactly that first step, not a long theory-heavy course.\nIf it's useful, here's [percent off]% off with code [scholarship code].\nHappy to talk it through if you want a second opinion before deciding.\n[Your name]",
+      "Hi [first name],\nI've mentored [N learners mentored] learners into AI roles at this point, and one question keeps coming up from people just starting out: where do you actually begin?\nIf you're [audience]figuring out that first step, my answer lately has been [program name], Great Learning's program for becoming AI-native. It's short, hands-on, and built for exactly that first step, not a long theory-heavy course.\nIf it's useful, here's [percent off]% off with code [scholarship code].\nHappy to talk it through if you want a second opinion before deciding.\n[Your name]",
     captionNoCode:
-      "Hi [first name],\nI've mentored [N learners mentored] learners into AI roles at this point, and one question keeps coming up from people just starting out: where do you actually begin?\nLately my answer has been [program name], Great Learning's program for becoming AI-native. It's short, hands-on, and built for exactly that first step, not a long theory-heavy course.\nIf it's useful, the program page has a promo code for [percent off]% off.\nHappy to talk it through if you want a second opinion before deciding.\n[Your name]",
+      "Hi [first name],\nI've mentored [N learners mentored] learners into AI roles at this point, and one question keeps coming up from people just starting out: where do you actually begin?\nIf you're [audience]figuring out that first step, my answer lately has been [program name], Great Learning's program for becoming AI-native. It's short, hands-on, and built for exactly that first step, not a long theory-heavy course.\nIf it's useful, the program page has a promo code for [percent off]% off.\nHappy to talk it through if you want a second opinion before deciding.\n[Your name]",
   },
   {
     id: "asset-04",
     label: "Instagram story",
     caption:
-      "\"Where do I even start with AI?\" That's the question I get most. My answer lately has been [program name]. Hands-on, beginner-friendly, built to get you working with AI, not just reading about it. [percent off]% off with code [scholarship code].",
+      "\"Where do I even start with AI?\" That's the question I get most. If you're [audience]wondering the same, my answer lately has been [program name]. Hands-on, beginner-friendly, built to get you working with AI, not just reading about it. [percent off]% off with code [scholarship code].",
     captionNoCode:
-      "\"Where do I even start with AI?\" That's the question I get most. My answer lately has been [program name]. Hands-on, beginner-friendly, built to get you working with AI, not just reading about it. Use the promo code on the program page for [percent off]% off.",
+      "\"Where do I even start with AI?\" That's the question I get most. If you're [audience]wondering the same, my answer lately has been [program name]. Hands-on, beginner-friendly, built to get you working with AI, not just reading about it. Use the promo code on the program page for [percent off]% off.",
   },
 ];
 

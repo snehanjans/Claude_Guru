@@ -26,13 +26,11 @@ import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
-import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import ScheduleOutlinedIcon from "@mui/icons-material/ScheduleOutlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import PublicOutlinedIcon from "@mui/icons-material/PublicOutlined";
@@ -59,7 +57,7 @@ import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import DoneAllRoundedIcon from "@mui/icons-material/DoneAllRounded";
 import FavoriteBorderRoundedIcon from "@mui/icons-material/FavoriteBorderRounded";
 import type { SvgIconComponent } from "@mui/icons-material";
-import { fmtDateNice, fmtUsd } from "@/lib/helpers";
+import { fmtDateNice, fmtUsd, fmtInr } from "@/lib/helpers";
 import {
   demoAmbassadorPrograms,
   demoBroadcastCollateral,
@@ -600,8 +598,11 @@ export default function ProgramDetailPage() {
     noPromoCode ? a.captionNoCode : a.caption;
 
   // Fill a collateral template with this program's details (link appended for the copy payload).
+  const audienceLeadIn = program.audience ? `a ${program.audience}, ` : "";
+
   const fillCollateral = (caption: string) =>
     caption
+      .replace(/\[audience\]/g, audienceLeadIn)
       .replace(/\[program name\]/g, program.title)
       .replace(/\[start date\]/g, fmtDateNice(program.nextCohortYmd))
       .replace(/\[scholarship code\]/g, program.scholarshipCode)
@@ -612,7 +613,7 @@ export default function ProgramDetailPage() {
   // bold for the on-screen preview. The copied text (via fillCollateral) stays plain.
   const renderCaption = (caption: string): ReactNode => {
     const parts = caption.split(
-      /(\[program name\]|\[start date\]|\[scholarship code\]|\[percent off\]%|\[N learners mentored\]|\[first name\])/g,
+      /(\[audience\]|\[program name\]|\[start date\]|\[scholarship code\]|\[percent off\]%|\[N learners mentored\]|\[first name\])/g,
     );
     const bold = (node: ReactNode, i: number) => (
       <Box key={i} component="span" sx={{ fontWeight: 700 }}>
@@ -621,6 +622,8 @@ export default function ProgramDetailPage() {
     );
     return parts.map((part, i) => {
       switch (part) {
+        case "[audience]":
+          return audienceLeadIn;
         case "[program name]":
           return bold(program.title, i);
         case "[start date]":
@@ -1003,37 +1006,35 @@ export default function ProgramDetailPage() {
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5 }}>
             <Chip
-              label={program.family === "gl" ? "GL program" : "University"}
+              label={
+                program.family === "gl"
+                  ? program.audience
+                    ? `For ${program.audience}s`
+                    : "For other professionals"
+                  : "University"
+              }
               size="small"
               sx={{
                 height: 22,
                 fontSize: "0.68rem",
                 fontWeight: 700,
                 borderRadius: "999px",
-                color: "text.secondary",
-                bgcolor: "action.hover",
+                ...(program.family === "gl"
+                  ? {
+                      color: "primary.main",
+                      bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                      border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.28)}`,
+                    }
+                  : {
+                      color: "var(--gl-program-default-text)",
+                      bgcolor: "var(--gl-program-default-bg)",
+                      border: "1px solid transparent",
+                    }),
               }}
             />
-            {program.isNew && (
-              <Chip
-                label="New"
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: "0.68rem",
-                  fontWeight: 700,
-                  borderRadius: "999px",
-                  color: "primary.main",
-                  bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
-                }}
-              />
-            )}
           </Stack>
           <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}>
             {program.title}
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 0.75, color: "text.secondary" }}>
-            {program.university}
           </Typography>
         </Box>
       </Stack>
@@ -1072,6 +1073,19 @@ export default function ProgramDetailPage() {
               {program.blurb}
             </Typography>
 
+            {/* who it's for */}
+            <Box sx={{ mt: 2.5 }}>
+              <Typography
+                variant="overline"
+                sx={{ display: "block", lineHeight: 1.6, letterSpacing: "0.08em", color: "text.secondary" }}
+              >
+                Who it's for
+              </Typography>
+              <Typography sx={{ fontSize: 15, lineHeight: 1.5, color: "text.primary" }}>
+                {program.audienceLine.replace(/^best for:\s*/i, "")}. No coding experience required.
+              </Typography>
+            </Box>
+
             {/* meta — equal-width columns, left-grouped (fixed tracks, not 1fr) */}
             <Box
               sx={{
@@ -1085,8 +1099,20 @@ export default function ProgramDetailPage() {
             >
               {[
                 { k: "Duration", v: program.durationLabel, icon: ScheduleOutlinedIcon },
-                { k: "Program fee", v: fmtUsd(program.price), icon: PaymentsOutlinedIcon },
-                { k: "Format", v: "Mentored live sessions weekly", icon: PublicOutlinedIcon },
+                {
+                  k: "Program fee",
+                  v: (
+                    <>
+                      {fmtUsd(program.price)}
+                      <Box component="span" sx={{ fontSize: 12 }}> (US and other countries)</Box>
+                      <br />
+                      {fmtInr(program.priceInr ?? 50000)} + GST
+                      <Box component="span" sx={{ fontSize: 12 }}> (India)</Box>
+                    </>
+                  ),
+                  icon: PaymentsOutlinedIcon,
+                },
+                { k: "Format", v: "Live sessions weekly", icon: PublicOutlinedIcon },
                 { k: "Tools", v: "10+ AI tools", icon: AutoAwesomeOutlinedIcon },
               ].map((f) => (
                 <Box key={f.k} sx={{ minWidth: 0 }}>
@@ -1392,48 +1418,6 @@ export default function ProgramDetailPage() {
               </Button>
             </Stack>
 
-            <Divider sx={{ my: 3 }} />
-
-            {/* who it's for + prerequisites */}
-            <SectionLabel icon={<PeopleAltOutlinedIcon sx={{ fontSize: 18, color: "primary.main" }} />}>
-              Who it&rsquo;s for
-            </SectionLabel>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55, mb: 2.75 }}>
-              {program.audienceLine}
-            </Typography>
-
-            <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1.5 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                Prerequisites
-              </Typography>
-              {program.hasTechnicalPrereq && (
-                <Chip
-                  size="small"
-                  icon={<WarningAmberIcon sx={{ fontSize: 14 }} />}
-                  label="Technical prerequisites"
-                  sx={{
-                    height: 22,
-                    fontSize: "0.7rem",
-                    fontWeight: 600,
-                    color: "var(--gl-warning-icon)",
-                    bgcolor: (t) => alpha(t.palette.warning.main, 0.12),
-                    border: (t) => `1px solid ${alpha(t.palette.warning.main, 0.26)}`,
-                    "& .MuiChip-icon": { color: "var(--gl-warning-icon)", ml: 0.5 },
-                  }}
-                />
-              )}
-            </Stack>
-            <Stack direction="row" flexWrap="wrap" useFlexGap spacing={0.75}>
-              {program.prerequisites.map((pr, i) => (
-                <Chip
-                  key={i}
-                  label={pr}
-                  size="small"
-                  variant="outlined"
-                  sx={{ height: 30, fontSize: "0.78rem", borderRadius: "8px", color: "text.secondary", px: 0.5 }}
-                />
-              ))}
-            </Stack>
           </>
         )}
 

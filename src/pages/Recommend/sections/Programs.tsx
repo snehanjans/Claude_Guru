@@ -11,13 +11,11 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import { fmtUsd, fmtInr } from "@/lib/helpers";
 import { demoAmbassadorPrograms } from "@/data/demo-ambassador";
 import { EmptyState } from "@/components/shared/EmptyState";
 import type { AmbassadorProgram } from "@/lib/types";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
-const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 
 const clamp = (lines: number) => ({
   display: "-webkit-box",
@@ -69,10 +67,10 @@ function ProgramCard({ p, onOpen }: { p: AmbassadorProgram; onOpen: () => void }
         <CardContent
           sx={{ p: 2.25, height: "100%", display: "flex", flexDirection: "column", gap: 1 }}
         >
-          {/* family + new */}
+          {/* audience */}
           <Stack direction="row" spacing={0.75} alignItems="center">
             <Chip
-              label={isGl ? "GL program" : "University"}
+              label={isGl ? (p.audience ? `For ${p.audience}s` : "For other professionals") : "University"}
               size="small"
               sx={{
                 height: 22,
@@ -92,80 +90,31 @@ function ProgramCard({ p, onOpen }: { p: AmbassadorProgram; onOpen: () => void }
                     }),
               }}
             />
-            {p.isNew && (
-              <Chip
-                label="New"
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: "0.68rem",
-                  fontWeight: 700,
-                  borderRadius: "999px",
-                  color: "var(--gl-status-confirmed-text)",
-                  bgcolor: "var(--gl-status-confirmed-bg)",
-                  border: "1px solid var(--gl-status-confirmed-border)",
-                }}
-              />
-            )}
           </Stack>
 
           <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.25, ...clamp(2) }}>
             {p.title}
           </Typography>
 
-          {/* meta */}
-          <Stack
-            direction="row"
-            alignItems="center"
-            flexWrap="wrap"
-            sx={{ mt: 0.25, rowGap: 0.5, color: "text.secondary" }}
-          >
-            <Typography variant="caption" sx={{ fontWeight: 600 }}>
-              {p.durationLabel}
-            </Typography>
-            <Box component="span" sx={{ mx: 0.75, opacity: 0.5 }}>
-              ·
-            </Box>
-            <Typography variant="caption" sx={{ fontWeight: 600 }}>
-              10+ AI Tools
-            </Typography>
-            <Box component="span" sx={{ mx: 0.75, opacity: 0.5 }}>
-              ·
-            </Box>
-            <Typography variant="caption" sx={{ fontWeight: 600 }}>
-              Live Sessions
-            </Typography>
-          </Stack>
-
+          {/* meta — duration only (the other bullets were identical on every card) */}
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ fontStyle: "italic" }}
+            sx={{ mt: 0.25, display: "block", fontWeight: 600, color: "text.secondary" }}
           >
-            {p.audienceLine}
+            {p.durationLabel}
           </Typography>
 
-          <Box sx={{ flex: 1 }} />
-
-          <Chip
-            label={
-              p.earningModel === "percentage"
-                ? `Earn up to ${p.bonusPctSelfCheckout}%`
-                : `Earn ${fmtUsd(p.flatBonusUsd ?? 0)} / ${fmtInr(p.flatBonusInr ?? 0)}`
-            }
-            size="small"
-            sx={{
-              alignSelf: "flex-start",
-              mt: 0.5,
-              height: 24,
-              fontWeight: 700,
-              fontSize: "0.72rem",
-              ...TABULAR,
-              color: "var(--gl-status-confirmed-text)",
-              bgcolor: "var(--gl-status-confirmed-bg)",
-              border: "1px solid var(--gl-status-confirmed-border)",
-            }}
-          />
+          <Box sx={{ mt: 0.75 }}>
+            <Typography
+              variant="overline"
+              sx={{ display: "block", lineHeight: 1.6, letterSpacing: "0.08em", color: "text.secondary" }}
+            >
+              Best for
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.primary", fontWeight: 400, lineHeight: 1.4 }}>
+              {p.audienceLine.replace(/^best for:\s*/i, "")}
+            </Typography>
+          </Box>
         </CardContent>
       </CardActionArea>
     </Card>
@@ -184,7 +133,14 @@ export function ProgramsSection() {
   }, []);
 
   // Catalog is GL-branded AINP programs only — university programs are not promotable.
-  const programs = useMemo(() => demoAmbassadorPrograms.filter((p) => p.family === "gl"), []);
+  // Role-specific programs first; the generic "other professionals" one sits last.
+  const programs = useMemo(
+    () =>
+      demoAmbassadorPrograms
+        .filter((p) => p.family === "gl")
+        .sort((a, b) => (a.audience ? 0 : 1) - (b.audience ? 0 : 1)),
+    [],
+  );
 
   return (
     <Box>

@@ -319,6 +319,9 @@ export type AmbassadorProgram = {
   priceInr?: number; // net program fee for India-based learners (INR) — drives INR bonus math
   nextCohortYmd: string; // upcoming cohort start (YYYY-MM-DD)
   audienceLine: string; // "Best for:" style audience descriptor
+  /** Role noun for role-specific collateral, e.g. "HR professional". Omitted on
+      the generic program so its share messages stay role-neutral. */
+  audience?: string;
   curriculum: string[]; // 4–6 short module strings
   prerequisites: string[]; // 1–3 short strings
   hasTechnicalPrereq: boolean;
