@@ -120,8 +120,8 @@ export default function RecommendPage() {
             Recommend, and earn on every enrollment
           </Typography>
           <Typography sx={{ mt: 0.75, mb: 2.5, fontSize: 14, color: "text.secondary", maxWidth: 600, lineHeight: 1.55 }}>
-            Earn 20% when your referral enrols on their own, 10% if a GL advisor helps close. That's up to ₹8,000
-            or $160 per enrolment.
+            Earn 20% when your referral enrols through your link, or 10% if they book a call and a GL learning
+            consultant helps them decide. That's up to ₹8,000 or $160 per enrolment.
           </Typography>
 
           {/* how it works — always 3-across (stacks on the smallest screens) */}
