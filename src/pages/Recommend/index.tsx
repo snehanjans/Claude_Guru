@@ -25,7 +25,7 @@ const TAB_META: Record<RecommendTab, { title: string; subtitle: string }> = {
   programs: {
     title: "Programs to recommend",
     subtitle:
-      "Learners automate real work with AI. Mentored, no coding needed, and money-back guaranteed.",
+      "Learners automate real work with AI. Mentored, no coding needed.",
   },
   referrals: {
     title: "My referrals",

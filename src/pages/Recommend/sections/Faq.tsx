@@ -28,7 +28,11 @@ const FAQ_GROUPS: { title: string; items: { q: string; a: string }[] }[] = [
     items: [
       {
         q: "How much do I earn on a referral?",
-        a: "You earn 20% of the final program price when a referral enrols without any assistance from a GL learning consultant. If a referral schedules a call to know more about the program and a GL learning consultant helps the prospecting learner, you will earn 10% of the final program price as a referral reward.",
+        a: "You earn 20% of the actual collected and realized program fees after any applicable discounts when a referral enrols without any assistance from a GL learning consultant. If a referral schedules a call to know more about the program and a GL learning consultant helps the prospecting learner, you will earn 10% as a referral reward. Discounts are offered to learners from time to time based on the promotions running at that time.",
+      },
+      {
+        q: "What is an eligible referral?",
+        a: "The referral scheme applies to new or inactive prospective learners enrolling in Great Learning programs. The referral would not be eligible for referral fee if Great Learning has engaged in the prior 2 month period with the prospective learner through its own outreach efforts and its counsellors have been supporting the prospective learner's decision making at any time during this month.",
       },
       {
         q: "How can I see the progress/status of my referred candidates?",

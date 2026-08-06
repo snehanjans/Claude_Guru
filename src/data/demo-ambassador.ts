@@ -77,7 +77,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     hasTechnicalPrereq: false,
     isNew: true,
     blurb:
-      "A 6-week mentored program on using AI agents and no-code tools to automate everyday professional work. Comes with a money-back guarantee.",
+      "A 6-week mentored program on using AI agents and no-code tools to automate everyday professional work.",
     message:
       "I'm mentoring on Great Learning's AI-Native Professional program and it's the most practical way I've seen to actually put AI agents to work in your day-to-day. It's mentored, hands-on, and backed by a money-back guarantee. Happy to answer any questions.",
   },
@@ -112,7 +112,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     hasTechnicalPrereq: false,
     isNew: true,
     blurb:
-      "A 6-week mentored program on building AI agents and no-code workflows that automate recurring HR work — with governance and human oversight. Comes with a money-back guarantee.",
+      "A 6-week mentored program on building AI agents and no-code workflows that automate recurring HR work, with governance and human oversight.",
     message:
       "If you work in HR, Great Learning's AI-Native Professional for HR is the most practical way I've seen to put AI agents to work on recurring HR tasks — mentored, hands-on, and no coding required. Happy to answer any questions.",
   },
@@ -147,7 +147,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     hasTechnicalPrereq: false,
     isNew: true,
     blurb:
-      "A 6-week mentored program on building AI agents and no-code workflows that automate recurring marketing work — research, content, campaigns, and reporting — without writing code.",
+      "A 6-week mentored program on building AI agents and no-code workflows that automate recurring marketing work (research, content, campaigns, and reporting) without writing code.",
     message:
       "For marketers, Great Learning's AI-Native Professional for Marketing is a hands-on, mentored path to automating campaigns, research, and reporting with AI — no coding. Ping me if you'd like details.",
   },
@@ -182,7 +182,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     hasTechnicalPrereq: false,
     isNew: true,
     blurb:
-      "A 6-week mentored program on building AI agents and no-code workflows that automate recurring finance work — reporting, analysis, and compliance monitoring — with human validation.",
+      "A 6-week mentored program on building AI agents and no-code workflows that automate recurring finance work (reporting, analysis, and compliance monitoring) with human validation.",
     message:
       "For finance teams, Great Learning's AI-Native Professional for Finance is a mentored, hands-on way to automate reporting, analysis, and compliance with AI agents — no coding. Reach out if you're curious.",
   },
@@ -214,7 +214,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     prerequisites: ["Comfortable with Python", "Basic statistics"],
     hasTechnicalPrereq: true,
     blurb:
-      "A 12-month deep dive into machine learning, deep learning, and production AI — the #1 ranked AI program, with McCombs School of Business faculty.",
+      "A 12-month deep dive into machine learning, deep learning, and production AI, the #1 ranked AI program, with McCombs School of Business faculty.",
     message:
       "If you want to go deep on AI and ML with a top-ranked credential, the PG Program in AI & Machine Learning from McCombs (UT Austin) is hard to beat. I mentor on it and can vouch for the rigour. Let me know if you'd like the syllabus.",
   },
@@ -277,7 +277,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     prerequisites: ["No programming experience required"],
     hasTechnicalPrereq: false,
     blurb:
-      "A 5-month weekend program for leaders on AI strategy, governance, and ROI — no programming experience required, with McCombs (UT Austin) faculty.",
+      "A 5-month weekend program for leaders on AI strategy, governance, and ROI. No programming experience required, with McCombs (UT Austin) faculty.",
     message:
       "For leaders trying to make sense of AI beyond the hype, McCombs' AI PG Program for Leaders cuts straight to strategy, governance, and ROI — and needs no coding. I mentor on it and it's refreshingly practical. Let me know if you'd like details.",
   },
@@ -309,7 +309,7 @@ export const demoAmbassadorPrograms: AmbassadorProgram[] = [
     hasTechnicalPrereq: false,
     isNew: true,
     blurb:
-      "A 14-week program from MIT Professional Education on building agentic AI systems using no-code tools — learn directly from MIT faculty.",
+      "A 14-week program from MIT Professional Education on building agentic AI systems using no-code tools. Learn directly from MIT faculty.",
     message:
       "MIT Professional Education's No Code and Agentic AI program is the clearest path I've found to building real agentic systems without writing code — and you learn from MIT faculty. I mentor learners through it. Reach out if you're curious.",
   },

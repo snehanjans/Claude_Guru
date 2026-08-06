@@ -1352,7 +1352,7 @@ export default function ProgramDetailPage() {
                     {program.bonusPctSelfCheckout}%
                   </Typography>
                   <Typography variant="body2" sx={{ color: "text.primary", lineHeight: 1.45 }}>
-                    of the program fee when your learner enrolls on their own using your link or code
+                    of the program fee when your learner enrolls on their own using your link
                   </Typography>
                 </Stack>
                 <Stack direction="row" spacing={1} alignItems="baseline">
