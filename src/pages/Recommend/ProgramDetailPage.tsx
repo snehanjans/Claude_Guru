@@ -192,7 +192,7 @@ const PROGRAM_FAQ: Record<string, FaqGroup[]> = {
     items: [
       {
         q: "Who will be teaching the program?",
-        a: "The program is led by Dr. Pavankumar Gurazada, Director of Academics for AI at Great Learning.",
+        a: "You'll learn through weekly live mentoring sessions conducted by industry experts. The program curriculum has been designed and curated by Dr. Pavankumar Gurazada, Director of Academics at Great Learning, ensuring a structured, practical, and industry-relevant learning experience.",
       },
       {
         q: "Which AI tools will I learn, and how do they work together?",
