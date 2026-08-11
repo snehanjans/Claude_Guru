@@ -16,7 +16,6 @@ import {
 import { setOpenDeclineReason, setOpenSession } from "@/store/slices/uiSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { toYmd } from "@/lib/helpers";
-import { demoNow } from "@/lib/constants";
 import { SessionCard } from "@/components/shared/SessionCard";
 import {
   DeclineReasonFields,
@@ -48,7 +47,13 @@ export function DeclineReasonDialog() {
   const composedReason = composeDeclineReason(reasonValue, isCareerMentor);
   const canSubmit = canSubmitDeclineReason(reasonValue, isCareerMentor);
 
-  const nowMs = demoNow.getTime();
+  /**
+   * Real clock, not `demoNow`. The calendar renders "today" from the real clock and
+   * the session data sits months after the demo date, so measuring against `demoNow`
+   * put every session ~113 days out — the 48-hour notice could never fire. The other
+   * two decline surfaces already use the real clock.
+   */
+  const nowMs = Date.now();
 
   const handleClose = () => {
     dispatch(setOpenDeclineReason(false));
@@ -59,7 +64,8 @@ export function DeclineReasonDialog() {
   const handleSubmit = () => {
     if (!declineSessionFocus || !canSubmit) return;
     const s = declineSessionFocus;
-    dispatch(declineSession({ id: s.id, dateYmd: toYmd(demoNow), reason: composedReason }));
+    // Stamp the day it was actually declined, matching the other decline surfaces.
+    dispatch(declineSession({ id: s.id, dateYmd: toYmd(new Date()), reason: composedReason }));
     dispatch(setOpenDeclineReason(false));
     dispatch(setOpenSession(false));
     dispatch(setSessionFocus(null));
