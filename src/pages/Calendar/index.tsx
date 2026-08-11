@@ -263,7 +263,6 @@ export default function CalendarPage() {
 
   /* ── redux state ──────────────────────────────────────────────────────── */
   const sessions = useAppSelector((s) => s.sessions.items);
-  const confirmations = useAppSelector((s) => s.sessions.confirmations);
   const sessionDeclined = useAppSelector((s) => s.sessions.sessionDeclined);
   const recentlyConfirmedIds = useAppSelector((s) => s.sessions.recentlyConfirmedIds);
   const calendarViewMode = useAppSelector((s) => s.calendar.calendarViewMode);
@@ -648,21 +647,6 @@ export default function CalendarPage() {
   }, [recentlyConfirmedIds, dispatch]);
 
 
-  /* ── Summary stats for "week at a glance" ─────────────────────────── */
-  const weekStats = useMemo(() => {
-    const weekSessions = sessionsThisWeek.filter((s) => !sessionDeclined[s.id]);
-    const confirmedCount = weekSessions.filter((s) => confirmations[s.id]).length;
-    const unconfirmedCount = weekSessions.filter((s) => !confirmations[s.id]).length;
-    const pendingReqs = requestsThisWeek.filter((r) => r.response === "pending").length;
-    // Available slots = pattern blocks + one-off for the week
-    const availSlots = weekDays.reduce((count, d) => {
-      const dayLong = DOW_LONG[d.getDay() === 0 ? 6 : d.getDay() - 1];
-      return count + patterns.filter((p) => p.days.includes(dayLong)).length
-        + oneOffAvail.filter((b) => b.dateYmd === toYmd(d)).length;
-    }, 0);
-    return { total: weekSessions.length, confirmedCount, unconfirmedCount, pendingReqs, availSlots };
-  }, [sessionsThisWeek, sessionDeclined, confirmations, requestsThisWeek, weekDays, patterns, oneOffAvail]);
-
   // Collect all availability blocks for popover
   const allAvailBlocks = useMemo(() => {
     const blocks = [...oneOffAvail];
@@ -695,6 +679,43 @@ export default function CalendarPage() {
   }, [calendarViewMode, weekDays, anchorDate]);
 
   const gridCols = visibleDays.length;
+
+  /* ── Summary stats, scoped to whatever the current view shows ──────────
+     The days on screen differ per view, so the summary follows them rather than
+     always reporting the week. Month view isn't a slice of `weekDays`, so its
+     range is built from `monthStart`. */
+  const summaryDays = useMemo(() => {
+    if (calendarViewMode !== "month") return visibleDays;
+    const first = new Date(monthStart);
+    const month = first.getMonth();
+    const days: Date[] = [];
+    for (let d = first; d.getMonth() === month; d = addDays(d, 1)) days.push(d);
+    return days;
+  }, [calendarViewMode, visibleDays, monthStart]);
+
+  const summaryLabel =
+    calendarViewMode === "month" ? "This month"
+      : calendarViewMode === "day" ? "This day"
+        : calendarViewMode === "weekend" ? "This weekend"
+          : calendarViewMode === "weekdays" ? "Weekdays"
+            : "This week";
+
+  const summaryStats = useMemo(() => {
+    const ymds = new Set(summaryDays.map(toYmd));
+    // Filter every session, not the week-scoped selector — month view reaches
+    // beyond the week those selectors cover.
+    const inRange = isEmpty ? [] : sessions.filter((s) => ymds.has(s.dateYmd));
+    // No confirmed/unconfirmed split — scheduling confirms, so those counts were
+    // "all of them" and "none of them". Declines are the live number instead.
+    const declinedCount = inRange.filter((s) => !!sessionDeclined[s.id]).length;
+    // Open slots = pattern blocks + one-offs falling on these days
+    const availSlots = summaryDays.reduce((count, d) => {
+      const dayLong = DOW_LONG[d.getDay() === 0 ? 6 : d.getDay() - 1];
+      return count + patterns.filter((p) => p.days.includes(dayLong)).length
+        + oneOffAvail.filter((b) => b.dateYmd === toYmd(d)).length;
+    }, 0);
+    return { total: inRange.length - declinedCount, declinedCount, availSlots };
+  }, [summaryDays, sessions, sessionDeclined, patterns, oneOffAvail, isEmpty]);
 
   // Sync mobile selected day when view mode changes
   useEffect(() => {
@@ -1776,7 +1797,9 @@ export default function CalendarPage() {
                     ) : (
                       <Box sx={{ width: 7, height: 7, borderRadius: '50%', border: `1.5px dashed ${item.color}`, flexShrink: 0 }} />
                     )}
-                    <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.62rem' }}>
+                    {/* Primary text, not `text.disabled` — the swatch carries the status
+                        colour, so the label only has to be readable. */}
+                    <Typography variant="caption" sx={{ color: 'text.primary', fontSize: '0.62rem' }}>
                       {item.label}
                     </Typography>
                   </Box>
@@ -2312,38 +2335,56 @@ export default function CalendarPage() {
       {/* ══════════════════════════════════════════════════════════════════ */}
       {/* ── SUMMARY CARDS ────────────────────────────────────────────── */}
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* ── Week at a glance ──────────────────────────────────────────── */}
+      {/* ── Week at a glance ──────────────────────────────────────────────
+          One inline row rather than a grid of tiles, and only figures that can
+          actually vary. Confirmed/Unconfirmed went with confirmation itself
+          (Confirmed always equalled Events, Unconfirmed was always zero), and
+          Pending went with request slots — sessions arrive pre-scheduled, so
+          nothing is awaiting a response. */}
       <Box sx={{ flexShrink: 0 }}>
-        <Typography variant="caption" fontWeight={600} color="text.disabled" sx={{ letterSpacing: "0.06em", textTransform: "uppercase", fontSize: "0.65rem", mb: 1, display: "block" }}>
-          This week
-        </Typography>
-        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(5, 1fr)" }, gap: 1 }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          useFlexGap
+          flexWrap="wrap"
+          sx={{
+            columnGap: 1.25,
+            rowGap: 0.5,
+            px: 1.5,
+            py: 0.875,
+            borderRadius: "12px",
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: "background.paper",
+          }}
+        >
+          <Typography
+            variant="caption"
+            fontWeight={700}
+            sx={{ letterSpacing: "0.06em", textTransform: "uppercase", fontSize: "0.62rem", color: "text.primary" }}
+          >
+            {summaryLabel}
+          </Typography>
           {[
-            { value: weekStats.total, label: "Events", color: "text.primary" },
-            { value: weekStats.confirmedCount, label: "Confirmed", color: "success.main" },
-            { value: weekStats.unconfirmedCount, label: "Unconfirmed", color: weekStats.unconfirmedCount > 0 ? "warning.main" : "text.secondary" },
-            { value: weekStats.pendingReqs, label: "Pending", color: weekStats.pendingReqs > 0 ? "info.main" : "text.secondary" },
-            { value: weekStats.availSlots, label: "Slots open", color: "text.secondary" },
-          ].map((s) => (
-            <Box
-              key={s.label}
-              sx={{
-                py: 1.25,
-                px: 1.5,
-                borderRadius: "12px",
-                border: "1px solid",
-                borderColor: "divider",
-                bgcolor: "background.paper",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <Typography sx={{ fontSize: "0.82rem", fontWeight: 500, color: "text.secondary" }}>{s.label}</Typography>
-              <Typography sx={{ fontSize: "1.25rem", fontWeight: 700, color: s.color, fontVariantNumeric: "tabular-nums" }}>{s.value}</Typography>
-            </Box>
+            { value: summaryStats.total, label: "scheduled", color: "text.primary" },
+            { value: summaryStats.availSlots, label: "open", color: "text.primary" },
+            { value: summaryStats.declinedCount, label: "declined", color: summaryStats.declinedCount > 0 ? "error.main" : "text.primary" },
+          ].map((s, i) => (
+            <Stack key={s.label} direction="row" alignItems="center" sx={{ columnGap: 1.25 }}>
+              {i > 0 && (
+                <Box component="span" aria-hidden sx={{ color: "text.disabled", fontSize: "0.72rem" }}>
+                  ·
+                </Box>
+              )}
+              <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", whiteSpace: "nowrap" }}>
+                <Box component="span" sx={{ fontWeight: 700, color: s.color, fontVariantNumeric: "tabular-nums" }}>
+                  {s.value}
+                </Box>{" "}
+                {s.label}
+              </Typography>
+            </Stack>
           ))}
-        </Box>
+        </Stack>
       </Box>
 
       {/* ── Mobile FAB ────────────────────────────────────────────────────── */}
