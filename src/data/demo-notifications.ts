@@ -5,7 +5,7 @@ export const demoNotifications: NotificationItem[] = [
   {
     id: "n1",
     title: "Confirm upcoming sessions",
-    body: "You have upcoming sessions that need confirmation by Wednesday.",
+    body: "Upcoming sessions are waiting on confirmation before Wednesday.",
     createdAtYmd: "2026-03-16",
     read: false,
     ctaLabel: "Review confirmations",
@@ -23,7 +23,7 @@ export const demoNotifications: NotificationItem[] = [
   {
     id: "n3",
     title: "Calendar sync tip",
-    body: "Connect Google Calendar to avoid double-booking.",
+    body: "Connecting Google Calendar keeps double-bookings off your schedule.",
     createdAtYmd: "2026-03-15",
     read: true,
     ctaLabel: "Open availability",
@@ -32,7 +32,7 @@ export const demoNotifications: NotificationItem[] = [
   {
     id: "n4",
     title: "Reminder: content is live",
-    body: "This week's session content is now available. Please review before you teach.",
+    body: "This week's session content is now available to review before your next session.",
     createdAtYmd: "2026-03-16",
     read: false,
     ctaLabel: "Open courses",
@@ -41,7 +41,7 @@ export const demoNotifications: NotificationItem[] = [
   {
     id: "n5",
     title: "Schedule updated",
-    body: "One session time changed. Please re-check your calendar and confirm availability.",
+    body: "One session moved to a new time — your calendar shows the update.",
     createdAtYmd: "2026-03-16",
     read: false,
     ctaLabel: "View weekly view",
@@ -49,8 +49,8 @@ export const demoNotifications: NotificationItem[] = [
   },
   {
     id: "n6",
-    title: "Action needed: mark availability",
-    body: "Your availability window is ending soon. Extend it to keep getting assigned sessions.",
+    title: "Availability window ending soon",
+    body: "Extending it keeps sessions coming your way.",
     createdAtYmd: "2026-03-15",
     read: false,
     ctaLabel: "Update availability",
@@ -59,7 +59,7 @@ export const demoNotifications: NotificationItem[] = [
   {
     id: "n7",
     title: "Conflict detected",
-    body: "We detected a potential conflict with your connected calendar. Review busy slots.",
+    body: "Your connected calendar shows a possible clash with a session.",
     createdAtYmd: "2026-03-15",
     read: false,
     ctaLabel: "Review busy",
@@ -77,14 +77,14 @@ export const demoNotifications: NotificationItem[] = [
   {
     id: "n9",
     title: "Reminder: 30 minutes to go",
-    body: "Your next session starts in 30 minutes. Join early to set up polls and check chat.",
+    body: "Your next session starts in 30 minutes. Joining early leaves time to set up polls and check the chat.",
     createdAtYmd: "2026-03-14",
     read: true,
   },
   {
     id: "n10",
     title: "New cohort starting soon",
-    body: "A new cohort begins next month. Keep your availability updated if you want more sessions.",
+    body: "A new cohort begins next month, so more sessions will be up for grabs.",
     createdAtYmd: "2026-03-14",
     read: true,
     ctaLabel: "Extend window",
@@ -93,7 +93,7 @@ export const demoNotifications: NotificationItem[] = [
   {
     id: "n11",
     title: "Ops note",
-    body: "Please confirm/unavailable by Wednesday so we can reassign in time if needed.",
+    body: "Telling us by Wednesday leaves time to reassign anything you can't take.",
     createdAtYmd: "2026-03-13",
     read: true,
     ctaLabel: "Review confirmations",
@@ -118,7 +118,7 @@ export const demoNotifications: NotificationItem[] = [
   {
     id: "n14",
     title: "Join reminder: session in 30 minutes",
-    body: "Your session starts in 30 minutes. Join now to test audio/video and be ready for learners.",
+    body: "Your session starts in 30 minutes. Joining early leaves time to check your audio and video.",
     createdAtYmd: "2026-03-16",
     happeningNow: true,
     sessionDateYmd: "2026-03-16",

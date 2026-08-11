@@ -44,6 +44,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import dayjs from "dayjs";
 import { compactDatePickerProps, compactTimePickerProps } from "@/lib/pickerProps";
+import { END_DATE_ORDER_MSG, END_TIME_ORDER_MSG } from "@/lib/constants";
 import {
   DeclineReasonFields,
   SchedulerContactNotice,
@@ -249,10 +250,10 @@ export function MarkNotAvailableDialog() {
       {/* ── Header ── */}
       <Box sx={{ px: 2, pt: 2, pb: 1.25, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: "0.9rem" }}>
-          {editingLeaveGroupId ? "Edit leave" : step === 2 ? "Conflicts found" : "Mark leave"}
+          {editingLeaveGroupId ? "Edit leave" : step === 2 ? "Overlapping events" : "Mark leave"}
         </Typography>
         <Chip
-          label={step === 2 ? `${totalConflicts} conflict${totalConflicts > 1 ? "s" : ""}` : "Leave"}
+          label={step === 2 ? `${totalConflicts} overlapping` : "Leave"}
           size="small"
           sx={{
             height: 20,
@@ -269,7 +270,7 @@ export function MarkNotAvailableDialog() {
         {step === 1 && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
-              Block off dates when you're not available for sessions.
+              Dates you block off won't be offered for sessions.
             </Typography>
 
             {/* Date range — same DatePicker fields the calendar's leave popover uses. */}
@@ -317,8 +318,8 @@ export function MarkNotAvailableDialog() {
             {naStartDate && naEndDate && !isValid && (
               <Typography variant="caption" sx={{ color: "error.main", fontSize: "0.7rem" }}>
                 {naStartDate > naEndDate
-                  ? "End date must be on or after the start date."
-                  : "End time must be after the start time."}
+                  ? END_DATE_ORDER_MSG
+                  : END_TIME_ORDER_MSG}
               </Typography>
             )}
 
@@ -350,7 +351,7 @@ export function MarkNotAvailableDialog() {
             >
               <WarningAmberOutlinedIcon sx={{ fontSize: 16, flexShrink: 0, mt: "1px", color: "var(--gl-status-declined-text)" }} />
               <Typography variant="body2" sx={{ fontSize: "0.82rem", color: "var(--gl-status-declined-text)", fontWeight: 500 }}>
-                These events overlap with your leave and will need attention.
+                These events overlap with your leave.
               </Typography>
             </Box>
 
@@ -407,7 +408,7 @@ export function MarkNotAvailableDialog() {
                       Auto-decline overlapping events
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.72rem" }}>
-                      Conflicting sessions will be automatically declined
+                      We'll decline them and share your reason.
                     </Typography>
                   </Box>
                 }

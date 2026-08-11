@@ -176,7 +176,7 @@ export function ProgramsSection() {
         <EmptyState
           icon={<SchoolOutlinedIcon />}
           title="No programs available yet"
-          subtitle="There are no programs open for recommendation right now. Check back soon."
+          subtitle="Nothing is open for recommendation right now. New ones open regularly."
         />
       ) : (
         <Grid container spacing={2}>

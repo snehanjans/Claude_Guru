@@ -366,7 +366,7 @@ export function MyReferralsSection() {
           color="text.secondary"
           sx={{ py: 4, textAlign: "center" }}
         >
-          No referrals {PERIOD_SUFFIX[period]}. Try a longer time period.
+          No referrals {period === "all" ? "across all time" : PERIOD_SUFFIX[period]} yet.
         </Typography>
       )}
 

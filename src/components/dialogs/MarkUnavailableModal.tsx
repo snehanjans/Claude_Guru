@@ -103,7 +103,7 @@ export function MarkUnavailableModal() {
           )}
 
           <Typography variant="body2" color="text.secondary">
-            Select a reason:
+            Reason
           </Typography>
 
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -121,7 +121,7 @@ export function MarkUnavailableModal() {
 
           {selectedReason === "Other" && (
             <TextField
-              label="Please specify"
+              label="Other reason"
               value={customReason}
               onChange={(e) => setCustomReason(e.target.value)}
               onKeyDown={(e) => {

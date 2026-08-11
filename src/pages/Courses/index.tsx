@@ -489,7 +489,7 @@ export default function CoursesPage() {
             <EmptyState
               icon={<SearchIcon />}
               title={`No results for \u201c${searchQuery.trim()}\u201d`}
-              subtitle="Try adjusting your search term or check the spelling"
+              subtitle="A different or shorter search term may turn up more"
             />
           ) : (
             <EmptyState

@@ -238,8 +238,8 @@ const AvailabilityBuilderDialog = () => {
       handleClose();
     } catch {
       dispatch(pushToast({
-        title: "Save failed",
-        description: "Could not save availability. Please try again.",
+        title: "Availability didn't save",
+        description: "Something went wrong on our side — please try again.",
         variant: "destructive",
       }));
     }

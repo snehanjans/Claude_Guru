@@ -319,7 +319,7 @@ export default function SupportPage() {
                   ? "Star any ticket to pin it here for quick access later"
                   : activeTab === "closed"
                     ? "Resolved tickets will appear here for your records"
-                    : "Try adjusting your search or filters to find what you need"
+                    : "Fewer filters or a shorter search may show more tickets"
             }
             compact
           />

@@ -28,7 +28,7 @@ export function AvailabilityNudgeDialog() {
       <Box sx={{ p: 3 }}>
         <DialogTitle sx={{ padding: 0 }}>Update your availability</DialogTitle>
         <Box sx={{ mt: 1, fontSize: "0.875rem", color: "hsl(var(--md-on-surface-variant))" }}>
-          If you do not update your availability, ops will not be able to schedule sessions with you.
+          Keeping your availability current is how we schedule sessions with you.
         </Box>
         <DialogActions sx={{ padding: 0, marginTop: "1.25rem", flexDirection: { xs: "column", sm: "row" }, gap: { xs: 1, sm: 0 }, "& > :not(:first-of-type)": { ml: { xs: 0, sm: 1 } } }}>
           <Button variant="text" color="inherit" onClick={() => dispatch(setOpenAvailabilityNudge(false))} sx={{ width: { xs: "100%", sm: "auto" } }}>

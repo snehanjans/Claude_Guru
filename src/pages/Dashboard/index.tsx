@@ -546,7 +546,7 @@ export default function DashboardPage() {
               Set your availability to get started
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 420, mx: 'auto', fontSize: { xs: '0.8rem', md: '0.875rem' } }}>
-              Without marking your availability, no activities will be scheduled with you. Let learners know when you're free so they can book time with you.
+              Activities get scheduled around the times you mark. Let learners know when you're free so they can book time with you.
             </Typography>
           </Box>
           <Button
@@ -738,7 +738,7 @@ export default function DashboardPage() {
                   if (needsWednesdayConfirm) {
                     tasks.push({ priority: 1, key: "confirm", node: (
                       <Box onClick={handleHighlightUnconfirmed} sx={{ ...taskCardSx, cursor: "pointer" }}>
-                        <TaskCard chipLabel={`${upcomingSessions.length - confirmedCount} pending`} chipColor="var(--gl-status-declined-text)" chipBg="var(--gl-status-declined-bg)" chipBorder="var(--gl-status-declined-border)" title="Confirm upcoming activities" description="Confirm by Wed 6 PM to finalize allocations." shortDescription="Confirm by Wed 6 PM." />
+                        <TaskCard chipLabel={`${upcomingSessions.length - confirmedCount} pending`} chipColor="var(--gl-status-declined-text)" chipBg="var(--gl-status-declined-bg)" chipBorder="var(--gl-status-declined-border)" title="Confirm upcoming activities" description="Confirming by Wed 6 PM helps us finalise allocations." shortDescription="Confirmations close Wed 6 PM." />
                       </Box>
                     )});
                   }
@@ -746,7 +746,7 @@ export default function DashboardPage() {
                   if (!hasUserConfiguredAvailability) {
                     tasks.push({ priority: 2, key: "avail-setup", node: (
                       <Box sx={taskCardSx}>
-                        <TaskCard chipLabel="Needs update" chipColor="var(--gl-status-declined-text)" chipBg="var(--gl-status-declined-bg)" chipBorder="var(--gl-status-declined-border)" title="Add your availability" description={`Keep availability up-to-date for next ${rangeDays} days.`} action={<Button size="small" variant="contained" onClick={() => dispatch(setOpenAvailability(true))}>Update availability</Button>} />
+                        <TaskCard chipLabel="Needs update" chipColor="var(--gl-status-declined-text)" chipBg="var(--gl-status-declined-bg)" chipBorder="var(--gl-status-declined-border)" title="Add your availability" description={`Sessions are being planned for the next ${rangeDays} days.`} action={<Button size="small" variant="contained" onClick={() => dispatch(setOpenAvailability(true))}>Update availability</Button>} />
                       </Box>
                     )});
                   } else {
@@ -768,7 +768,7 @@ export default function DashboardPage() {
                   if (!calendarConnected) {
                     tasks.push({ priority: 4, key: "calendar", node: (
                       <Box sx={taskCardSx}>
-                        <TaskCard chipLabel="Not connected" chipColor="var(--gl-status-pending-text)" chipBg="var(--gl-status-pending-bg)" chipBorder="var(--gl-status-pending-border)" title="Avoid double booking" description="Connect calendar to detect conflicts." action={<Button size="small" variant="contained">Connect Google Calendar</Button>} />
+                        <TaskCard chipLabel="Not connected" chipColor="var(--gl-status-pending-text)" chipBg="var(--gl-status-pending-bg)" chipBorder="var(--gl-status-pending-border)" title="Avoid double booking" description="A connected calendar spots clashes for you." action={<Button size="small" variant="contained">Connect Google Calendar</Button>} />
                       </Box>
                     )});
                   }
@@ -1469,7 +1469,7 @@ export default function DashboardPage() {
                                 sx={{ height: 20, fontSize: "0.7rem", fontWeight: 600, bgcolor: "var(--gl-status-declined-text)", color: "common.white" }}
                               />
                               <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5, display: { xs: "none", sm: "block" } }}>
-                                Past due date with grading unfinished
+                                Grading still open past the due date.
                               </Typography>
                             </AccordionSummary>
                             <AccordionDetails sx={{ p: { xs: 1.25, sm: 1.5 } }}>
@@ -1828,14 +1828,14 @@ export default function DashboardPage() {
                   if (needsWednesdayConfirm) {
                     dt.push({ p: 1, k: "confirm", n: (
                       <Box onClick={handleHighlightUnconfirmed} sx={{ cursor: "pointer" }}>
-                        <TaskCard chipLabel={`${upcomingSessions.length - confirmedCount} pending`} chipColor="var(--gl-status-declined-text)" chipBg="var(--gl-status-declined-bg)" chipBorder="var(--gl-status-declined-border)" title="Confirm upcoming activities" description="Confirm by Wed 6 PM to finalize allocations." />
+                        <TaskCard chipLabel={`${upcomingSessions.length - confirmedCount} pending`} chipColor="var(--gl-status-declined-text)" chipBg="var(--gl-status-declined-bg)" chipBorder="var(--gl-status-declined-border)" title="Confirm upcoming activities" description="Confirming by Wed 6 PM helps us finalise allocations." />
                       </Box>
                     )});
                   }
 
                   if (!hasUserConfiguredAvailability) {
                     dt.push({ p: 2, k: "avail-setup", n: (
-                      <TaskCard chipLabel="Needs update" chipColor="var(--gl-status-declined-text)" chipBg="var(--gl-status-declined-bg)" chipBorder="var(--gl-status-declined-border)" title="Add your availability" description={`Keep availability up-to-date for next ${rangeDays} days.`} />
+                      <TaskCard chipLabel="Needs update" chipColor="var(--gl-status-declined-text)" chipBg="var(--gl-status-declined-bg)" chipBorder="var(--gl-status-declined-border)" title="Add your availability" description={`Sessions are being planned for the next ${rangeDays} days.`} />
                     )});
                   } else {
                     dt.push({ p: 3, k: "avail-summary", n: (
@@ -1867,7 +1867,7 @@ export default function DashboardPage() {
 
                   if (!calendarConnected) {
                     dt.push({ p: 4, k: "calendar", n: (
-                      <TaskCard chipLabel="Not connected" chipColor="var(--gl-status-pending-text)" chipBg="var(--gl-status-pending-bg)" chipBorder="var(--gl-status-pending-border)" title="Avoid double booking" description="Connect calendar to detect conflicts." action={<Button size="small" variant="contained">Connect Google Calendar</Button>} />
+                      <TaskCard chipLabel="Not connected" chipColor="var(--gl-status-pending-text)" chipBg="var(--gl-status-pending-bg)" chipBorder="var(--gl-status-pending-border)" title="Avoid double booking" description="A connected calendar spots clashes for you." action={<Button size="small" variant="contained">Connect Google Calendar</Button>} />
                     )});
                   }
 

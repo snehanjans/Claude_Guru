@@ -15,7 +15,7 @@ import { useAppSelector, useAppDispatch } from "@/store";
 import { setOpenAddAvailability } from "@/store/slices/uiSlice";
 import { addOneOffAvail } from "@/store/slices/availabilitySlice";
 import { pushToast } from "@/store/slices/toastsSlice";
-import { timeOptions12 } from "@/lib/constants";
+import { timeOptions12, END_TIME_ORDER_MSG } from "@/lib/constants";
 import { parseHHMM, fmtTime12, fmtDateNice } from "@/lib/helpers";
 
 /**
@@ -79,7 +79,7 @@ export function AddAvailabilityModal() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <Box sx={{ border: 1, borderColor: 'divider', bgcolor: 'action.hover', p: 1.5 }}>
             <Typography variant="body2" color="text.secondary">
-              Add a one-off time slot when you are available for sessions.
+              A one-off slot marks a single date you're available for sessions.
             </Typography>
           </Box>
 
@@ -122,7 +122,7 @@ export function AddAvailabilityModal() {
 
           {date && !isValid && (
             <Typography variant="caption" sx={{ color: 'error.main' }}>
-              End time must be after start time.
+              {END_TIME_ORDER_MSG}
             </Typography>
           )}
         </Box>

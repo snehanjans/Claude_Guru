@@ -162,6 +162,21 @@ function timeToPercent(mins: number) {
   return ((mins - CAL_START) / (CAL_END - CAL_START)) * 100;
 }
 
+/** 2px on every edge so neighbouring tiles never share a border. */
+const TILE_INSET_PX = 2;
+
+/** Absolute box for a time-grid tile, inset so back-to-back events read as separate. */
+function tileBox(startMin: number, endMin: number) {
+  const topPct = timeToPercent(startMin);
+  const heightPct = timeToPercent(endMin) - topPct;
+  return {
+    top: `calc(${topPct}% + ${TILE_INSET_PX}px)`,
+    // Floor the height: a 15-minute slot is only ~10px tall at GRID_ROW_PX = 42,
+    // so a naive `- 4px` would nearly collapse it.
+    height: `max(calc(${heightPct}% - ${TILE_INSET_PX * 2}px), 8px)`,
+  };
+}
+
 /** Hours to render on the time axis (12 AM … 11 PM - 24 rows). */
 const HOUR_LABELS: number[] = (() => {
   const arr: number[] = [];
@@ -849,7 +864,7 @@ export default function CalendarPage() {
               Set your availability to get started
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 420, mx: 'auto' }}>
-              Without marking your availability, no events will be scheduled with you. Let learners know when you're free so they can book time with you.
+              Events get scheduled around the times you mark. Let learners know when you're free so they can book time with you.
             </Typography>
           </Box>
           <Button
@@ -888,8 +903,8 @@ export default function CalendarPage() {
             >
               <LightbulbOutlinedIcon sx={{ fontSize: 17, color: "success.dark" }} />
               <Typography sx={{ fontSize: 12.5, color: "success.dark", flex: 1 }}>
-                <Box component="span" sx={{ fontWeight: 700 }}>Block off your time:</Box>{" "}
-                click and drag down any day on the calendar to mark your availability or leave.
+                <Box component="span" sx={{ fontWeight: 700 }}>Faster way:</Box>{" "}
+                dragging down any day on the calendar marks availability or leave.
               </Typography>
               <IconButton size="small" onClick={dismissSpotNudge} aria-label="Dismiss tip" sx={{ color: "success.dark", p: 0.25 }}>
                 <CloseRoundedIcon sx={{ fontSize: 16 }} />
@@ -1002,8 +1017,7 @@ export default function CalendarPage() {
                           onClick={() => { dispatch(setSessionFocus(s)); dispatch(setOpenSessionDetails(true)); }}
                           sx={{
                             position: 'absolute',
-                            top: `${topPct}%`,
-                            height: `${blockHeight}%`,
+                            ...tileBox(s.start, s.end),
                             left: 52,
                             right: 4,
                             bgcolor: sColors.bg,
@@ -1016,7 +1030,8 @@ export default function CalendarPage() {
                             overflow: 'hidden',
                             fontFamily: 'inherit',
                             zIndex: 5,
-                            minHeight: totalPx * blockHeight / 100,
+                            // Mirror tileBox's inset, or this floor would cancel it out.
+                            minHeight: Math.max((totalPx * blockHeight) / 100 - TILE_INSET_PX * 2, 8),
                           }}
                         >
                           <Typography sx={{ fontSize: '0.7rem', color: sColors.text, fontWeight: 500, lineHeight: '14px' }} noWrap>
@@ -1033,8 +1048,6 @@ export default function CalendarPage() {
                   {requestsThisWeek
                     .filter((r) => r.dateYmd === mobileSelectedDay && r.response === "pending")
                     .map((r) => {
-                      const topPct = timeToPercent(r.start);
-                      const blockHeight = timeToPercent(r.end) - topPct;
                       return (
                         <Box
                           key={r.id}
@@ -1042,8 +1055,7 @@ export default function CalendarPage() {
                           onClick={() => { dispatch(setRequestFocus(r)); dispatch(setOpenRequest(true)); }}
                           sx={{
                             position: 'absolute',
-                            top: `${topPct}%`,
-                            height: `${blockHeight}%`,
+                            ...tileBox(r.start, r.end),
                             left: 52,
                             right: 4,
                             bgcolor: 'var(--gl-cal-request-pending-bg)',
@@ -1388,18 +1400,16 @@ export default function CalendarPage() {
                         const e2 = dragSel?.ymd === ymd
                           ? Math.max(dragSel.aMin, dragSel.bMin)
                           : pendingSpot!.end;
-                        const top = timeToPercent(s);
-                        const h = timeToPercent(Math.max(e2, s + SPOT_SNAP)) - top;
+                        const endMin = Math.max(e2, s + SPOT_SNAP);
                         // Once released (pending), the block reflects the chosen kind.
                         const isLeave = !!pendingSpot && pendingSpot.ymd === ymd && spotKind === 'leave';
                         return (
                           <Box
                             sx={{
                               position: 'absolute',
-                              left: 0,
-                              right: 0,
-                              top: `${top}%`,
-                              height: `${h}%`,
+                              left: TILE_INSET_PX,
+                              right: TILE_INSET_PX,
+                              ...tileBox(s, endMin),
                               bgcolor: isLeave ? (t) => alpha(t.palette.error.main, 0.12) : 'var(--gl-cal-avail-bg)',
                               border: isLeave ? '1.5px dashed' : '1.5px solid',
                               borderColor: isLeave ? 'error.main' : 'success.main',
@@ -1412,7 +1422,7 @@ export default function CalendarPage() {
                             }}
                           >
                             <Typography sx={{ fontSize: 10, fontWeight: 700, color: isLeave ? 'error.main' : 'success.dark' }} noWrap>
-                              {fmtTime12(s)} – {fmtTime12(Math.max(e2, s + SPOT_SNAP))}
+                              {fmtTime12(s)} – {fmtTime12(endMin)}
                             </Typography>
                           </Box>
                         );
@@ -1460,10 +1470,9 @@ export default function CalendarPage() {
                           key={`busy-${b.id}`}
                           sx={{
                             position: 'absolute',
-                            left: 0,
-                            right: 0,
-                            top: `${timeToPercent(b.start)}%`,
-                            height: `${timeToPercent(b.end) - timeToPercent(b.start)}%`,
+                            left: TILE_INSET_PX,
+                            right: TILE_INSET_PX,
+                            ...tileBox(b.start, b.end),
                             bgcolor: 'var(--gl-cal-busy-bg)',
                             borderLeft: '3px solid var(--gl-cal-busy-border)',
                             borderRadius: '8px',
@@ -1489,10 +1498,9 @@ export default function CalendarPage() {
                           }}
                           sx={{
                             position: 'absolute',
-                            left: 0,
-                            right: 0,
-                            top: `${timeToPercent(n.start)}%`,
-                            height: `${timeToPercent(n.end) - timeToPercent(n.start)}%`,
+                            left: TILE_INSET_PX,
+                            right: TILE_INSET_PX,
+                            ...tileBox(n.start, n.end),
                             bgcolor: 'var(--gl-cal-leave-bg)',
                             border: '1.5px dashed',
                             borderColor: 'error.main',
@@ -1504,7 +1512,6 @@ export default function CalendarPage() {
                             pt: 0.25,
                             overflow: 'hidden',
                             cursor: 'pointer',
-                            width: '100%',
                             fontFamily: 'inherit',
                             textAlign: 'left',
                           }}
@@ -1535,10 +1542,9 @@ export default function CalendarPage() {
                             }}
                             sx={{
                               position: 'absolute',
-                              left: `calc(${(col / numCols) * 100}% + 1px)`,
-                              width: `calc(${(1 / numCols) * 100}% - 2px)`,
-                              top: `${timeToPercent(p.start)}%`,
-                              height: `${timeToPercent(p.end) - timeToPercent(p.start)}%`,
+                              left: `calc(${(col / numCols) * 100}% + ${TILE_INSET_PX}px)`,
+                              width: `calc(${(1 / numCols) * 100}% - ${TILE_INSET_PX * 2}px)`,
+                              ...tileBox(p.start, p.end),
                               bgcolor: rv.bg,
                               border: '1.5px dashed',
                               borderColor: rv.border,
@@ -1576,10 +1582,9 @@ export default function CalendarPage() {
                             }}
                             sx={{
                               position: 'absolute',
-                              left: `calc(${(col / numCols) * 100}% + 1px)`,
-                              width: `calc(${(1 / numCols) * 100}% - 2px)`,
-                              top: `${timeToPercent(b.start)}%`,
-                              height: `${timeToPercent(b.end) - timeToPercent(b.start)}%`,
+                              left: `calc(${(col / numCols) * 100}% + ${TILE_INSET_PX}px)`,
+                              width: `calc(${(1 / numCols) * 100}% - ${TILE_INSET_PX * 2}px)`,
+                              ...tileBox(b.start, b.end),
                               bgcolor: rv.bg,
                               border: '1.5px dashed',
                               borderColor: rv.border,
@@ -1620,10 +1625,9 @@ export default function CalendarPage() {
                             aria-label={`Request: ${r.title}, ${fmtTime12(r.start)} to ${fmtTime12(r.end)}, status ${r.response}`}
                             sx={{
                               position: 'absolute',
-                              left: `calc(${rLeftPct}% + 2px)`,
-                              width: `calc(${rWidthPct}% - ${rNumCols > 1 ? 4 : 4}px)`,
-                              top: `${timeToPercent(r.start)}%`,
-                              height: `${timeToPercent(r.end) - timeToPercent(r.start)}%`,
+                              left: `calc(${rLeftPct}% + ${TILE_INSET_PX}px)`,
+                              width: `calc(${rWidthPct}% - ${TILE_INSET_PX * 2}px)`,
+                              ...tileBox(r.start, r.end),
                               bgcolor: rColors.bg,
                               border: `1.5px dashed ${rColors.border}`,
                               borderRadius: '8px',
@@ -1696,10 +1700,9 @@ export default function CalendarPage() {
                             aria-label={`${statusLabel} session: ${s.title}, ${fmtTime12(s.start)} to ${fmtTime12(s.end)}`}
                             sx={{
                               position: 'absolute',
-                              left: `calc(${leftPct}% + 2px)`,
-                              width: `calc(${widthPct}% - ${numCols > 1 ? 4 : 4}px)`,
-                              top: `${timeToPercent(s.start)}%`,
-                              height: `${blockHeight}%`,
+                              left: `calc(${leftPct}% + ${TILE_INSET_PX}px)`,
+                              width: `calc(${widthPct}% - ${TILE_INSET_PX * 2}px)`,
+                              ...tileBox(s.start, s.end),
                               bgcolor: sColors.bg,
                               border: 'none',
                               borderRadius: '8px',
@@ -1853,10 +1856,10 @@ export default function CalendarPage() {
             {pendingSpot && spotConflictStep && (
               <>
                 <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 0.25 }}>
-                  {spotLeaveConflicts.length === 1 ? 'This clashes with a session' : `This clashes with ${spotLeaveConflicts.length} sessions`}
+                  {spotLeaveConflicts.length === 1 ? 'This overlaps a session' : `This overlaps ${spotLeaveConflicts.length} sessions`}
                 </Typography>
                 <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1.25 }}>
-                  Marking this leave will decline {spotLeaveConflicts.length === 1 ? 'it' : 'them'}. Tell the scheduler why.
+                  Marking this leave declines {spotLeaveConflicts.length === 1 ? 'it' : 'them'}. Please add a reason for the scheduler.
                 </Typography>
 
                 <Stack

@@ -86,9 +86,9 @@ export function RecommendFlowDialog() {
   const canAdvance = Boolean(program) && contactValid && !isDuplicate;
 
   const contactHelper = contactError
-    ? "Enter a valid email address or phone number."
+    ? "We need an email address or phone number here."
     : duplicateError
-      ? "You have already recommended a program to this contact."
+      ? "A recommendation is already on its way to this contact."
       : "We will reach out to them — you are done after this step.";
 
   const handleNext = () => {
@@ -148,7 +148,7 @@ export function RecommendFlowDialog() {
                 <TextField
                   {...params}
                   label="Program"
-                  helperText={touched && !program ? "Choose a program to recommend." : " "}
+                  helperText={touched && !program ? "Which program should we recommend?" : " "}
                   error={touched && !program}
                 />
               )}

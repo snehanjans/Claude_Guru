@@ -20,7 +20,7 @@ import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import LanguageIcon from "@mui/icons-material/Language";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 
-import { timeOptions12 } from "@/lib/constants";
+import { timeOptions12, END_DATE_ORDER_MSG, END_TIME_ORDER_MSG } from "@/lib/constants";
 import { parseHHMM, hhmmFromMinutes } from "@/lib/helpers";
 import type { Pattern, PresetCard } from "@/lib/types";
 import WeeklySlotsEditor, {
@@ -215,9 +215,9 @@ export default function MarkAvailabilityDialog({
   const timesFilled = !!fromTime && !!toTime;
   const datesError =
     datesFilled && endDate < startDate
-      ? "End date must be on or after the start date."
+      ? END_DATE_ORDER_MSG
       : timesFilled && parseHHMM(toTime) <= parseHHMM(fromTime)
-        ? "End time must be after start time."
+        ? END_TIME_ORDER_MSG
         : null;
   const weeklyInvalid = !cards.some((c) => c.enabled) && drafts.length === 0;
 

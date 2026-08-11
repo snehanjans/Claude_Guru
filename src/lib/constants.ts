@@ -38,3 +38,8 @@ export const demoNow = new Date("2026-04-21T09:00:00");
 // ─── Nudge Image ────────────────────────────────────────────────────────────
 
 export const availabilityNudgeImageSrc = "/Teacher.png";
+
+// ─── Validation copy ───────────────────────────────────────────────────────
+/** Shared so the availability dialogs cannot drift apart in wording again. */
+export const END_TIME_ORDER_MSG = "End time needs to be after the start time.";
+export const END_DATE_ORDER_MSG = "End date needs to be on or after the start date.";

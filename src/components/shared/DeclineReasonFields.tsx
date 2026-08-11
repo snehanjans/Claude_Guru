@@ -105,7 +105,7 @@ export function SchedulerContactNotice({
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="body2" fontWeight={600} sx={{ color: "var(--gl-status-declined-text)", mb: 0.5, fontSize: headSize }}>
             {tooClose.length === 1
-              ? "This cancellation is very close to the session"
+              ? "This session starts within 48 hours"
               : `${tooClose.length} of these start within 48 hours`}
           </Typography>
           <Typography variant="body2" sx={{ color: "hsl(var(--md-on-surface-variant))", mb: 1.5, fontSize: bodySize }}>
@@ -174,7 +174,7 @@ export function DeclineReasonFields({
   if (!isCareerMentor) {
     return (
       <TextField
-        label="Reason (required)"
+        label="Reason"
         value={value.freeText}
         onChange={(e) => onChange({ ...value, freeText: e.target.value })}
         placeholder="E.g., travel / personal commitment / overlap"
@@ -193,7 +193,7 @@ export function DeclineReasonFields({
         variant="body2"
         sx={{ fontWeight: 600, mb: 1.5, fontSize: compact ? 12 : { xs: "0.8rem", sm: "0.875rem" } }}
       >
-        Choose reason for cancelling
+        Why you're cancelling
       </Typography>
       <FormControl fullWidth size={size} required sx={fontSx}>
         <InputLabel>Reason</InputLabel>
@@ -211,7 +211,7 @@ export function DeclineReasonFields({
         </Select>
       </FormControl>
       <TextField
-        label="Specify more details"
+        label="More details"
         value={value.details}
         onChange={(e) => onChange({ ...value, details: e.target.value })}
         placeholder="Add any context for the scheduler (optional)"

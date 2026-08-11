@@ -240,11 +240,11 @@ export default function PreferencesPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      dispatch(pushToast({ title: "Invalid file", description: "Please select an image file." }));
+      dispatch(pushToast({ title: "That file type isn't supported", description: "Photos need to be an image file." }));
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      dispatch(pushToast({ title: "File too large", description: "Please select an image under 2MB." }));
+      dispatch(pushToast({ title: "That image is over 2MB", description: "Photos need to be under 2MB." }));
       return;
     }
     const reader = new FileReader();
@@ -690,7 +690,7 @@ export default function PreferencesPage() {
           dispatch(setGuruName(next));
           dispatch(pushToast({ title: "Name updated" }));
         }}
-        validate={(v) => v.length < 2 ? "Please enter at least 2 characters." : null}
+        validate={(v) => v.length < 2 ? "Names need at least 2 characters." : null}
       />
       <EditFieldDialog
         open={editField === "email"}
@@ -705,7 +705,7 @@ export default function PreferencesPage() {
           dispatch(pushToast({ title: "Email updated" }));
         }}
         validate={(v) => {
-          if (!v.includes("@") || !v.includes(".")) return "Please enter a valid email address.";
+          if (!v.includes("@") || !v.includes(".")) return "This doesn't look like an email address yet.";
           return null;
         }}
       />
