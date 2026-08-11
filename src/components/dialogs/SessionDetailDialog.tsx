@@ -14,7 +14,6 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
-  confirmSession,
   setSessionFocus,
   setDeclineSessionFocus,
   setDeclineReason,
@@ -78,12 +77,11 @@ export function SessionDetailDialog() {
                 color: "text.secondary",
               }}
             >
-              Content is shared Monday. Confirm or raise queries by Wednesday. Reminders sent 1 day and 30 min before your session.
+              Content is shared Monday. Raise any queries by Wednesday. Reminders sent 1 day and 30 min before your session.
             </Box>
 
             <Stack spacing={1.5}>
               {displayed.map((s) => {
-                const isConfirmed = !!confirmations[s.id] || s.id === nextSessionId;
                 return (
                   <Card key={s.id} variant="outlined" sx={{ p: { xs: 1.5, sm: 2 } }}>
                     <SessionCard
@@ -94,8 +92,10 @@ export function SessionDetailDialog() {
                       dateYmd={s.dateYmd}
                       start={s.start}
                       end={s.end}
-                      status={isConfirmed ? STATUS_CONFIRMED() : STATUS_SCHEDULED}
-                      actions={isConfirmed ? (
+                      // Scheduled means confirmed, so there is no confirm action \u2014
+                      // the only response left is declining.
+                      status={STATUS_CONFIRMED()}
+                      actions={
                         <>
                           <Button
                             variant="soft"
@@ -116,20 +116,6 @@ export function SessionDetailDialog() {
                           >
                             View Course content
                           </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            startIcon={<TaskAltOutlinedIcon sx={{ fontSize: 18 }} />}
-                            size="small"
-                            variant="contained"
-                            onClick={() => {
-                              dispatch(confirmSession(s.id));
-                              dispatch(pushToast({ title: "Confirmed", description: `${s.title} \u2022 ${fmtDateNice(s.dateYmd)}` }));
-                            }}
-                          >
-                            Confirm
-                          </Button>
                           <Button
                             startIcon={<DoNotDisturbOnOutlinedIcon sx={{ fontSize: 18 }} />}
                             size="small"
@@ -143,7 +129,7 @@ export function SessionDetailDialog() {
                             I'm unavailable
                           </Button>
                         </>
-                      )}
+                      }
                       secondaryAction={
                         <Button variant="text" size="small" onClick={() => {
                           dispatch(setSessionFocus(s));

@@ -41,7 +41,8 @@ import dayjs, { type Dayjs } from "dayjs";
 import { keyframes, alpha } from "@mui/system";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { setCalendarViewMode, setAnchorDate, type CalendarViewMode } from "@/store/slices/calendarSlice";
-import { setSessionFocus, clearRecentlyConfirmed } from "@/store/slices/sessionsSlice";
+import { setSessionFocus, clearRecentlyConfirmed, declineSession } from "@/store/slices/sessionsSlice";
+import { pushToast } from "@/store/slices/toastsSlice";
 import { setRequestFocus } from "@/store/slices/requestsSlice";
 import { addOneOffAvail, addUnavailable, removeUnavailableByGroupId } from "@/store/slices/availabilitySlice";
 import {
@@ -87,6 +88,14 @@ import {
   minsFromDayjs,
 } from "@/lib/helpers";
 import { compactDatePickerProps, compactTimePickerProps } from "@/lib/pickerProps";
+import {
+  DeclineReasonFields,
+  SchedulerContactNotice,
+  composeDeclineReason,
+  canSubmitDeclineReason,
+  EMPTY_DECLINE_REASON,
+  type DeclineReasonValue,
+} from "@/components/shared/DeclineReasonFields";
 import { DOW, DOW_LONG, demoNow } from "@/lib/constants";
 import type { NA, RequestSlot, Session, AvailRole } from "@/lib/types";
 import { availRoleVisual, COMBINED_MENTOR_ROLE } from "@/lib/role-config";
@@ -189,8 +198,15 @@ function fmtTimeLabel(mins: number) {
   return m === 0 ? `${h12} ${ampm}` : `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-/** Session status color (§8.4) */
-function sessionColors(confirmed: boolean, declined: boolean) {
+/**
+ * Session status color (§8.4).
+ *
+ * Only two states remain: scheduled and declined. There is no confirmed variant —
+ * scheduling confirms, so every live session is "scheduled" and takes the blue
+ * palette. The green `--gl-cal-session-confirmed-*` tokens are deliberately unused
+ * here; that green is the availability hue, and sessions must not read as availability.
+ */
+function sessionColors(declined: boolean) {
   if (declined)
     return {
       bg: "var(--gl-cal-session-declined-bg)",
@@ -198,14 +214,6 @@ function sessionColors(confirmed: boolean, declined: boolean) {
       text: "error.main",
       sub: "error.light",
     };
-  if (confirmed)
-    return {
-      bg: "var(--gl-cal-session-confirmed-bg)",
-      border: "var(--gl-cal-session-confirmed-border)",
-      text: "var(--gl-cal-session-confirmed-text)",
-      sub: "var(--gl-cal-session-confirmed-sub)",
-    };
-  // Scheduled
   return {
     bg: "var(--gl-cal-session-scheduled-bg)",
     border: "var(--gl-cal-session-scheduled-border)",
@@ -271,6 +279,8 @@ export default function CalendarPage() {
   const guruStage = useAppSelector((s) => s.devPanel.guruStage);
   const selectedRole = useAppSelector((s) => s.devPanel.selectedRole);
   const isComboRole = selectedRole === COMBINED_MENTOR_ROLE;
+  // Career Mentors pick a decline reason from a fixed list; everyone else types one.
+  const isCareerMentorRole = selectedRole === "Career Mentor";
   const isEmpty = guruStage === "empty";
   const requests = useAppSelector((s) => s.requests.items);
   /* ── memoized selectors (§7) ──────────────────────────────────────────── */
@@ -388,6 +398,13 @@ export default function CalendarPage() {
   const [showLeaveDates, setShowLeaveDates] = useState(true);
   // Set when the popover is editing an existing leave group rather than creating one.
   const [spotEditGroupId, setSpotEditGroupId] = useState<string | null>(null);
+  /**
+   * Leave that covers a scheduled session declines it, and a decline always needs a
+   * reason — the same one the session-detail flow asks for. When conflicts exist,
+   * confirming moves the popover to this second step instead of committing.
+   */
+  const [spotConflictStep, setSpotConflictStep] = useState(false);
+  const [spotDeclineReason, setSpotDeclineReason] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
   // The edited group's reason, carried through so editing times doesn't reset a
   // custom reason ("Sick leave", …) back to the generic default.
   const [spotEditReason, setSpotEditReason] = useState<string | null>(null);
@@ -471,9 +488,36 @@ export default function CalendarPage() {
     setDragSel(null);
   };
 
+  /**
+   * Scheduled sessions the pending leave would cover. Declining them is the whole
+   * reason the confirm flow has a second step, so this drives both the warning and
+   * the decline dispatches. Already-declined and past sessions are ignored.
+   */
+  const spotLeaveConflicts = useMemo(() => {
+    if (!pendingSpot || spotKind !== "leave") return [];
+    const segments = generateLeaveSegments(
+      leaveFromYmd, leaveToYmd, pendingSpot.start, pendingSpot.end, "",
+    );
+    return sessions.filter(
+      (s) =>
+        !sessionDeclined[s.id] &&
+        s.dateYmd >= todayYmd &&
+        segments.some((seg) => seg.dateYmd === s.dateYmd && overlaps(seg.start, seg.end, s.start, s.end)),
+    );
+  }, [pendingSpot, spotKind, leaveFromYmd, leaveToYmd, sessions, sessionDeclined, todayYmd]);
+
+  const spotDeclineReasonText = composeDeclineReason(spotDeclineReason, isCareerMentorRole);
+  const canConfirmSpotConflicts = canSubmitDeclineReason(spotDeclineReason, isCareerMentorRole);
+
   const confirmSpot = () => {
     if (!pendingSpot) return;
     const { ymd, start, end } = pendingSpot;
+    // Leave over a scheduled session declines it — collect a reason first, exactly
+    // as the session-detail flow does, rather than cancelling silently.
+    if (spotKind === "leave" && spotLeaveConflicts.length > 0 && !spotConflictStep) {
+      setSpotConflictStep(true);
+      return;
+    }
     if (spotKind === "leave") {
       // One block per day, all sharing a groupId so the range deletes as a unit.
       // Editing rewrites the group wholesale: the day count can change, so there is
@@ -483,6 +527,15 @@ export default function CalendarPage() {
       generateLeaveSegments(leaveFromYmd, leaveToYmd, start, end, spotEditReason ?? "Leave").forEach((seg, i) => {
         dispatch(addUnavailable({ id: `na-${Date.now()}-${i}`, groupId, ...seg }));
       });
+      if (spotLeaveConflicts.length > 0) {
+        spotLeaveConflicts.forEach((s) =>
+          dispatch(declineSession({ id: s.id, dateYmd: todayYmd, reason: spotDeclineReasonText })),
+        );
+        dispatch(pushToast({
+          title: "Leave marked",
+          description: `${spotLeaveConflicts.length} session${spotLeaveConflicts.length > 1 ? "s" : ""} declined`,
+        }));
+      }
     } else {
       dispatch(addOneOffAvail({
         id: `oneoff-${ymd}-${start}-${end}-${Date.now()}`,
@@ -494,12 +547,16 @@ export default function CalendarPage() {
     setSpotConfirmPos(null);
     setSpotEditGroupId(null);
     setSpotEditReason(null);
+    setSpotConflictStep(false);
+    setSpotDeclineReason(EMPTY_DECLINE_REASON);
   };
   const cancelSpot = () => {
     setPendingSpot(null);
     setSpotConfirmPos(null);
     setSpotEditGroupId(null);
     setSpotEditReason(null);
+    setSpotConflictStep(false);
+    setSpotDeclineReason(EMPTY_DECLINE_REASON);
   };
 
   /**
@@ -913,8 +970,7 @@ export default function CalendarPage() {
                   {sessionsThisWeek
                     .filter((s) => s.dateYmd === mobileSelectedDay && !sessionDeclined[s.id])
                     .map((s) => {
-                      const confirmed = !!confirmations[s.id];
-                      const sColors = sessionColors(confirmed, false);
+                      const sColors = sessionColors(false);
                       const topPct = timeToPercent(s.start);
                       const blockHeight = timeToPercent(s.end) - topPct;
                       const totalPx = HOUR_LABELS.length * GRID_ROW_PX;
@@ -1163,8 +1219,11 @@ export default function CalendarPage() {
                   const drawnSessions = daySessions.filter((s) => !sessionDeclined[s.id]);
                   drawnSessions.forEach((s) => occupiedIntervals.push({ start: s.start, end: s.end }));
 
-                  // Declined sessions - their time slots
+                  // Declined sessions are still drawn (struck through), so their slots stay
+                  // occupied. Without this the availability underneath resurfaces and renders
+                  // stacked on top of the declined card.
                   const declinedSessions = daySessions.filter((s) => !!sessionDeclined[s.id]);
+                  declinedSessions.forEach((s) => occupiedIntervals.push({ start: s.start, end: s.end }));
 
                   // Requests add to occupied
                   dayRequests.forEach((r) => occupiedIntervals.push({ start: r.start, end: r.end }));
@@ -1582,24 +1641,18 @@ export default function CalendarPage() {
                       {/* §8.2 Draw order: 5. Sessions (top) - with status dot + pulse */}
                       {daySessions.map((s) => {
                         const declined = !!sessionDeclined[s.id];
-                        const confirmed = !!confirmations[s.id];
                         const isPastSession = s.dateYmd < todayYmd || (s.dateYmd === todayYmd && s.start < realNow.getHours() * 60 + realNow.getMinutes());
-                        const isCompletedSession = isPastSession && confirmed;
-                        const isMissedSession = isPastSession && !confirmed && !declined;
-                        const sColors = isMissedSession
-                          ? { bg: "var(--gl-status-missed-bg)", border: "var(--gl-status-missed-border)", text: "var(--gl-status-missed-text)", sub: "var(--gl-status-missed-sub)" }
-                          : isCompletedSession
-                            ? { bg: "var(--gl-status-completed-bg)", border: "var(--gl-status-completed-border)", text: "var(--gl-status-completed-text)", sub: "var(--gl-status-completed-text)" }
-                            : sessionColors(confirmed, declined);
+                        // "Missed" used to mean a past session never confirmed. Confirmation
+                        // no longer exists, so a past session is completed unless declined.
+                        const isCompletedSession = isPastSession && !declined;
+                        const sColors = isCompletedSession
+                          ? { bg: "var(--gl-status-completed-bg)", border: "var(--gl-status-completed-border)", text: "var(--gl-status-completed-text)", sub: "var(--gl-status-completed-text)" }
+                          : sessionColors(declined);
                         const statusLabel = declined
                           ? "Declined"
                           : isCompletedSession
                             ? "Completed"
-                            : isMissedSession
-                              ? "Missed"
-                              : confirmed
-                                ? "Confirmed"
-                                : "Scheduled";
+                            : "Scheduled";
                         const isRecentlyConfirmed = !!recentlyConfirmedIds[s.id];
                         const blockHeight = timeToPercent(s.end) - timeToPercent(s.start);
                         // Approximate pixel height based on grid
@@ -1635,6 +1688,10 @@ export default function CalendarPage() {
                               pb: 0.5,
                               textAlign: 'left',
                               cursor: 'pointer',
+                              // The strike is painted by this element using its own
+                              // currentColor, not the children's — without a color here
+                              // the line renders default black over red text.
+                              color: sColors.text,
                               textDecoration: declined ? 'line-through' : 'none',
                               opacity: 1,
                               overflow: 'hidden',
@@ -1699,8 +1756,8 @@ export default function CalendarPage() {
               {/* Left: legend dots */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.25, md: 2 }, flexWrap: 'wrap' }}>
                 {[
+                  // One session state, not two — scheduling a session confirms it.
                   { color: 'var(--gl-cal-session-scheduled-border)', label: 'Scheduled', dot: true },
-                  { color: 'var(--gl-cal-session-confirmed-border)', label: 'Confirmed', dot: true },
                   { color: 'var(--gl-status-completed-text)', label: 'Completed', dot: true },
                   { color: 'var(--gl-status-missed-text)', label: 'Missed', dot: true },
                   { color: 'var(--gl-cal-session-declined-border)', label: 'Declined', dot: true },
@@ -1765,9 +1822,75 @@ export default function CalendarPage() {
             transformOrigin={{ vertical: 'top', horizontal: 'left' }}
             // The TimePicker lists portal outside this Popover — let them hold focus.
             disableEnforceFocus
-            slotProps={{ paper: { sx: { borderRadius: '12px', p: 1.75, width: 288, maxWidth: 'calc(100vw - 24px)' } } }}
+            // The conflict step carries a session list and the reason fields, so it
+            // needs more room than the date/time step.
+            slotProps={{ paper: { sx: { borderRadius: '12px', p: 1.75, width: spotConflictStep ? 340 : 288, maxWidth: 'calc(100vw - 24px)' } } }}
           >
-            {pendingSpot && (
+            {/* Step 2 — leave covers scheduled sessions, so collect a decline reason. */}
+            {pendingSpot && spotConflictStep && (
+              <>
+                <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 0.25 }}>
+                  {spotLeaveConflicts.length === 1 ? 'This clashes with a session' : `This clashes with ${spotLeaveConflicts.length} sessions`}
+                </Typography>
+                <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1.25 }}>
+                  Marking this leave will decline {spotLeaveConflicts.length === 1 ? 'it' : 'them'}. Tell the scheduler why.
+                </Typography>
+
+                <Stack
+                  spacing={0.75}
+                  sx={{
+                    maxHeight: 132,
+                    overflowY: 'auto',
+                    p: 1,
+                    mb: 1.5,
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: 'var(--gl-status-declined-border)',
+                    bgcolor: 'var(--gl-status-declined-bg)',
+                  }}
+                >
+                  {spotLeaveConflicts.map((s) => (
+                    <Box key={s.id}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 600, lineHeight: 1.3 }}>{s.title}</Typography>
+                      <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                        {fmtShortDate(new Date(`${s.dateYmd}T00:00:00`), userLocale)} · {fmtTime12(s.start)}–{fmtTime12(s.end)}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+
+                <Box sx={{ mb: 1.5 }}>
+                  <SchedulerContactNotice compact sessions={spotLeaveConflicts} nowMs={realNow.getTime()} />
+                </Box>
+
+                <DeclineReasonFields
+                  compact
+                  autoFocus
+                  isCareerMentor={isCareerMentorRole}
+                  value={spotDeclineReason}
+                  onChange={setSpotDeclineReason}
+                />
+
+                <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1.75 }}>
+                  <Button size="small" color="inherit" onClick={() => setSpotConflictStep(false)} sx={{ fontSize: 12 }}>
+                    Back
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="error"
+                    disableElevation
+                    disabled={!canConfirmSpotConflicts}
+                    onClick={confirmSpot}
+                    sx={{ fontSize: 12 }}
+                  >
+                    {spotLeaveConflicts.length === 1 ? 'Mark leave & decline' : `Mark leave & decline ${spotLeaveConflicts.length}`}
+                  </Button>
+                </Stack>
+              </>
+            )}
+
+            {pendingSpot && !spotConflictStep && (
               <>
                 {/* Availability vs Leave toggle. Suppressed when editing an existing
                     leave — switching kind there would mean deleting it and creating
@@ -1968,8 +2091,7 @@ export default function CalendarPage() {
                   // Session tags (tone by confirmed/declined/scheduled)
                   daySessions.forEach((s) => {
                     const declined = !!sessionDeclined[s.id];
-                    const confirmed = !!confirmations[s.id];
-                    const sColors = sessionColors(confirmed, declined);
+                    const sColors = sessionColors(declined);
                     const shortTitle = s.title;
                     chips.push({
                       key: `sess-${s.id}`,

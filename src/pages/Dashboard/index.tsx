@@ -47,7 +47,6 @@ import { alpha } from "@mui/material/styles";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
   setSessionFocus,
-  confirmSession,
   clearRecentlyConfirmed,
   setHomeSessionsView,
   setDeclineSessionFocus,
@@ -1050,19 +1049,6 @@ export default function DashboardPage() {
                                   )
                                 ) : (
                                   <>
-                                    <Button
-                                      startIcon={<TaskAltOutlinedIcon sx={{ fontSize: 18 }} />}
-                                      size="small"
-                                      variant="contained"
-                                      onClick={() => {
-                                        setExitingId(s.id);
-                                        dispatch(confirmSession(s.id));
-                                        dispatch(pushToast({ title: "Confirmed", description: `${s.title} \u2022 ${fmtDateNice(s.dateYmd)}` }));
-                                        setTimeout(() => setExitingId(null), 420);
-                                      }}
-                                    >
-                                      Confirm
-                                    </Button>
                                     <Button
                                       startIcon={<DoNotDisturbOnOutlinedIcon sx={{ fontSize: 18 }} />}
                                       size="small"

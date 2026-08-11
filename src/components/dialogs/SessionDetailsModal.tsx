@@ -49,7 +49,6 @@ import Typography from "@mui/material/Typography";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
   setSessionFocus,
-  confirmSession,
   setDeclineSessionFocus,
   setDeclineReason,
 } from "@/store/slices/sessionsSlice";
@@ -1320,19 +1319,7 @@ export function SessionDetailsModal() {
               >
                 I'm unavailable
               </Button>
-              {!isConfirmed && (
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<CheckCircleOutlinedIcon sx={{ fontSize: 15 }} />}
-                  onClick={() => {
-                    dispatch(confirmSession(session.id));
-                    dispatch(pushToast({ title: "Confirmed", description: `${session.title} \u2022 ${fmtDateNice(session.dateYmd)}` }));
-                  }}
-                >
-                  Confirm
-                </Button>
-              )}
+              {/* No confirm action \u2014 a scheduled session is already confirmed. */}
             </Stack>
           )}
           {session && isPast && !isCompleted && (

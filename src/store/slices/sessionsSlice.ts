@@ -22,7 +22,10 @@ interface SessionsState {
 
 const initialState: SessionsState = {
   items: demoSessions,
-  confirmations: { s0: true, eval3: true, eval5: true, mod3: true },
+  // Sessions are confirmed the moment they are scheduled — confirming is not a step
+  // the Guru performs. Every session is seeded rather than a hand-picked subset, so
+  // nothing ever renders as "awaiting confirmation". Declining is the only response.
+  confirmations: Object.fromEntries(demoSessions.map((s) => [s.id, true])),
   sessionDeclined: {},
   sessionDeclinedAtYmd: {},
   sessionDeclinedReasons: {},
@@ -45,15 +48,8 @@ const sessionsSlice = createSlice({
     setSessions(state, action: PayloadAction<Session[]>) {
       state.items = action.payload;
     },
-    confirmSession(state, action: PayloadAction<string>) {
-      state.confirmations[action.payload] = true;
-      state.recentlyConfirmedIds[action.payload] = Date.now();
-    },
     clearRecentlyConfirmed(state, action: PayloadAction<string>) {
       delete state.recentlyConfirmedIds[action.payload];
-    },
-    unconfirmSession(state, action: PayloadAction<string>) {
-      delete state.confirmations[action.payload];
     },
     declineSession(state, action: PayloadAction<{ id: string; dateYmd: string; reason?: string }>) {
       state.sessionDeclined[action.payload.id] = true;
@@ -100,9 +96,7 @@ const sessionsSlice = createSlice({
 
 export const {
   setSessions,
-  confirmSession,
   clearRecentlyConfirmed,
-  unconfirmSession,
   declineSession,
   acceptSession,
   setSessionFocus,

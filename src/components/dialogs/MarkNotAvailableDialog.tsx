@@ -44,6 +44,14 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import dayjs from "dayjs";
 import { compactDatePickerProps, compactTimePickerProps } from "@/lib/pickerProps";
+import {
+  DeclineReasonFields,
+  SchedulerContactNotice,
+  composeDeclineReason,
+  canSubmitDeclineReason,
+  EMPTY_DECLINE_REASON,
+  type DeclineReasonValue,
+} from "@/components/shared/DeclineReasonFields";
 
 /**
  * Date fields matching the calendar's leave popover, one notch larger to sit with
@@ -80,6 +88,10 @@ export function MarkNotAvailableDialog() {
 
   const [autoDecline, setAutoDecline] = useState(true);
   const [step, setStep] = useState<1 | 2>(1);
+  // Why the overlapping sessions are being declined. Required before confirming
+  // while auto-decline is on — a decline without a reason tells the scheduler nothing.
+  const [declineReasonValue, setDeclineReasonValue] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
+  const isCareerMentorRole = useAppSelector((s) => s.devPanel.selectedRole) === "Career Mentor";
 
   /* ── Pre-fill when editing existing leave ───────────────────────── */
   useEffect(() => {
@@ -104,6 +116,7 @@ export function MarkNotAvailableDialog() {
     if (!open) {
       setStep(1);
       setAutoDecline(true);
+      setDeclineReasonValue(EMPTY_DECLINE_REASON);
     }
   }, [open]);
 
@@ -149,6 +162,9 @@ export function MarkNotAvailableDialog() {
   }, [requests, naStartDate, naEndDate, naStartMins, naEndMins]);
 
   const totalConflicts = conflictingSessions.length + conflictingRequests.length;
+  const willDecline = autoDecline && conflictingSessions.length > 0;
+  const declineReasonText = composeDeclineReason(declineReasonValue, isCareerMentorRole);
+  const canConfirmStep2 = !willDecline || canSubmitDeclineReason(declineReasonValue, isCareerMentorRole);
 
   const handleMarkLeave = () => {
     // If there are conflicts, go to step 2 for confirmation
@@ -183,7 +199,7 @@ export function MarkNotAvailableDialog() {
     /* §10: on submit with auto-decline */
     if (autoDecline && totalConflicts > 0) {
       conflictingSessions.forEach((s) => {
-        dispatch(declineSession({ id: s.id, dateYmd: s.dateYmd }));
+        dispatch(declineSession({ id: s.id, dateYmd: todayYmd, reason: declineReasonText }));
       });
       conflictingRequests.forEach((r) => {
         dispatch(respondToRequest({ id: r.id, response: "unavailable" }));
@@ -397,6 +413,19 @@ export function MarkNotAvailableDialog() {
                 }
               />
             </Box>
+
+            {/* Declining needs a reason, exactly as the session-detail flow asks for
+                one — so it only appears while auto-decline is actually on. */}
+            {autoDecline && conflictingSessions.length > 0 && (
+              <>
+                <SchedulerContactNotice sessions={conflictingSessions} nowMs={Date.now()} />
+                <DeclineReasonFields
+                  isCareerMentor={isCareerMentorRole}
+                  value={declineReasonValue}
+                  onChange={setDeclineReasonValue}
+                />
+              </>
+            )}
           </Box>
         )}
       </DialogContent>
@@ -410,7 +439,7 @@ export function MarkNotAvailableDialog() {
           variant="contained"
           size="small"
           onClick={step === 2 ? handleConfirm : handleMarkLeave}
-          disabled={step === 1 && !isValid}
+          disabled={step === 1 ? !isValid : !canConfirmStep2}
           sx={{ px: 2.5, fontSize: "0.75rem" }}
         >
           {step === 2 ? "Confirm leave" : editingLeaveGroupId ? "Update" : "Mark leave"}
