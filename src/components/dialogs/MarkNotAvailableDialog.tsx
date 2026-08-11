@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -30,71 +30,31 @@ import {
 import { declineSession } from "@/store/slices/sessionsSlice";
 import { respondToRequest } from "@/store/slices/requestsSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
-import { timeOptions12 } from "@/lib/constants";
-
-/** Full-day bounds in minutes (midnight → midnight). */
-const DAY_START = 0;
-const DAY_END = 24 * 60;
-import { fmtTime12, toYmd, addDays, hhmmFromMinutes, getLocaleFromTimezone } from "@/lib/helpers";
-import type { NA } from "@/lib/types";
+import {
+  fmtTime12,
+  toYmd,
+  addDays,
+  hhmmFromMinutes,
+  parseHHMM,
+  generateLeaveSegments,
+  dayjsFromMins,
+  minsFromDayjs,
+} from "@/lib/helpers";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import dayjs from "dayjs";
+import { compactDatePickerProps, compactTimePickerProps } from "@/lib/pickerProps";
 
 /**
- * §10: Multi-day leave segmentation helper.
- *
- * Given a date range with start/end times, create leave blocks per day segment:
- * - First day: start at selected start time, end at midnight (24:00)
- * - Middle days: full 24-hour span (00:00 to 24:00)
- * - Last day: start at midnight (00:00), end at selected end time
- * - Single day: start at selected start time, end at selected end time
+ * Date fields matching the calendar's leave popover, one notch larger to sit with
+ * this dialog's 36px/0.75rem controls. Keeps the year, which the popover drops for
+ * width. Labels come from the caption above the row, as in the popover — a floating
+ * label detaches at this field height.
  */
-function generateLeaveSegments(
-  startDateYmd: string,
-  endDateYmd: string,
-  startMins: number,
-  endMins: number,
-  reason: string
-): Omit<NA, "id">[] {
-  const segments: Omit<NA, "id">[] = [];
-  const startDate = new Date(`${startDateYmd}T00:00:00`);
-  const now = Date.now();
-
-  // Single day
-  if (startDateYmd === endDateYmd) {
-    segments.push({
-      dateYmd: startDateYmd,
-      start: startMins,
-      end: endMins,
-      reason: reason || "Leave",
-      createdAt: now,
-    });
-    return segments;
-  }
-
-  // Multi-day: iterate from start to end date
-  let current = startDate;
-  let dayIndex = 0;
-  while (toYmd(current) <= endDateYmd) {
-    const ymd = toYmd(current);
-    const isFirst = ymd === startDateYmd;
-    const isLast = ymd === endDateYmd;
-
-    const segStart = isFirst ? startMins : DAY_START;
-    const segEnd = isLast ? endMins : DAY_END;
-
-    segments.push({
-      dateYmd: ymd,
-      start: segStart,
-      end: segEnd,
-      reason: reason || "Leave",
-      createdAt: now + dayIndex, // unique createdAt per segment
-    });
-
-    current = addDays(current, 1);
-    dayIndex++;
-  }
-
-  return segments;
-}
+const DIALOG_DATE_PICKER = (ariaLabel: string) =>
+  compactDatePickerProps(ariaLabel, { format: "D MMM YYYY", height: 36, fontSize: 12 });
+const DIALOG_TIME_PICKER = (ariaLabel: string) =>
+  compactTimePickerProps(ariaLabel, { height: 36, fontSize: 12 });
 
 /** Overlap predicate: aStart < bEnd && bStart < aEnd */
 function overlaps(aStart: number, aEnd: number, bStart: number, bEnd: number) {
@@ -106,8 +66,12 @@ export function MarkNotAvailableDialog() {
   const open = useAppSelector((s) => s.ui.openNotAvailable);
   const naStartDate = useAppSelector((s) => s.availability.naStartDate);
   const naEndDate = useAppSelector((s) => s.availability.naEndDate);
-  // Leave is always marked on a full-day basis (midnight → midnight).
+  const naStart = useAppSelector((s) => s.availability.naStart);
+  const naEnd = useAppSelector((s) => s.availability.naEnd);
   const naReason = useAppSelector((s) => s.availability.naReason);
+  // Times are held as "HH:MM"; the segment helper and the pickers both work in minutes.
+  const naStartMins = parseHHMM(naStart);
+  const naEndMins = parseHHMM(naEnd);
   const sessions = useAppSelector((s) => s.sessions.items);
   const sessionDeclined = useAppSelector((s) => s.sessions.sessionDeclined);
   const requests = useAppSelector((s) => s.requests.items);
@@ -116,11 +80,6 @@ export function MarkNotAvailableDialog() {
 
   const [autoDecline, setAutoDecline] = useState(true);
   const [step, setStep] = useState<1 | 2>(1);
-  const startDateRef = useRef<HTMLInputElement>(null);
-  const endDateRef = useRef<HTMLInputElement>(null);
-  const timeZoneMode = useAppSelector((s) => s.profile.timeZoneMode);
-  const manualTimeZone = useAppSelector((s) => s.profile.manualTimeZone);
-  const userLocale = getLocaleFromTimezone(timeZoneMode === "manual" ? manualTimeZone : Intl.DateTimeFormat().resolvedOptions().timeZone);
 
   /* ── Pre-fill when editing existing leave ───────────────────────── */
   useEffect(() => {
@@ -148,18 +107,21 @@ export function MarkNotAvailableDialog() {
     }
   }, [open]);
 
-  /* ── Validation (§10): end date must be on or after start date ──── */
+  /* ── Validation (§10): end date on or after start, and a real interval ──── */
   const isValid = useMemo(() => {
     if (!naStartDate || !naEndDate) return false;
     if (naStartDate > naEndDate) return false;
+    // On a single day the times must still form an interval. Across days they
+    // can't invert — the end time belongs to a later date than the start time.
+    if (naStartDate === naEndDate && naEndMins <= naStartMins) return false;
     return true;
-  }, [naStartDate, naEndDate]);
+  }, [naStartDate, naEndDate, naStartMins, naEndMins]);
 
   /* ── §10: Detect overlapping scheduled sessions ─────────────────── */
   const todayYmd = toYmd(new Date());
   const conflictingSessions = useMemo(() => {
     if (!naStartDate || !naEndDate) return [];
-    const segments = generateLeaveSegments(naStartDate, naEndDate, DAY_START, DAY_END, "");
+    const segments = generateLeaveSegments(naStartDate, naEndDate, naStartMins, naEndMins, "");
 
     return sessions.filter((s) => {
       if (sessionDeclined[s.id]) return false;
@@ -170,12 +132,12 @@ export function MarkNotAvailableDialog() {
           seg.dateYmd === s.dateYmd && overlaps(seg.start, seg.end, s.start, s.end)
       );
     });
-  }, [sessions, sessionDeclined, naStartDate, naEndDate, todayYmd]);
+  }, [sessions, sessionDeclined, naStartDate, naEndDate, naStartMins, naEndMins, todayYmd]);
 
   /* ── §10: Detect overlapping pending requests ───────────────────── */
   const conflictingRequests = useMemo(() => {
     if (!naStartDate || !naEndDate) return [];
-    const segments = generateLeaveSegments(naStartDate, naEndDate, DAY_START, DAY_END, "");
+    const segments = generateLeaveSegments(naStartDate, naEndDate, naStartMins, naEndMins, "");
 
     return requests.filter((r) => {
       if (r.response !== "pending") return false;
@@ -184,7 +146,7 @@ export function MarkNotAvailableDialog() {
           seg.dateYmd === r.dateYmd && overlaps(seg.start, seg.end, r.start, r.end)
       );
     });
-  }, [requests, naStartDate, naEndDate]);
+  }, [requests, naStartDate, naEndDate, naStartMins, naEndMins]);
 
   const totalConflicts = conflictingSessions.length + conflictingRequests.length;
 
@@ -207,7 +169,7 @@ export function MarkNotAvailableDialog() {
     }
 
     /* §10: create leave blocks per day segment */
-    const segments = generateLeaveSegments(naStartDate, naEndDate, DAY_START, DAY_END, reason);
+    const segments = generateLeaveSegments(naStartDate, naEndDate, naStartMins, naEndMins, reason);
     segments.forEach((seg, i) => {
       dispatch(
         addUnavailable({
@@ -294,49 +256,53 @@ export function MarkNotAvailableDialog() {
               Block off dates when you're not available for sessions.
             </Typography>
 
-            {/* Date range */}
-            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
-              <Box sx={{ position: "relative" }}>
-                <TextField
-                  label="Start date"
-                  value={naStartDate ? new Date(`${naStartDate}T00:00:00`).toLocaleDateString(userLocale, { day: "2-digit", month: "short", year: "numeric" }) : ""}
-                  size="small"
-                  fullWidth
-                  slotProps={{ inputLabel: { shrink: true }, input: { readOnly: true, sx: { cursor: "pointer" } } }}
-                  onClick={() => startDateRef.current?.showPicker()}
-                  sx={{ "& .MuiInputBase-root": { height: 36, fontSize: "0.75rem" }, "& .MuiInputLabel-root": { fontSize: "0.7rem" } }}
+            {/* Date range — same DatePicker fields the calendar's leave popover uses. */}
+            <Box>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.secondary", mb: 0.5 }}>
+                Dates
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                <DatePicker
+                  {...DIALOG_DATE_PICKER("Leave start date")}
+                  value={naStartDate ? dayjs(`${naStartDate}T00:00:00`) : null}
+                  onChange={(v) => v && dispatch(setNaStartDate(v.format("YYYY-MM-DD")))}
                 />
-                <input
-                  ref={startDateRef}
-                  type="date"
-                  value={naStartDate}
-                  onChange={(e) => dispatch(setNaStartDate(e.target.value))}
-                  style={{ position: "absolute", opacity: 0, width: 0, height: 0, pointerEvents: "none" }}
+                <Box component="span" sx={{ color: "text.secondary", fontSize: 13 }}>–</Box>
+                <DatePicker
+                  {...DIALOG_DATE_PICKER("Leave end date")}
+                  value={naEndDate ? dayjs(`${naEndDate}T00:00:00`) : null}
+                  onChange={(v) => v && dispatch(setNaEndDate(v.format("YYYY-MM-DD")))}
+                  minDate={naStartDate ? dayjs(`${naStartDate}T00:00:00`) : undefined}
                 />
               </Box>
-              <Box sx={{ position: "relative" }}>
-                <TextField
-                  label="End date"
-                  value={naEndDate ? new Date(`${naEndDate}T00:00:00`).toLocaleDateString(userLocale, { day: "2-digit", month: "short", year: "numeric" }) : ""}
-                  size="small"
-                  fullWidth
-                  slotProps={{ inputLabel: { shrink: true }, input: { readOnly: true, sx: { cursor: "pointer" } } }}
-                  onClick={() => endDateRef.current?.showPicker()}
-                  sx={{ "& .MuiInputBase-root": { height: 36, fontSize: "0.75rem" }, "& .MuiInputLabel-root": { fontSize: "0.7rem" } }}
+            </Box>
+
+            {/* Times — on a multi-day range these bound the first and last day; the
+                days in between are blocked in full. */}
+            <Box>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.secondary", mb: 0.5 }}>
+                {naStartDate !== naEndDate ? "Times (first and last day)" : "Times"}
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                <TimePicker
+                  {...DIALOG_TIME_PICKER("Leave start time")}
+                  value={dayjsFromMins(naStartDate || todayYmd, naStartMins)}
+                  onChange={(v) => v && dispatch(setNaStart(hhmmFromMinutes(minsFromDayjs(v))))}
                 />
-                <input
-                  ref={endDateRef}
-                  type="date"
-                  value={naEndDate}
-                  onChange={(e) => dispatch(setNaEndDate(e.target.value))}
-                  style={{ position: "absolute", opacity: 0, width: 0, height: 0, pointerEvents: "none" }}
+                <Box component="span" sx={{ color: "text.secondary", fontSize: 13 }}>–</Box>
+                <TimePicker
+                  {...DIALOG_TIME_PICKER("Leave end time")}
+                  value={dayjsFromMins(naStartDate || todayYmd, naEndMins)}
+                  onChange={(v) => v && dispatch(setNaEnd(hhmmFromMinutes(minsFromDayjs(v, true))))}
                 />
               </Box>
             </Box>
 
             {naStartDate && naEndDate && !isValid && (
               <Typography variant="caption" sx={{ color: "error.main", fontSize: "0.7rem" }}>
-                End date must be on or after the start date.
+                {naStartDate > naEndDate
+                  ? "End date must be on or after the start date."
+                  : "End time must be after the start time."}
               </Typography>
             )}
 

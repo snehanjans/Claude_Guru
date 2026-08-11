@@ -26,18 +26,24 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import ListItemText from "@mui/material/ListItemText";
 import CheckIcon from "@mui/icons-material/Check";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import SpeedDial from "@mui/material/SpeedDial";
 import SpeedDialAction from "@mui/material/SpeedDialAction";
 import SpeedDialIcon from "@mui/material/SpeedDialIcon";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
-import { keyframes } from "@mui/system";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import ButtonBase from "@mui/material/ButtonBase";
+import dayjs, { type Dayjs } from "dayjs";
+import { keyframes, alpha } from "@mui/system";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { setCalendarViewMode, setAnchorDate, type CalendarViewMode } from "@/store/slices/calendarSlice";
 import { setSessionFocus, clearRecentlyConfirmed } from "@/store/slices/sessionsSlice";
 import { setRequestFocus } from "@/store/slices/requestsSlice";
-import { addOneOffAvail } from "@/store/slices/availabilitySlice";
+import { addOneOffAvail, addUnavailable, removeUnavailableByGroupId } from "@/store/slices/availabilitySlice";
 import {
   setOpenSession,
   setOpenSessionDetails,
@@ -76,7 +82,11 @@ import {
   getTimeZoneOffsetMinutes,
   formatGMTOffsetFromMinutesAhead,
   getLocaleFromTimezone,
+  generateLeaveSegments,
+  dayjsFromMins,
+  minsFromDayjs,
 } from "@/lib/helpers";
+import { compactDatePickerProps, compactTimePickerProps } from "@/lib/pickerProps";
 import { DOW, DOW_LONG, demoNow } from "@/lib/constants";
 import type { NA, RequestSlot, Session, AvailRole } from "@/lib/types";
 import { availRoleVisual, COMBINED_MENTOR_ROLE } from "@/lib/role-config";
@@ -125,6 +135,18 @@ function computeEventLayout(
 /** Full-day time range for the calendar grid (midnight to midnight). */
 const CAL_START = 0;       // 00:00
 const CAL_END = 24 * 60;   // 24:00 (midnight - includes 11 PM–12 AM slot)
+
+/** 15-minute granularity for the drag-select time editors. */
+const TIME_STEP = 15;
+
+
+/**
+ * The drag-select popover's date/time fields, at the popover's own density.
+ * Shared with the Mark leave dialog so both leave surfaces stay identical.
+ */
+const spotTimePickerProps = (ariaLabel: string) =>
+  compactTimePickerProps(ariaLabel, { stepMinutes: TIME_STEP });
+const spotDatePickerProps = (ariaLabel: string) => compactDatePickerProps(ariaLabel);
 
 /** Convert minutes-since-midnight to a percentage within the visible grid. */
 function timeToPercent(mins: number) {
@@ -349,13 +371,40 @@ export default function CalendarPage() {
   };
 
   /* ── Drag-to-select spot availability (week/day time-grid) ────────── */
-  const SPOT_SNAP = 30; // minutes
+  const SPOT_SNAP = 15; // minutes — drag snap + editable step
   const [dragSel, setDragSel] = useState<{ ymd: string; aMin: number; bMin: number } | null>(null);
   const dragColRef = useRef<HTMLElement | null>(null);
   // Pending selection awaiting confirmation (set on drag-release, committed on confirm).
   const [pendingSpot, setPendingSpot] = useState<{ ymd: string; start: number; end: number } | null>(null);
   const [spotConfirmPos, setSpotConfirmPos] = useState<{ top: number; left: number } | null>(null);
   const [spotRole, setSpotRole] = useState<AvailRole>("both");
+  // Whether the dragged range should become availability or leave (chosen on confirm).
+  const [spotKind, setSpotKind] = useState<"availability" | "leave">("availability");
+  // Leave may span days. Both default to the dragged day; the date fields stay
+  // collapsed behind the date line until the user asks to change the range.
+  const [leaveFromYmd, setLeaveFromYmd] = useState<string>(todayYmd);
+  const [leaveToYmd, setLeaveToYmd] = useState<string>(todayYmd);
+  // Date fields are shown by default; the date line collapses them again.
+  const [showLeaveDates, setShowLeaveDates] = useState(true);
+  // Set when the popover is editing an existing leave group rather than creating one.
+  const [spotEditGroupId, setSpotEditGroupId] = useState<string | null>(null);
+  // The edited group's reason, carried through so editing times doesn't reset a
+  // custom reason ("Sick leave", …) back to the generic default.
+  const [spotEditReason, setSpotEditReason] = useState<string | null>(null);
+  const leaveDayCount =
+    Math.round(
+      (new Date(`${leaveToYmd}T00:00:00`).getTime() - new Date(`${leaveFromYmd}T00:00:00`).getTime()) / 86400000
+    ) + 1;
+
+  // An existing leave may already have started in the past; editing it must not mark
+  // its own saved date invalid. New leave still can't begin before today.
+  const leaveMinYmd = spotEditGroupId && leaveFromYmd < todayYmd ? leaveFromYmd : todayYmd;
+
+  // Moving the start forward drags the end with it so the range can't invert.
+  const setLeaveFrom = (ymd: string) => {
+    setLeaveFromYmd(ymd);
+    setLeaveToYmd((to) => (to < ymd ? ymd : to));
+  };
 
   // Earliest minute selectable on a given day. null → whole day is in the past.
   // Today is clamped to "now" (snapped up); future days start at midnight.
@@ -367,6 +416,14 @@ export default function CalendarPage() {
     }
     return CAL_START;
   };
+
+  /**
+   * Lower bound for the popover's start-time field. New selections can't begin in
+   * the past, but an existing leave already can — clamping it would show its own
+   * saved value as invalid and silently shift it forward on the next edit.
+   */
+  const spotStartFloor = (ymd: string) =>
+    spotEditGroupId !== null ? CAL_START : earliestSelectableMin(ymd) ?? CAL_START;
 
   // Snap a pointer's Y position (within a day column) to minutes-since-midnight,
   // clamped so a selection can never start before `floor` (the present).
@@ -405,6 +462,11 @@ export default function CalendarPage() {
     setPendingSpot({ ymd: dragSel.ymd, start, end });
     setSpotConfirmPos({ top: e.clientY, left: e.clientX });
     setSpotRole("both");
+    setSpotKind("availability");
+    // Leave defaults to the single day the drag started on.
+    setLeaveFromYmd(dragSel.ymd);
+    setLeaveToYmd(dragSel.ymd);
+    setShowLeaveDates(true);
     dragColRef.current = null;
     setDragSel(null);
   };
@@ -412,23 +474,85 @@ export default function CalendarPage() {
   const confirmSpot = () => {
     if (!pendingSpot) return;
     const { ymd, start, end } = pendingSpot;
-    dispatch(addOneOffAvail({
-      id: `oneoff-${ymd}-${start}-${end}-${Date.now()}`,
-      dateYmd: ymd, start, end,
-      ...(isComboRole ? { availFor: spotRole } : {}),
-    }));
+    if (spotKind === "leave") {
+      // One block per day, all sharing a groupId so the range deletes as a unit.
+      // Editing rewrites the group wholesale: the day count can change, so there is
+      // no per-block mapping to patch — drop the old blocks and regenerate.
+      const groupId = spotEditGroupId ?? `leave-${Date.now()}`;
+      if (spotEditGroupId) dispatch(removeUnavailableByGroupId(spotEditGroupId));
+      generateLeaveSegments(leaveFromYmd, leaveToYmd, start, end, spotEditReason ?? "Leave").forEach((seg, i) => {
+        dispatch(addUnavailable({ id: `na-${Date.now()}-${i}`, groupId, ...seg }));
+      });
+    } else {
+      dispatch(addOneOffAvail({
+        id: `oneoff-${ymd}-${start}-${end}-${Date.now()}`,
+        dateYmd: ymd, start, end,
+        ...(isComboRole ? { availFor: spotRole } : {}),
+      }));
+    }
     setPendingSpot(null);
     setSpotConfirmPos(null);
+    setSpotEditGroupId(null);
+    setSpotEditReason(null);
   };
   const cancelSpot = () => {
     setPendingSpot(null);
     setSpotConfirmPos(null);
+    setSpotEditGroupId(null);
+    setSpotEditReason(null);
   };
 
-  // Dismissible nudge prompting users to drag-add availability (persisted).
+  /**
+   * Reopen the drag-select popover against an existing leave group, so editing a
+   * leave uses the same date/time fields that created it. The group's first block
+   * gives the start, its last block the end — leave is stored one block per day.
+   */
+  const openLeaveEditor = (blocks: NA[]) => {
+    if (!blocks.length) return;
+    const first = blocks[0];
+    const last = blocks[blocks.length - 1];
+    const rect = leaveAnchorEl?.getBoundingClientRect();
+    setPendingSpot({ ymd: first.dateYmd, start: first.start, end: last.end });
+    setLeaveFromYmd(first.dateYmd);
+    setLeaveToYmd(last.dateYmd);
+    setSpotKind("leave");
+    setShowLeaveDates(true);
+    setSpotEditGroupId(first.groupId ?? null);
+    setSpotEditReason(first.reason ?? null);
+    setSpotConfirmPos(rect ? { top: rect.bottom + 4, left: rect.left } : { top: 140, left: 140 });
+    setLeaveAnchorEl(null);
+  };
+
+  // Fine-tune the pending selection from the confirm popover (15-min steps).
+  const setSpotStart = (v: number) =>
+    setPendingSpot((p) => {
+      if (!p) return p;
+      const floor = spotStartFloor(p.ymd);
+      const start = Math.min(Math.max(v, floor), CAL_END - TIME_STEP);
+      // Pushing the start past the end carries the end along, preserving the duration,
+      // rather than collapsing the range to a single 15-minute step. Moving the start
+      // earlier still just grows the range.
+      const end = p.end > start ? p.end : Math.min(start + (p.end - p.start), CAL_END);
+      return { ...p, start, end };
+    });
+  const setSpotEnd = (v: number) =>
+    setPendingSpot((p) => {
+      if (!p) return p;
+      const end = Math.min(Math.max(v, p.start + TIME_STEP), CAL_END);
+      return { ...p, end };
+    });
+
+  /**
+   * Dismissible nudge explaining drag-to-mark, persisted so it stays gone once read.
+   *
+   * The key is versioned: the tip used to describe adding availability only, and now
+   * covers leave as well. Anyone who dismissed the old wording would otherwise never
+   * see the new instruction, so a copy change that adds meaning gets a new key.
+   */
+  const SPOT_NUDGE_KEY = "guru-spot-nudge-dismissed-v2";
   const [spotNudgeDismissed, setSpotNudgeDismissed] = useState(() => {
     try {
-      return typeof window !== "undefined" && window.localStorage.getItem("guru-spot-nudge-dismissed") === "1";
+      return typeof window !== "undefined" && window.localStorage.getItem(SPOT_NUDGE_KEY) === "1";
     } catch {
       return false;
     }
@@ -436,7 +560,7 @@ export default function CalendarPage() {
   const dismissSpotNudge = () => {
     setSpotNudgeDismissed(true);
     try {
-      window.localStorage.setItem("guru-spot-nudge-dismissed", "1");
+      window.localStorage.setItem(SPOT_NUDGE_KEY, "1");
     } catch {
       /* ignore */
     }
@@ -686,8 +810,8 @@ export default function CalendarPage() {
             >
               <LightbulbOutlinedIcon sx={{ fontSize: 17, color: "success.dark" }} />
               <Typography sx={{ fontSize: 12.5, color: "success.dark", flex: 1 }}>
-                <Box component="span" sx={{ fontWeight: 700 }}>Mark when you’re free:</Box>{" "}
-                click and drag down any day to add an availability slot, then confirm.
+                <Box component="span" sx={{ fontWeight: 700 }}>Block off your time:</Box>{" "}
+                click and drag down any day on the calendar to mark your availability or leave.
               </Typography>
               <IconButton size="small" onClick={dismissSpotNudge} aria-label="Dismiss tip" sx={{ color: "success.dark", p: 0.25 }}>
                 <CloseRoundedIcon sx={{ fontSize: 16 }} />
@@ -1017,7 +1141,15 @@ export default function CalendarPage() {
                   /* raw data for this day */
                   const rawAvailBlocks = patterns.filter((p) => p.days.includes(dayLong));
                   const rawOneOffBlocks = oneOffAvail.filter((b) => b.dateYmd === ymd);
-                  const naBlocks = unavailable.filter((n) => n.dateYmd === ymd);
+                  // While a leave is being edited, its saved block on the previewed day is
+                  // suppressed — the pending-selection preview already draws that day at the
+                  // new time, and painting both reads as the edit having created a second,
+                  // overlapping leave. Other days of the group stay drawn.
+                  const naBlocks = unavailable.filter(
+                    (n) =>
+                      n.dateYmd === ymd &&
+                      !(spotEditGroupId && n.groupId === spotEditGroupId && ymd === pendingSpot?.ymd)
+                  );
                   const rawBusyBlocks = busyThisWeek.filter((b) => b.dateYmd === ymd);
                   const daySessions = sessionsThisWeek.filter((s) => s.dateYmd === ymd);
                   const dayRequests = requestsThisWeek.filter((r) => r.dateYmd === ymd);
@@ -1178,6 +1310,8 @@ export default function CalendarPage() {
                           : pendingSpot!.end;
                         const top = timeToPercent(s);
                         const h = timeToPercent(Math.max(e2, s + SPOT_SNAP)) - top;
+                        // Once released (pending), the block reflects the chosen kind.
+                        const isLeave = !!pendingSpot && pendingSpot.ymd === ymd && spotKind === 'leave';
                         return (
                           <Box
                             sx={{
@@ -1186,9 +1320,9 @@ export default function CalendarPage() {
                               right: 0,
                               top: `${top}%`,
                               height: `${h}%`,
-                              bgcolor: 'var(--gl-cal-avail-bg)',
-                              border: '1.5px solid',
-                              borderColor: 'success.main',
+                              bgcolor: isLeave ? (t) => alpha(t.palette.error.main, 0.12) : 'var(--gl-cal-avail-bg)',
+                              border: isLeave ? '1.5px dashed' : '1.5px solid',
+                              borderColor: isLeave ? 'error.main' : 'success.main',
                               borderRadius: '8px',
                               zIndex: 8,
                               pointerEvents: 'none',
@@ -1197,7 +1331,7 @@ export default function CalendarPage() {
                               overflow: 'hidden',
                             }}
                           >
-                            <Typography sx={{ fontSize: 10, fontWeight: 700, color: 'success.dark' }} noWrap>
+                            <Typography sx={{ fontSize: 10, fontWeight: 700, color: isLeave ? 'error.main' : 'success.dark' }} noWrap>
                               {fmtTime12(s)} – {fmtTime12(Math.max(e2, s + SPOT_SNAP))}
                             </Typography>
                           </Box>
@@ -1218,7 +1352,10 @@ export default function CalendarPage() {
                               right: 0,
                               height: '2px',
                               bgcolor: 'primary.main',
-                              zIndex: 20,
+                              // Above every block in the column (max 8), but below the
+                              // sticky day header (10) — at 20 it drew straight through
+                              // the header once the current time scrolled up behind it.
+                              zIndex: 9,
                               pointerEvents: 'none',
                             }}
                           >
@@ -1615,7 +1752,7 @@ export default function CalendarPage() {
           </Box>
 
           {/* ── Popovers ─────────────────────────────────────────────── */}
-          <LeavePopover anchorEl={leaveAnchorEl} />
+          <LeavePopover anchorEl={leaveAnchorEl} onEdit={openLeaveEditor} />
           <AvailabilityPopover anchorEl={availAnchorEl} blocks={allAvailBlocks} />
 
           {/* Confirm drag-selected spot availability */}
@@ -1626,24 +1763,121 @@ export default function CalendarPage() {
             onClose={cancelSpot}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
             transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-            slotProps={{ paper: { sx: { borderRadius: '12px', p: 2, width: 248 } } }}
+            // The TimePicker lists portal outside this Popover — let them hold focus.
+            disableEnforceFocus
+            slotProps={{ paper: { sx: { borderRadius: '12px', p: 1.75, width: 288, maxWidth: 'calc(100vw - 24px)' } } }}
           >
             {pendingSpot && (
               <>
-                <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary' }}>
-                  Mark yourself available?
-                </Typography>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
-                  {fmtShortDate(new Date(`${pendingSpot.ymd}T00:00:00`), userLocale)}
-                </Typography>
-                <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'success.dark', mt: 0.25 }}>
-                  {fmtTime12(pendingSpot.start)} – {fmtTime12(pendingSpot.end)}
-                </Typography>
-                {isComboRole && (
-                  <Box sx={{ mt: 1.5 }}>
-                    <AvailRoleSelect value={spotRole} onChange={setSpotRole} />
-                  </Box>
+                {/* Availability vs Leave toggle. Suppressed when editing an existing
+                    leave — switching kind there would mean deleting it and creating
+                    availability instead, which is not what "edit" implies. */}
+                {spotEditGroupId ? (
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1.25 }}>Edit leave</Typography>
+                ) : (
+                  <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    fullWidth
+                    value={spotKind}
+                    onChange={(_e, v) => v && setSpotKind(v)}
+                    sx={{
+                      mb: 1.25,
+                      '& .MuiToggleButton-root': { textTransform: 'none', fontSize: 12, fontWeight: 600, py: 0.5 },
+                      '& .Mui-selected': { fontWeight: 700 },
+                    }}
+                  >
+                    <ToggleButton value="availability" color="success">
+                      Availability
+                    </ToggleButton>
+                    <ToggleButton value="leave" color="error">
+                      Leave
+                    </ToggleButton>
+                  </ToggleButtonGroup>
                 )}
+
+                {/* Date line. Leave can span days, so it doubles as the toggle for the
+                    from/to date fields; availability is always a single day. */}
+                {spotKind === 'leave' ? (
+                  <ButtonBase
+                    onClick={() => setShowLeaveDates((v) => !v)}
+                    aria-expanded={showLeaveDates}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      borderRadius: '6px',
+                      px: 0.5,
+                      ml: -0.5,
+                      py: 0.25,
+                      color: 'text.secondary',
+                      '&:hover': { bgcolor: 'action.hover', color: 'text.primary' },
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'inherit' }}>
+                      {leaveFromYmd === leaveToYmd
+                        ? fmtShortDate(new Date(`${leaveFromYmd}T00:00:00`), userLocale)
+                        : `${fmtShortDate(new Date(`${leaveFromYmd}T00:00:00`), userLocale)} – ${fmtShortDate(new Date(`${leaveToYmd}T00:00:00`), userLocale)}`}
+                    </Typography>
+                    <EditCalendarIcon sx={{ fontSize: 14 }} />
+                  </ButtonBase>
+                ) : (
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                    {fmtShortDate(new Date(`${pendingSpot.ymd}T00:00:00`), userLocale)}
+                  </Typography>
+                )}
+
+                {spotKind === 'leave' && showLeaveDates && (
+                  <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mt: 0.75 }}>
+                    <DatePicker
+                      {...spotDatePickerProps('Leave start date')}
+                      value={dayjs(`${leaveFromYmd}T00:00:00`)}
+                      onChange={(v) => v && setLeaveFrom(v.format('YYYY-MM-DD'))}
+                      minDate={dayjs(`${leaveMinYmd}T00:00:00`)}
+                    />
+                    <Box component="span" sx={{ color: 'text.secondary', fontSize: 13 }}>–</Box>
+                    <DatePicker
+                      {...spotDatePickerProps('Leave end date')}
+                      value={dayjs(`${leaveToYmd}T00:00:00`)}
+                      onChange={(v) => v && setLeaveToYmd(v.format('YYYY-MM-DD'))}
+                      minDate={dayjs(`${leaveFromYmd}T00:00:00`)}
+                    />
+                  </Stack>
+                )}
+
+                <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mt: 0.75 }}>
+                  <TimePicker
+                    {...spotTimePickerProps("Start time")}
+                    value={dayjsFromMins(pendingSpot.ymd, pendingSpot.start)}
+                    onChange={(v) => v && setSpotStart(minsFromDayjs(v))}
+                    shouldDisableTime={(v) => {
+                      const m = minsFromDayjs(v);
+                      return m < spotStartFloor(pendingSpot!.ymd) || m > CAL_END - TIME_STEP;
+                    }}
+                  />
+                  <Box component="span" sx={{ color: 'text.secondary', fontSize: 13 }}>–</Box>
+                  <TimePicker
+                    {...spotTimePickerProps("End time")}
+                    value={dayjsFromMins(pendingSpot.ymd, pendingSpot.end)}
+                    onChange={(v) => v && setSpotEnd(minsFromDayjs(v, true))}
+                    shouldDisableTime={(v) => minsFromDayjs(v, true) < pendingSpot!.start + TIME_STEP}
+                  />
+                </Stack>
+
+                {spotKind === 'leave' ? (
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.75 }}>
+                    {leaveDayCount > 1
+                      ? `You'll show as unavailable for ${leaveDayCount} days — from ${fmtTime12(pendingSpot.start)} on the first day to ${fmtTime12(pendingSpot.end)} on the last, and all day in between.`
+                      : "You'll show as unavailable for this time."}
+                  </Typography>
+                ) : (
+                  isComboRole && (
+                    <Box sx={{ mt: 1.5 }}>
+                      <AvailRoleSelect value={spotRole} onChange={setSpotRole} />
+                    </Box>
+                  )
+                )}
+
                 <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1.75 }}>
                   <Button size="small" color="inherit" onClick={cancelSpot} sx={{ fontSize: 12 }}>
                     Cancel
@@ -1651,12 +1885,12 @@ export default function CalendarPage() {
                   <Button
                     size="small"
                     variant="contained"
-                    color="success"
+                    color={spotKind === 'leave' ? 'error' : 'success'}
                     disableElevation
                     onClick={confirmSpot}
                     sx={{ fontSize: 12 }}
                   >
-                    Confirm
+                    {spotEditGroupId ? 'Save changes' : spotKind === 'leave' ? 'Mark leave' : 'Mark available'}
                   </Button>
                 </Stack>
               </>

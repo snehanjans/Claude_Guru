@@ -18,15 +18,21 @@ import {
 } from "@/store/slices/availabilitySlice";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { fmtTime12, fmtDateNice } from "@/lib/helpers";
+import type { NA } from "@/lib/types";
 
 /**
  * Popover shown when clicking a leave (NA) block on the calendar.
  * Displays leave details + Edit / Cancel leave actions.
+ *
+ * `onEdit` lets the host handle Edit itself — the calendar reuses its own inline
+ * date/time popover for that. Without it, Edit falls back to the full dialog.
  */
 export function LeavePopover({
   anchorEl,
+  onEdit,
 }: {
   anchorEl: HTMLElement | null;
+  onEdit?: (blocks: NA[]) => void;
 }) {
   const dispatch = useAppDispatch();
   const naId = useAppSelector((s) => s.ui.leavePopoverNaId);
@@ -50,12 +56,20 @@ export function LeavePopover({
   };
 
   const handleEdit = () => {
+    setConfirmCancel(false);
+    // Inline editing rewrites a whole group, so it needs a groupId to replace.
+    // Blocks without one (e.g. auto-created when a session was declined) keep
+    // using the dialog — otherwise saving would add a group and orphan the old block.
+    if (onEdit && na?.groupId) {
+      onEdit(groupBlocks);
+      dispatch(setLeavePopoverNaId(null));
+      return;
+    }
     if (na?.groupId) {
       dispatch(setEditingLeaveGroupId(na.groupId));
     }
     dispatch(setLeavePopoverNaId(null));
     dispatch(setOpenNotAvailable(true));
-    setConfirmCancel(false);
   };
 
   const handleCancelLeave = () => {

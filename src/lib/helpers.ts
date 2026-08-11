@@ -1,4 +1,5 @@
-import type { Session } from "./types";
+import dayjs, { type Dayjs } from "dayjs";
+import type { NA, Session } from "./types";
 
 // ─── Number Formatting ──────────────────────────────────────────────────────
 
@@ -42,6 +43,22 @@ export function hhmmFromMinutes(mins: number) {
   return `${pad2(h)}:${pad2(m)}`;
 }
 
+/**
+ * Bridge between minutes-since-midnight and the Dayjs values MUI X pickers use.
+ *
+ * 24:00 (1440) is a valid end-of-day here but has no same-day Dayjs representation —
+ * it lands on the next day's 00:00. `minsFromDayjs` therefore reads time-of-day only,
+ * and for an end field maps 00:00 back to 1440, since an end of midnight can only
+ * ever mean the end of the range.
+ */
+export function dayjsFromMins(ymd: string, mins: number) {
+  return dayjs(`${ymd}T00:00:00`).add(mins, "minute");
+}
+export function minsFromDayjs(v: Dayjs, isEndField = false) {
+  const mins = v.hour() * 60 + v.minute();
+  return isEndField && mins === 0 ? 24 * 60 : mins;
+}
+
 export function parseHHMM(hhmm: string) {
   const [h, m] = hhmm.split(":").map((x) => Number(x));
   return minutes(h || 0, m || 0);
@@ -65,6 +82,59 @@ export function addMonths(d: Date, n: number) {
   dt.setDate(1);
   dt.setMonth(dt.getMonth() + n);
   return dt;
+}
+
+/**
+ * §10: Multi-day leave segmentation.
+ *
+ * Leave is stored as one block per day, so a range has to be cut at midnight:
+ * - Single day: the selected start → end times
+ * - First day:  selected start time → midnight
+ * - Middle days: the full 24 hours
+ * - Last day:   midnight → selected end time
+ *
+ * Shared by the leave dialog and the calendar's drag-select popover; both tag
+ * the resulting blocks with one `groupId` so the range can be removed as a unit.
+ */
+export function generateLeaveSegments(
+  startDateYmd: string,
+  endDateYmd: string,
+  startMins: number,
+  endMins: number,
+  reason: string
+): Omit<NA, "id">[] {
+  const DAY_START = 0;
+  const DAY_END = 24 * 60;
+  const segments: Omit<NA, "id">[] = [];
+  const now = Date.now();
+
+  // An inverted range would fall through the loop below and return zero segments.
+  // Callers replace a leave group by removing it and re-adding what comes back, so
+  // returning nothing silently deletes the leave. Collapse to a single day instead.
+  if (endDateYmd < startDateYmd) {
+    return [{ dateYmd: startDateYmd, start: startMins, end: endMins, reason: reason || "Leave", createdAt: now }];
+  }
+
+  if (startDateYmd === endDateYmd) {
+    return [{ dateYmd: startDateYmd, start: startMins, end: endMins, reason: reason || "Leave", createdAt: now }];
+  }
+
+  let current = new Date(`${startDateYmd}T00:00:00`);
+  let dayIndex = 0;
+  while (toYmd(current) <= endDateYmd) {
+    const ymd = toYmd(current);
+    segments.push({
+      dateYmd: ymd,
+      start: ymd === startDateYmd ? startMins : DAY_START,
+      end: ymd === endDateYmd ? endMins : DAY_END,
+      reason: reason || "Leave",
+      createdAt: now + dayIndex, // unique createdAt per segment
+    });
+    current = addDays(current, 1);
+    dayIndex++;
+  }
+
+  return segments;
 }
 
 export function startOfMonth(d: Date) {
