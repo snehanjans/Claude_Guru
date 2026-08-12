@@ -41,7 +41,7 @@ import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import ZoomOutMapRoundedIcon from "@mui/icons-material/ZoomOutMapRounded";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import PublicRoundedIcon from "@mui/icons-material/PublicRounded";
@@ -1918,7 +1918,9 @@ export default function ProgramDetailPage() {
       >
         <Fade in={Boolean(lightbox)} timeout={200}>
           <Box sx={{ position: "relative", outline: "none", maxWidth: "100%", maxHeight: "100%" }}>
-            <IconButton
+            {/* Same close design, floated over the lightbox corner — only the
+                positioning, surface and press feedback are local to this one. */}
+            <DialogCloseButton
               aria-label="Close preview"
               onClick={() => setLightbox(null)}
               sx={{
@@ -1927,16 +1929,12 @@ export default function ProgramDetailPage() {
                 right: -14,
                 zIndex: 1,
                 bgcolor: "background.paper",
-                border: "1px solid",
-                borderColor: "divider",
                 boxShadow: 2,
                 transition: `transform 130ms ${EASE_OUT}`,
                 "&:hover": { bgcolor: "background.paper" },
                 "&:active": { transform: "scale(0.94)" },
               }}
-            >
-              <CloseRoundedIcon sx={{ fontSize: 20 }} />
-            </IconButton>
+            />
             {lightbox &&
               (() => {
                 const media = COLLATERAL_MEDIA[lightbox.id];

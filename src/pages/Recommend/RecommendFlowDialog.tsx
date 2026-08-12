@@ -8,7 +8,6 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import Divider from "@mui/material/Divider";
-import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Step from "@mui/material/Step";
 import StepLabel from "@mui/material/StepLabel";
@@ -17,7 +16,6 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { alpha, useTheme } from "@mui/material/styles";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import RedeemOutlinedIcon from "@mui/icons-material/RedeemOutlined";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
@@ -25,6 +23,7 @@ import { fmtDateNice, fmtUsd, fmtInr } from "@/lib/helpers";
 import { demoAmbassadorPrograms } from "@/data/demo-ambassador";
 import type { AmbassadorProgram } from "@/lib/types";
 import { useRecommend } from "./RecommendContext";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
@@ -121,9 +120,7 @@ export function RecommendFlowDialog() {
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             Recommend a program
           </Typography>
-          <IconButton onClick={closeFlow} size="small" aria-label="Close" sx={{ mt: -0.5, mr: -0.5 }}>
-            <CloseRoundedIcon fontSize="small" />
-          </IconButton>
+          <DialogCloseButton onClick={closeFlow} />
         </Stack>
         <Stepper activeStep={step} sx={{ "& .MuiStepLabel-label": { fontWeight: 600 } }}>
           {STEPS.map((s) => (

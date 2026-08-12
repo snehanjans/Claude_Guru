@@ -14,7 +14,6 @@ import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
-import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import PlayCircleOutlinedIcon from "@mui/icons-material/PlayCircleOutlined";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import CallMergeOutlinedIcon from "@mui/icons-material/CallMergeOutlined";
@@ -84,6 +83,7 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import type { Session, SessionType } from "@/lib/types";
 import { filterSessionsByRole } from "@/lib/role-config";
 import { getActivityStats } from "@/lib/activity-stats";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 
 const slideOutDown = keyframes`
   0%   { opacity: 1; transform: translateY(0)     scale(1);   }
@@ -1225,9 +1225,7 @@ export default function DashboardPage() {
                                     <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: "0.8125rem" }}>Event details</Typography>
                                     <Chip label={peStatusLabel} size="small" sx={{ fontWeight: 600, fontSize: "0.7rem", height: 22, ...peStatusSx }} />
                                   </Stack>
-                                  <IconButton size="small" onClick={() => setPlannedEventDetailId(null)} sx={{ color: "text.secondary" }}>
-                                    <CloseOutlinedIcon sx={{ fontSize: 16 }} />
-                                  </IconButton>
+                                  <DialogCloseButton onClick={() => setPlannedEventDetailId(null)} />
                                 </Box>
 
                                 {/* Scrollable content - matches SessionDetailsModal layout */}

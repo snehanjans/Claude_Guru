@@ -21,7 +21,6 @@ import { alpha, useTheme } from "@mui/material/styles";
 import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
@@ -36,6 +35,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { webinarRegLinkFor } from "@/data/demo-ambassador";
 import type { AmbassadorProgram, AmbassadorWebinar, WebinarStatus } from "@/lib/types";
 import { useRecommend } from "../RecommendContext";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
@@ -138,9 +138,7 @@ function PlanWebinarDialog({
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             Plan a webinar
           </Typography>
-          <IconButton onClick={onClose} size="small" aria-label="Close" sx={{ mt: -0.5, mr: -0.5 }}>
-            <CloseRoundedIcon fontSize="small" />
-          </IconButton>
+          <DialogCloseButton onClick={onClose} />
         </Stack>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
           {program.title}

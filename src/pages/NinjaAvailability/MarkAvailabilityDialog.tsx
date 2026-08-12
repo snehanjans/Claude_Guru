@@ -7,7 +7,6 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
@@ -16,13 +15,13 @@ import MenuItem from "@mui/material/MenuItem";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import InputAdornment from "@mui/material/InputAdornment";
-import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import LanguageIcon from "@mui/icons-material/Language";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 
 import { timeOptions12, END_DATE_ORDER_MSG, END_TIME_ORDER_MSG } from "@/lib/constants";
 import { parseHHMM, hhmmFromMinutes } from "@/lib/helpers";
 import type { Pattern, PresetCard } from "@/lib/types";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 import WeeklySlotsEditor, {
   defaultPresets,
   type WeeklySlotsHandle,
@@ -293,13 +292,7 @@ export default function MarkAvailabilityDialog({
               </Typography>
             </Stack>
           </Box>
-          <IconButton
-            onClick={onClose}
-            size="small"
-            sx={{ border: 1, borderColor: "divider", borderRadius: "4px", p: 0.75 }}
-          >
-            <CloseOutlinedIcon sx={{ fontSize: 16 }} />
-          </IconButton>
+          <DialogCloseButton onClick={onClose} />
         </Stack>
       </DialogTitle>
 

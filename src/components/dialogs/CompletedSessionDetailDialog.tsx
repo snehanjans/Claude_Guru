@@ -1,5 +1,4 @@
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
-import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import MailOutlinedIcon from "@mui/icons-material/MailOutlined";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
@@ -24,6 +23,7 @@ import { setOpenCompletedSession, setOpenLearnerRatings, setLearnerRatingsSessio
 import { pushToast } from "@/store/slices/toastsSlice";
 import { demoLearnerRatingsBySessionId } from "@/data/demo-sessions";
 import { fmtDateNice, fmtTime12, getTimeZoneOffsetMinutes, formatGMTOffsetFromMinutesAhead } from "@/lib/helpers";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 
 function fmtDuration(start: number, end: number) {
   const mins = end - start;
@@ -99,9 +99,7 @@ export function CompletedSessionDetailDialog() {
               }}
             />
           </Stack>
-          <IconButton size="small" onClick={close} sx={{ color: "text.secondary" }}>
-            <CloseOutlinedIcon sx={{ fontSize: 16 }} />
-          </IconButton>
+          <DialogCloseButton onClick={close} />
         </Box>
 
         {/* ── Scrollable content ── */}

@@ -11,7 +11,6 @@ import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CloseIcon from "@mui/icons-material/Close";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
@@ -23,6 +22,7 @@ import { setOpenCourseDetail, setCourseDetailId } from "@/store/slices/uiSlice";
 import { demoCourseCatalog, demoCourseModules } from "@/data/demo-sessions";
 import { CoursePatternThumb } from "@/components/shared/CoursePatternThumb";
 import type { CourseSection } from "@/lib/types";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 
 const SlideFromRight = forwardRef(function SlideFromRight(
   props: TransitionProps & { children: React.ReactElement },
@@ -223,7 +223,7 @@ export function CourseDetailDialog() {
               <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.3, fontSize: "1.05rem" }}>{course.title}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, fontSize: "0.8rem" }}>{course.program} &middot; {course.batch}</Typography>
             </Box>
-            <IconButton size="small" onClick={close} sx={{ flexShrink: 0 }}><CloseIcon fontSize="small" /></IconButton>
+            <DialogCloseButton onClick={close} />
           </Box>
         </Box>
       )}

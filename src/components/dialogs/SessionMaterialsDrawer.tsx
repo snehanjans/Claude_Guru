@@ -1,6 +1,5 @@
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined";
-import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
@@ -12,7 +11,6 @@ import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import Drawer from "@mui/material/Drawer";
-import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useAppSelector, useAppDispatch } from "@/store";
@@ -21,6 +19,7 @@ import { setOpenSessionMaterials } from "@/store/slices/uiSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { fmtDateNice, fmtTime12 } from "@/lib/helpers";
 import type { SessionPrepMaterial } from "@/lib/types";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 
 const TYPE_ICON: Record<SessionPrepMaterial["type"], React.ReactNode> = {
   slides: <SlideshowOutlinedIcon sx={{ fontSize: 18 }} />,
@@ -84,9 +83,7 @@ export function SessionMaterialsDrawer() {
             <DescriptionOutlinedIcon sx={{ fontSize: 18, color: "text.secondary" }} />
             <Typography variant="subtitle1" fontWeight={700}>Session Material</Typography>
           </Stack>
-          <IconButton size="small" onClick={handleClose} sx={{ color: "text.secondary" }}>
-            <CloseOutlinedIcon sx={{ fontSize: 18 }} />
-          </IconButton>
+          <DialogCloseButton onClick={handleClose} />
         </Box>
 
         {/* ── Content ── */}

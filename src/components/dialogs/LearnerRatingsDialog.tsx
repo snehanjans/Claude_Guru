@@ -1,9 +1,7 @@
 import { useState } from "react";
 import StarOutlinedIcon from "@mui/icons-material/StarOutlined";
-import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
-import IconButton from "@mui/material/IconButton";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -14,6 +12,7 @@ import { useAppSelector, useAppDispatch } from "@/store";
 import { setOpenLearnerRatings, setLearnerRatingsSessionId } from "@/store/slices/uiSlice";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import { demoLearnerRatingsBySessionId, demoFeedbackSummaryBySessionId, demoQualitativeFeedbackBySessionId } from "@/data/demo-sessions";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 
 /* ── Palette - derived from theme ── */
 function useRatingColors() {
@@ -183,9 +182,7 @@ export function LearnerRatingsDialog() {
             <Typography variant="subtitle1" fontWeight={700}>
               {isQualitative ? `${session?.sessionType ?? "Session"} feedback` : "Online session feedback"}
             </Typography>
-            <IconButton size="small" onClick={handleClose} sx={{ color: "text.secondary" }}>
-              <CloseOutlinedIcon sx={{ fontSize: 18 }} />
-            </IconButton>
+            <DialogCloseButton onClick={handleClose} />
           </Stack>
         </Box>
 

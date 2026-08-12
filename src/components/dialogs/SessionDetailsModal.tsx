@@ -15,7 +15,6 @@ import SlideshowOutlinedIcon from "@mui/icons-material/SlideshowOutlined";
 import SavingsOutlinedIcon from "@mui/icons-material/SavingsOutlined";
 import MailOutlinedIcon from "@mui/icons-material/MailOutlined";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
-import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import PollOutlinedIcon from "@mui/icons-material/PollOutlined";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
@@ -61,6 +60,7 @@ import { demoCourseCatalog, demoLearnerRatingsBySessionId } from "@/data/demo-se
 import { dateTimeMs, sortByDateTime } from "@/lib/helpers";
 import type { SessionPrepMaterial, Poll } from "@/lib/types";
 import { getActivityStats } from "@/lib/activity-stats";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 
 const MATERIAL_ICONS: Record<SessionPrepMaterial["type"], React.ReactNode> = {
   slides: <SlideshowOutlinedIcon sx={{ fontSize: 15 }} />,
@@ -637,9 +637,7 @@ export function SessionDetailsModal() {
               />
             )}
           </Stack>
-          <IconButton size="small" onClick={handleClose} sx={{ color: "text.secondary" }}>
-            <CloseOutlinedIcon sx={{ fontSize: 16 }} />
-          </IconButton>
+          <DialogCloseButton onClick={handleClose} />
         </Box>
 
         {/* ── Scrollable content ── */}

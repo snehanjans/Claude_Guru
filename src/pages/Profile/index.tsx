@@ -14,7 +14,6 @@ import Drawer from "@mui/material/Drawer";
 import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
 import IconButton from "@mui/material/IconButton";
-import CloseIcon from "@mui/icons-material/Close";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
@@ -80,6 +79,7 @@ import type { GuruRoleCategory } from "@/lib/role-config";
 import type { GuruRole } from "@/store/slices/devPanelSlice";
 import { clearRoleSwitching } from "@/store/slices/devPanelSlice";
 import { GURU_LEARNERS_IMPACTED } from "@/data/demo-ambassador";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 
 const borderRotate = keyframes`
   0% { transform: rotate(0deg); }
@@ -1582,9 +1582,7 @@ export default function ProfilePage() {
                   Download your stats card or share directly to social media.
                 </Typography>
               </Box>
-              <IconButton size="small" onClick={() => setShareOpen(false)}>
-                <CloseIcon sx={{ fontSize: 18 }} />
-              </IconButton>
+              <DialogCloseButton onClick={() => setShareOpen(false)} />
             </Stack>
           </Box>
 
@@ -2282,9 +2280,7 @@ export default function ProfilePage() {
                 Detailed ratings across all courses with monthly trends and learner feedback volume.
               </Typography>
             </Box>
-            <IconButton size="small" onClick={() => setShowCourseReport(false)} sx={{ mt: -0.5 }}>
-              <CloseIcon sx={{ fontSize: 18 }} />
-            </IconButton>
+            <DialogCloseButton onClick={() => setShowCourseReport(false)} />
           </Stack>
 
           {/* Summary stats row */}
@@ -2434,9 +2430,7 @@ export default function ProfilePage() {
                     </Typography>
                   )}
                 </Box>
-                <IconButton size="small" onClick={() => setReportModal(null)} sx={{ mt: -0.5 }}>
-                  <CloseIcon sx={{ fontSize: 18 }} />
-                </IconButton>
+                <DialogCloseButton onClick={() => setReportModal(null)} />
               </Stack>
 
               {/* Hero stat */}
@@ -2694,9 +2688,7 @@ export default function ProfilePage() {
                     {chart.description}
                   </Typography>
                 </Box>
-                <IconButton size="small" onClick={() => setEngagementModal(null)} sx={{ mt: -0.5 }}>
-                  <CloseIcon sx={{ fontSize: 18 }} />
-                </IconButton>
+                <DialogCloseButton onClick={() => setEngagementModal(null)} />
               </Stack>
 
               {/* Hero total */}
