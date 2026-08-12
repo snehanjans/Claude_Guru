@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import Button from "@mui/material/Button";
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
@@ -13,11 +12,11 @@ import type { StepIconProps } from "@mui/material/StepIcon";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import Box from "@mui/material/Box";
-import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
+import { DIALOG_ACTION_MIN_WIDTH } from "@/lib/constants";
 import Paper from "@mui/material/Paper";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
@@ -43,6 +42,7 @@ import { TimezonePicker } from "@/components/shared/TimezonePicker";
 import WeeklySlotsEditor, { defaultPresets, type WeeklySlotsHandle } from "./WeeklySlotsEditor";
 import { COMBINED_MENTOR_ROLE, availRoleVisual } from "@/lib/role-config";
 import type { AvailRole } from "@/lib/types";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 
 /* ── Qonto-style stepper (tuned to the app's primary color) ── */
 const QontoConnector = styled(StepConnector)(({ theme }) => ({
@@ -267,13 +267,7 @@ const AvailabilityBuilderDialog = () => {
           <Typography variant="h6" sx={{ fontWeight: 700, fontSize: { xs: "1.1rem", sm: "1.25rem" } }}>
             Update availability
           </Typography>
-          <IconButton
-            onClick={handleClose}
-            size="small"
-            sx={{ border: 1, borderColor: "divider", borderRadius: "8px", p: 0.75 }}
-          >
-            <CloseOutlinedIcon sx={{ fontSize: 16 }} />
-          </IconButton>
+          <DialogCloseButton onClick={handleClose} />
         </Stack>
 
         {/* Step indicators — bleed into the dialog's horizontal padding so long
@@ -504,7 +498,7 @@ const AvailabilityBuilderDialog = () => {
                   onClick={handleSave}
                   disabled={isSaving || noSlots}
                   startIcon={isSaving ? <CircularProgress size={14} color="inherit" /> : undefined}
-                  sx={{ px: 2 }}
+                  sx={{ px: 2, minWidth: DIALOG_ACTION_MIN_WIDTH }}
                 >
                   {isSaving ? "Saving…" : "Update"}
                 </Button>

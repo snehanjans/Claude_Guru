@@ -41,5 +41,12 @@ export const availabilityNudgeImageSrc = "/Teacher.png";
 
 // ─── Validation copy ───────────────────────────────────────────────────────
 /** Shared so the availability dialogs cannot drift apart in wording again. */
+/**
+ * Minimum width for a dialog's primary action button. Shared so short labels
+ * ("Update") and long ones ("Confirm leave") render at the same size across the
+ * leave and availability dialogs, which users see back to back.
+ */
+export const DIALOG_ACTION_MIN_WIDTH = 104;
+
 export const END_TIME_ORDER_MSG = "End time needs to be after the start time.";
 export const END_DATE_ORDER_MSG = "End date needs to be on or after the start date.";

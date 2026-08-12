@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import TextField from "@mui/material/TextField";
@@ -44,7 +45,8 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import dayjs from "dayjs";
 import { compactDatePickerProps, compactTimePickerProps } from "@/lib/pickerProps";
-import { END_DATE_ORDER_MSG, END_TIME_ORDER_MSG } from "@/lib/constants";
+import { DIALOG_ACTION_MIN_WIDTH, END_DATE_ORDER_MSG, END_TIME_ORDER_MSG } from "@/lib/constants";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 import {
   DeclineReasonFields,
   SchedulerContactNotice,
@@ -248,22 +250,29 @@ export function MarkNotAvailableDialog() {
       PaperProps={{ sx: { width: { xs: "calc(100vw - 1.5rem)", sm: 420 }, overflow: "hidden" } }}
     >
       {/* ── Header ── */}
-      <Box sx={{ px: 2, pt: 2, pb: 1.25, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: "0.9rem" }}>
-          {editingLeaveGroupId ? "Edit leave" : step === 2 ? "Overlapping events" : "Mark leave"}
-        </Typography>
-        <Chip
-          label={step === 2 ? `${totalConflicts} overlapping` : "Leave"}
-          size="small"
-          sx={{
-            height: 20,
-            fontSize: "0.65rem",
-            fontWeight: 600,
-            ...(step === 2
-              ? { bgcolor: "var(--gl-status-declined-bg)", color: "var(--gl-status-declined-text)", border: "1px solid var(--gl-status-declined-border)" }
-              : { bgcolor: "var(--gl-status-pending-bg)", color: "var(--gl-status-pending-text)", border: "1px solid var(--gl-status-pending-border)" }),
-          }}
-        />
+      <Box sx={{ px: 2, pt: 2, pb: 1.25, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+        {/* Title + status chip group left, close button right — same header shape as
+            CompletedSessionDetailDialog and the other dismissible dialogs. */}
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: "0.9rem" }} noWrap>
+            {editingLeaveGroupId ? "Edit leave" : step === 2 ? "Overlapping events" : "Mark leave"}
+          </Typography>
+          <Chip
+            label={step === 2 ? `${totalConflicts} overlapping` : "Leave"}
+            size="small"
+            sx={{
+              height: 20,
+              fontSize: "0.65rem",
+              fontWeight: 600,
+              flexShrink: 0,
+              ...(step === 2
+                ? { bgcolor: "var(--gl-status-declined-bg)", color: "var(--gl-status-declined-text)", border: "1px solid var(--gl-status-declined-border)" }
+                : { bgcolor: "var(--gl-status-pending-bg)", color: "var(--gl-status-pending-text)", border: "1px solid var(--gl-status-pending-border)" }),
+            }}
+          />
+        </Stack>
+        {/* Bordered square, matching AvailabilityBuilderDialog's close affordance. */}
+        <DialogCloseButton onClick={handleClose} />
       </Box>
 
       <DialogContent sx={{ px: 2, pt: 0.5, pb: 1.5 }}>
@@ -276,7 +285,7 @@ export function MarkNotAvailableDialog() {
             {/* Date range — same DatePicker fields the calendar's leave popover uses. */}
             <Box>
               <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.secondary", mb: 0.5 }}>
-                Dates
+                Date and time
               </Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                 <DatePicker
@@ -292,15 +301,9 @@ export function MarkNotAvailableDialog() {
                   minDate={naStartDate ? dayjs(`${naStartDate}T00:00:00`) : undefined}
                 />
               </Box>
-            </Box>
 
-            {/* Times — on a multi-day range these bound the first and last day; the
-                days in between are blocked in full. */}
-            <Box>
-              <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.secondary", mb: 0.5 }}>
-                {naStartDate !== naEndDate ? "Times (first and last day)" : "Times"}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              {/* Time row sits inside the same group, so the one label governs both. */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 1 }}>
                 <TimePicker
                   {...DIALOG_TIME_PICKER("Leave start time")}
                   value={dayjsFromMins(naStartDate || todayYmd, naStartMins)}
@@ -313,6 +316,14 @@ export function MarkNotAvailableDialog() {
                   onChange={(v) => v && dispatch(setNaEnd(hhmmFromMinutes(minsFromDayjs(v, true))))}
                 />
               </Box>
+
+              {/* The removed "Times (first and last day)" caption carried this; without
+                  it a multi-day range gives no clue the middle days are blocked whole. */}
+              {naStartDate !== naEndDate && (
+                <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 0.5, display: "block" }}>
+                  These times bound the first and last day — the days in between are blocked in full.
+                </Typography>
+              )}
             </Box>
 
             {naStartDate && naEndDate && !isValid && (
@@ -323,15 +334,32 @@ export function MarkNotAvailableDialog() {
               </Typography>
             )}
 
-            <TextField
-              label="Reason (optional)"
-              value={naReason}
-              onChange={(e) => dispatch(setNaReason(e.target.value))}
-              placeholder="e.g. Vacation, Personal"
-              size="small"
-              fullWidth
-              sx={{ "& .MuiInputBase-root": { height: 36, fontSize: "0.75rem" }, "& .MuiInputLabel-root": { fontSize: "0.7rem" } }}
-            />
+            {/* Caption above rather than a floating label, matching the Dates and
+                Times rows in this dialog. `aria-label` carries the accessible name
+                now that no <label> element does. */}
+            <Box>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: "text.secondary", mb: 0.5 }}>
+                Reason for leave{" "}
+                {/* Same colour as the label, lighter weight — `text.disabled` was
+                    too faint to read, and this still reads as secondary. */}
+                <Box component="span" sx={{ fontWeight: 400 }}>
+                  (optional)
+                </Box>
+              </Typography>
+              <TextField
+                value={naReason}
+                onChange={(e) => dispatch(setNaReason(e.target.value))}
+                placeholder="e.g. Medical emergency — back next week"
+                slotProps={{ htmlInput: { "aria-label": "Reason for leave" } }}
+                size="small"
+                fullWidth
+                multiline
+                minRows={3}
+                // No fixed `height` here: it would clamp the textarea and defeat
+                // minRows/auto-grow. Padding sets the box instead.
+                sx={{ "& .MuiInputBase-root": { fontSize: "0.75rem", p: 1 } }}
+              />
+            </Box>
           </Box>
         )}
 
@@ -433,7 +461,10 @@ export function MarkNotAvailableDialog() {
 
       {/* ── Footer ── */}
       <Box sx={{ px: 2, pb: 2, pt: 0.5, display: "flex", justifyContent: "flex-end", gap: 1 }}>
-        <Button variant="text" color="inherit" size="small" onClick={step === 2 ? () => setStep(1) : handleClose} sx={{ fontSize: "0.75rem" }}>
+        {/* Sized to match AvailabilityBuilderDialog's footer: same small default type
+            (no fontSize override) and the shared DIALOG_ACTION_MIN_WIDTH, so the two
+            dialogs' primary buttons render identically despite different labels. */}
+        <Button variant="text" color="inherit" size="small" onClick={step === 2 ? () => setStep(1) : handleClose}>
           {step === 2 ? "Back" : "Cancel"}
         </Button>
         <Button
@@ -441,7 +472,7 @@ export function MarkNotAvailableDialog() {
           size="small"
           onClick={step === 2 ? handleConfirm : handleMarkLeave}
           disabled={step === 1 ? !isValid : !canConfirmStep2}
-          sx={{ px: 2.5, fontSize: "0.75rem" }}
+          sx={{ px: 2, minWidth: DIALOG_ACTION_MIN_WIDTH }}
         >
           {step === 2 ? "Confirm leave" : editingLeaveGroupId ? "Update" : "Mark leave"}
         </Button>
