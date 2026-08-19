@@ -13,6 +13,7 @@ import pollsReducer from "./slices/pollsSlice";
 import devPanelReducer from "./slices/devPanelSlice";
 import supportReducer from "./slices/supportSlice";
 import webinarsReducer from "./slices/webinarsSlice";
+import collateralEditsReducer from "./slices/collateralEditsSlice";
 import { ninjaApi } from "@/api/ninja/ninjaApi";
 
 export const store = configureStore({
@@ -31,6 +32,7 @@ export const store = configureStore({
     devPanel: devPanelReducer,
     support: supportReducer,
     webinars: webinarsReducer,
+    collateralEdits: collateralEditsReducer,
     // RTK Query API cache
     [ninjaApi.reducerPath]: ninjaApi.reducer,
   },
