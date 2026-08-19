@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
@@ -11,6 +11,10 @@ import Divider from "@mui/material/Divider";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import Modal from "@mui/material/Modal";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 import Fade from "@mui/material/Fade";
 import Backdrop from "@mui/material/Backdrop";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -19,7 +23,8 @@ import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { alpha } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
+import { keyframes } from "@mui/system";
 import type { SxProps, Theme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
@@ -41,6 +46,8 @@ import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import ZoomOutMapRoundedIcon from "@mui/icons-material/ZoomOutMapRounded";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import AutoFixHighOutlinedIcon from "@mui/icons-material/AutoFixHighOutlined";
 import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
@@ -68,8 +75,17 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { polishMessage, PolishError } from "@/lib/ai/polishMessage";
+import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+/* Gradient sweep on the textarea border while a polish request is in flight. */
+const POLISH_SHIMMER = keyframes`
+  from { background-position: 0% 50%; }
+  to { background-position: 200% 50%; }
+`;
+/** How long the "Undo" affordance stays available after a successful polish. */
+const POLISH_UNDO_MS = 8_000;
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 
 /* Per-program share/meta image (og:image) shown in link previews. Drop the files
@@ -541,6 +557,9 @@ export default function ProgramDetailPage() {
   const { programId } = useParams<{ programId: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  // Read directly for the wand's SVG gradient stops — an SVG paint server can't
+  // take colours from an sx callback.
+  const theme = useTheme();
   const noPromoCode = useAppSelector((s) => s.devPanel.noPromoCode);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [tab, setTab] = useState<"overview" | "collaterals" | "faq">("overview");
@@ -549,6 +568,24 @@ export default function ProgramDetailPage() {
   const [lightbox, setLightbox] = useState<{ id: string; label: string; caption: string } | null>(
     null,
   );
+  // LinkedIn "Message to post" card — local override of the generated caption once
+  // the guru edits it. Null means "use the generated message". State-only for now;
+  // persistence lands in a later change.
+  const [linkedInMessageOverride, setLinkedInMessageOverride] = useState<string | null>(null);
+  const [linkedInEditOpen, setLinkedInEditOpen] = useState(false);
+  const [linkedInEditDraft, setLinkedInEditDraft] = useState("");
+  const [linkedInDiscardConfirmOpen, setLinkedInDiscardConfirmOpen] = useState(false);
+  // "Polish with AI" — in-flight flag, one level of undo, and the inline error.
+  const [polishing, setPolishing] = useState(false);
+  const [polishError, setPolishError] = useState<string | null>(null);
+  const [polishUndoText, setPolishUndoText] = useState<string | null>(null);
+  const [polishStatus, setPolishStatus] = useState("");
+  // Whether this editing session used polish at all — decides if the terminal
+  // saved/discarded analytics event fires (that pair is what tells us whether
+  // the rewrite was actually usable).
+  const polishUsedRef = useRef(false);
+  const polishAbortRef = useRef<AbortController | null>(null);
+  const polishUndoTimerRef = useRef<number | null>(null);
 
   const program = demoAmbassadorPrograms.find((p) => p.id === programId) ?? null;
   // The guru shares a clean referral link — program page + ?ref=<guru id>. The
@@ -562,7 +599,33 @@ export default function ProgramDetailPage() {
     setTab("overview");
     setLightbox(null);
     setFaqExpanded("0-0");
+    setLinkedInMessageOverride(null);
   }, [programId]);
+
+  // Clear the polish affordances whenever the edit modal opens or closes, and
+  // abort any in-flight request so a late response can't overwrite the text
+  // after the guru has already closed the dialog.
+  useEffect(() => {
+    if (linkedInEditOpen) {
+      polishUsedRef.current = false;
+      return;
+    }
+    polishAbortRef.current?.abort();
+    polishAbortRef.current = null;
+    if (polishUndoTimerRef.current) window.clearTimeout(polishUndoTimerRef.current);
+    setPolishing(false);
+    setPolishError(null);
+    setPolishUndoText(null);
+    setPolishStatus("");
+  }, [linkedInEditOpen]);
+
+  useEffect(
+    () => () => {
+      polishAbortRef.current?.abort();
+      if (polishUndoTimerRef.current) window.clearTimeout(polishUndoTimerRef.current);
+    },
+    [],
+  );
 
   if (!program) {
     return (
@@ -668,6 +731,69 @@ export default function ProgramDetailPage() {
     dispatch(pushToast({ title: "Copied", description }));
     setCopiedKey(key);
     window.setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1600);
+  };
+
+  /**
+   * Rephrase the draft in place. On failure the guru's text is left exactly as
+   * it was — we only surface an inline message. The referral URL is stripped
+   * before the request and re-appended after it inside polishMessage().
+   */
+  const handlePolish = async () => {
+    if (polishing || !linkedInEditDraft.trim()) return;
+    const before = linkedInEditDraft;
+    const controller = new AbortController();
+    polishAbortRef.current = controller;
+    polishUsedRef.current = true;
+    setPolishing(true);
+    setPolishError(null);
+    setPolishUndoText(null);
+    setPolishStatus("Polishing your message…");
+    track(ANALYTICS_EVENTS.POLISH_REQUESTED, { program: program.id, chars: before.length });
+
+    try {
+      const polished = await polishMessage({
+        text: before,
+        referralLink: link,
+        protectedPhrases: [program.title, program.scholarshipCode],
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      setLinkedInEditDraft(polished);
+      setPolishUndoText(before);
+      setPolishStatus("Message polished. Undo is available for a few seconds.");
+      track(ANALYTICS_EVENTS.POLISH_SUCCEEDED, {
+        program: program.id,
+        charsBefore: before.length,
+        charsAfter: polished.length,
+      });
+      if (polishUndoTimerRef.current) window.clearTimeout(polishUndoTimerRef.current);
+      polishUndoTimerRef.current = window.setTimeout(
+        () => setPolishUndoText(null),
+        POLISH_UNDO_MS,
+      );
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      setPolishError("Couldn't polish that — try again.");
+      setPolishStatus("Couldn't polish that message. Your text is unchanged.");
+      track(ANALYTICS_EVENTS.POLISH_FAILED, {
+        program: program.id,
+        reason: err instanceof PolishError ? err.message : "unexpected",
+      });
+    } finally {
+      if (!controller.signal.aborted) setPolishing(false);
+      if (polishAbortRef.current === controller) polishAbortRef.current = null;
+    }
+  };
+
+  /** Restore the pre-polish text. One level is enough — see POLISH_UNDO_MS. */
+  const handlePolishUndo = () => {
+    if (polishUndoText === null) return;
+    setLinkedInEditDraft(polishUndoText);
+    setPolishUndoText(null);
+    setPolishError(null);
+    setPolishStatus("Reverted to your previous message.");
+    track(ANALYTICS_EVENTS.POLISH_UNDONE, { program: program.id });
+    if (polishUndoTimerRef.current) window.clearTimeout(polishUndoTimerRef.current);
   };
 
   // Download the collateral image. No real creative in the demo, so we generate a
@@ -1435,10 +1561,40 @@ export default function ProgramDetailPage() {
                 const media = COLLATERAL_MEDIA[asset.id];
                 // Full post the guru shares: the message plus their id-tagged link.
                 const body = `${fillCollateral(captionFor(asset))}\n\n${link}`;
-                // LinkedIn-style truncation of the post text for the preview.
                 const postText = fillCollateral(captionFor(asset));
-                const liIsLong = postText.length > 160;
-                const liText = liIsLong ? postText.slice(0, 160).replace(/\s+\S*$/, "") : postText;
+                // LinkedIn-only: the guru's edited message, if any, replaces the
+                // generated caption in the "Message to post" card and its copy payload.
+                // Other platforms are untouched by this override. Once edited, the
+                // override is the whole post (message + link combined) since the
+                // link is editable inside the same textarea.
+                const liHasOverride = asset.id === "asset-01" && linkedInMessageOverride !== null;
+                const liMessage = asset.id === "asset-01" ? linkedInMessageOverride ?? postText : postText;
+                const liCopyBody = liHasOverride ? liMessage : `${liMessage}\n\n${link}`;
+                // Left-hand LinkedIn preview mirrors the saved message (read-only —
+                // the edit modal is the only place editing happens). LinkedIn's real
+                // feed truncates around ~200 characters; we approximate that with a
+                // fixed 3-line clamp so the preview card's height never grows with a
+                // longer message.
+                const liPreviewIsLong = liMessage.length > 200;
+                // Keep the "Message to post" card at a fixed size regardless of how
+                // long the (editable) message gets — truncate on-card and let "Read
+                // more" open the full text in the edit popup.
+                const liMessageIsLong = liMessage.length > 280;
+                const liMessagePreview = liMessageIsLong
+                  ? liMessage.slice(0, 280).replace(/\s+\S*$/, "")
+                  : liMessage;
+                const openLinkedInEdit = () => {
+                  setLinkedInEditDraft(liCopyBody);
+                  setLinkedInEditOpen(true);
+                };
+                // Closing without saving. Pairs with POLISH_SAVED so we can tell
+                // whether a polished rewrite was actually kept.
+                const closeLinkedInEditDiscarded = () => {
+                  if (polishUsedRef.current) {
+                    track(ANALYTICS_EVENTS.POLISH_DISCARDED, { program: program.id });
+                  }
+                  setLinkedInEditOpen(false);
+                };
                 return (
                   <Box
                     key={asset.id}
@@ -1472,6 +1628,7 @@ export default function ProgramDetailPage() {
                         left, the copyable message on the right — so the guru can visualise
                         it before posting. Other platforms show a placeholder + message. */}
                     {asset.id === "asset-01" ? (
+                      <>
                       <Box
                         sx={{
                           display: "grid",
@@ -1541,15 +1698,37 @@ export default function ProgramDetailPage() {
                             <MoreHorizRoundedIcon sx={{ color: "text.secondary" }} />
                           </Stack>
 
-                          {/* post text */}
-                          <Typography variant="body2" sx={{ px: 1.5, pb: 1.5, lineHeight: 1.5 }}>
-                            {renderRichText(liText)}
-                            {liIsLong && (
-                              <Box component="span" sx={{ color: "text.secondary", fontWeight: 500 }}>
-                                …more
-                              </Box>
-                            )}
-                          </Typography>
+                          {/* post text — mirrors the saved message, display only.
+                              Clamped to 3 lines (LinkedIn truncates by character
+                              count on the real feed; this is a UI-stable approximation)
+                              so the card's height never grows with the message. The
+                              "…more" row is always reserved so short and long messages
+                              render at the same height. */}
+                          <Box sx={{ px: 1.5, pb: 1.5 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                lineHeight: 1.5,
+                                display: "-webkit-box",
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {renderRichText(liMessage)}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                lineHeight: 1.5,
+                                color: "text.secondary",
+                                fontWeight: 500,
+                                visibility: liPreviewIsLong ? "visible" : "hidden",
+                              }}
+                            >
+                              …more
+                            </Typography>
+                          </Box>
 
                           {/* link-preview card — thumbnail + title + domain */}
                           <Divider />
@@ -1665,30 +1844,85 @@ export default function ProgramDetailPage() {
                               t.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : t.palette.grey[50],
                           }}
                         >
-                          <Typography
-                            sx={{
-                              fontSize: "0.7rem",
-                              fontWeight: 700,
-                              letterSpacing: "0.06em",
-                              textTransform: "uppercase",
-                              color: "text.secondary",
-                              mb: 1,
-                            }}
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            spacing={1}
+                            sx={{ mb: "20px" }}
                           >
-                            Message to post
-                          </Typography>
+                            <Typography
+                              sx={{
+                                fontSize: "0.7rem",
+                                fontWeight: 700,
+                                letterSpacing: "0.06em",
+                                textTransform: "uppercase",
+                                color: "text.secondary",
+                                lineHeight: 1,
+                              }}
+                            >
+                              Message to post
+                            </Typography>
+                            <Button
+                              disableElevation
+                              onClick={openLinkedInEdit}
+                              startIcon={<EditOutlinedIcon sx={{ fontSize: 17 }} />}
+                              sx={{
+                                minWidth: 0,
+                                py: 0.625,
+                                px: 1.5,
+                                fontSize: 14,
+                                fontWeight: 700,
+                                textTransform: "none",
+                                borderRadius: "8px",
+                                color: "primary.main",
+                                bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                                "&:hover": { bgcolor: (t) => alpha(t.palette.primary.main, 0.16) },
+                              }}
+                            >
+                              Edit
+                            </Button>
+                          </Stack>
                           <Typography
                             variant="body2"
                             sx={{ lineHeight: 1.55, whiteSpace: "pre-line", color: "text.primary" }}
                           >
-                            {renderCaption(captionFor(asset))}
+                            {renderRichText(liMessagePreview)}
+                            {liMessageIsLong && (
+                              <>
+                                {"… "}
+                                <Box
+                                  component="span"
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={openLinkedInEdit}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      openLinkedInEdit();
+                                    }
+                                  }}
+                                  sx={{
+                                    color: "primary.main",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                    outline: "none",
+                                    "&:hover, &:focus-visible": { textDecoration: "underline" },
+                                  }}
+                                >
+                                  Read more
+                                </Box>
+                              </>
+                            )}
                           </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ mt: 1, color: "primary.main", fontWeight: 600, wordBreak: "break-all", lineHeight: 1.45 }}
-                          >
-                            {link}
-                          </Typography>
+                          {!liHasOverride && (
+                            <Typography
+                              variant="body2"
+                              sx={{ mt: 1, color: "primary.main", fontWeight: 600, wordBreak: "break-all", lineHeight: 1.45 }}
+                            >
+                              {link}
+                            </Typography>
+                          )}
 
                           <Box sx={{ mt: "auto", pt: 2.5 }}>
                             {/* info box — how to use the message (yellow note treatment) */}
@@ -1716,41 +1950,313 @@ export default function ProgramDetailPage() {
 
                             <Button
                               fullWidth
+                              variant="contained"
                               disableElevation
+                              color={done ? "success" : "primary"}
                               startIcon={
                                 done ? (
                                   <CheckRoundedIcon sx={{ fontSize: 18 }} />
                                 ) : (
-                                  <ContentCopyOutlinedIcon sx={{ fontSize: 18 }} />
+                                  <LinkedInIcon sx={{ fontSize: 20 }} />
                                 )
                               }
-                              onClick={() => copy(key, body, `${asset.label} copied to clipboard.`)}
+                              onClick={() => copy(key, liCopyBody, `${asset.label} copied to clipboard.`)}
                               sx={{
                                 py: 1,
                                 textTransform: "none",
                                 fontWeight: 700,
                                 borderRadius: "10px",
-                                color: done ? "success.main" : "primary.main",
-                                bgcolor: (t) =>
-                                  done
-                                    ? alpha(t.palette.success.main, 0.1)
-                                    : alpha(t.palette.primary.main, 0.1),
-                                "&:hover": {
-                                  bgcolor: (t) =>
-                                    done
-                                      ? alpha(t.palette.success.main, 0.16)
-                                      : alpha(t.palette.primary.main, 0.16),
-                                },
                                 transition: `transform 130ms ${EASE_OUT}, background-color 130ms ${EASE_OUT}`,
                                 "&:active": { transform: "scale(0.99)" },
                                 "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
                               }}
                             >
-                              {done ? "Copied" : "Copy text"}
+                              {done ? "Copied" : "Copy and Share on LinkedIn"}
                             </Button>
                           </Box>
                         </Box>
                       </Box>
+
+                      {/* Edit the LinkedIn message — link included, fully editable. */}
+                      <Dialog
+                        open={linkedInEditOpen}
+                        onClose={() => {
+                          if (linkedInEditDraft !== liCopyBody) {
+                            setLinkedInDiscardConfirmOpen(true);
+                          } else {
+                            closeLinkedInEditDiscarded();
+                          }
+                        }}
+                        maxWidth="sm"
+                        fullWidth
+                        aria-labelledby="linkedin-edit-message-title"
+                      >
+                        <DialogTitle id="linkedin-edit-message-title">Edit message</DialogTitle>
+                        <DialogContent>
+                          {/* Gradient ring around the field while polishing. The
+                              2px pad is always reserved so nothing shifts when
+                              the sweep appears; the text stays fully readable. */}
+                          <Box
+                            sx={{
+                              mt: 1,
+                              p: "2px",
+                              borderRadius: "10px",
+                              background: (t) =>
+                                polishing
+                                  ? `linear-gradient(90deg, ${alpha(t.palette.primary.main, 0.15)}, ${
+                                      t.palette.primary.main
+                                    }, ${alpha(t.palette.primary.main, 0.15)})`
+                                  : "transparent",
+                              backgroundSize: "200% 100%",
+                              animation: polishing ? `${POLISH_SHIMMER} 1.4s linear infinite` : "none",
+                              "@media (prefers-reduced-motion: reduce)": {
+                                animation: "none",
+                                // Static highlight instead of a moving sweep.
+                                background: (t) =>
+                                  polishing ? t.palette.primary.main : "transparent",
+                              },
+                            }}
+                          >
+                            <TextField
+                              autoFocus
+                              fullWidth
+                              multiline
+                              minRows={8}
+                              maxRows={12}
+                              value={linkedInEditDraft}
+                              onChange={(e) => setLinkedInEditDraft(e.target.value)}
+                              onFocus={(e) => {
+                                const len = e.target.value.length;
+                                e.target.setSelectionRange(len, len);
+                              }}
+                              sx={{
+                                "& .MuiInputBase-root": {
+                                  alignItems: "flex-start",
+                                  bgcolor: "background.paper",
+                                  borderRadius: "8px",
+                                },
+                                "& .MuiInputBase-inputMultiline": { overflowY: "auto !important" },
+                              }}
+                            />
+                          </Box>
+
+                          {/* Polish outcome: inline error, or the undo affordance. */}
+                          {polishError && (
+                            <Typography
+                              variant="body2"
+                              sx={{ mt: 1, fontSize: 13, color: "error.main", fontWeight: 600 }}
+                            >
+                              {polishError}
+                            </Typography>
+                          )}
+                          {!polishError && polishUndoText !== null && (
+                            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1 }}>
+                              <Typography variant="body2" sx={{ fontSize: 13, color: "text.secondary" }}>
+                                Polished your message.
+                              </Typography>
+                              <Button
+                                onClick={handlePolishUndo}
+                                sx={{
+                                  minWidth: 0,
+                                  p: 0,
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                  textTransform: "none",
+                                  color: "primary.main",
+                                  "&:hover": { bgcolor: "transparent", textDecoration: "underline" },
+                                }}
+                              >
+                                Undo
+                              </Button>
+                            </Stack>
+                          )}
+
+                          {/* Screen-reader announcements for polish start / result. */}
+                          <Box
+                            aria-live="polite"
+                            sx={{
+                              position: "absolute",
+                              width: 1,
+                              height: 1,
+                              overflow: "hidden",
+                              clip: "rect(0 0 0 0)",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {polishStatus}
+                          </Box>
+                        </DialogContent>
+                        <DialogActions sx={{ justifyContent: "space-between" }}>
+                          {/* Gradient stops for the wand. An SVG paint server is the
+                              only way to gradient-fill an icon's strokes; the border
+                              uses a masked ring instead so its fill stays transparent. */}
+                          <Box
+                            component="svg"
+                            aria-hidden="true"
+                            focusable="false"
+                            sx={{ position: "absolute", width: 0, height: 0 }}
+                          >
+                            <defs>
+                              {(
+                                [
+                                  ["polishWandIdle", 0.85],
+                                  ["polishWandHover", 1],
+                                ] as const
+                              ).map(([id, o]) => (
+                                <linearGradient key={id} id={id} x1="0" y1="0" x2="1" y2="1">
+                                  <stop offset="0%" stopColor={theme.palette.primary.main} stopOpacity={o} />
+                                  <stop offset="55%" stopColor={theme.palette.primary.light} stopOpacity={o} />
+                                  <stop offset="100%" stopColor={theme.palette.secondary.main} stopOpacity={o} />
+                                </linearGradient>
+                              ))}
+                            </defs>
+                          </Box>
+
+                          {/* Outlined + gradient-edged, but still clearly secondary
+                              to Save: transparent fill, neutral label. */}
+                          <Button
+                            onClick={handlePolish}
+                            disabled={polishing || !linkedInEditDraft.trim()}
+                            startIcon={
+                              <AutoFixHighOutlinedIcon
+                                sx={{ fontSize: 17, fill: "url(#polishWandIdle)" }}
+                              />
+                            }
+                            sx={{
+                              position: "relative",
+                              px: 1.5,
+                              py: 0.625,
+                              textTransform: "none",
+                              fontWeight: 600,
+                              // Matches the Save button's corner radius.
+                              borderRadius: "10px",
+                              bgcolor: "transparent",
+                              color: "text.primary",
+                              border: "1px solid",
+                              // Fallback edge for engines without mask compositing;
+                              // the gradient ring below replaces it where supported.
+                              borderColor: "divider",
+                              "@supports ((-webkit-mask-composite: xor) or (mask-composite: exclude))":
+                                {
+                                  borderColor: "transparent",
+                                  "&::before": {
+                                    content: '""',
+                                    position: "absolute",
+                                    // Cover the border box, not the padding box, so the
+                                    // ring sits exactly where the 1px border would.
+                                    inset: "-1px",
+                                    borderRadius: "inherit",
+                                    padding: "1px",
+                                    background: (t) =>
+                                      `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.55)}, ${alpha(
+                                        t.palette.primary.light,
+                                        0.5,
+                                      )}, ${alpha(t.palette.secondary.main, 0.55)})`,
+                                    WebkitMask:
+                                      "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                                    WebkitMaskComposite: "xor",
+                                    maskComposite: "exclude",
+                                    pointerEvents: "none",
+                                    transition: `background 160ms ${EASE_OUT}`,
+                                  },
+                                },
+                              "&:hover": {
+                                // Very light tint — enough to register, not enough to
+                                // read as a filled button.
+                                bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+                                borderColor: (t) => alpha(t.palette.primary.main, 0.5),
+                                "& .MuiSvgIcon-root": { fill: "url(#polishWandHover)" },
+                                "&::before": {
+                                  background: (t) =>
+                                    `linear-gradient(135deg, ${t.palette.primary.main}, ${alpha(
+                                      t.palette.primary.light,
+                                      0.9,
+                                    )}, ${t.palette.secondary.main})`,
+                                },
+                              },
+                              "&.Mui-focusVisible": {
+                                outline: (t) => `2px solid ${t.palette.primary.main}`,
+                                outlineOffset: 2,
+                              },
+                              "&.Mui-disabled": {
+                                color: "text.disabled",
+                                borderColor: "divider",
+                                "& .MuiSvgIcon-root": { fill: "currentColor" },
+                                "&::before": { background: "transparent" },
+                              },
+                            }}
+                          >
+                            {polishing ? "Polishing…" : "Polish with AI"}
+                          </Button>
+                          <Stack direction="row" spacing={1}>
+                            <Button
+                              color="inherit"
+                              onClick={() => {
+                                if (linkedInEditDraft !== liCopyBody) {
+                                  setLinkedInDiscardConfirmOpen(true);
+                                } else {
+                                  closeLinkedInEditDiscarded();
+                                }
+                              }}
+                              sx={{ textTransform: "none", fontWeight: 600 }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              variant="contained"
+                              disableElevation
+                              onClick={() => {
+                                setLinkedInMessageOverride(linkedInEditDraft);
+                                if (polishUsedRef.current) {
+                                  track(ANALYTICS_EVENTS.POLISH_SAVED, { program: program.id });
+                                }
+                                setLinkedInEditOpen(false);
+                              }}
+                              sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px" }}
+                            >
+                              Save
+                            </Button>
+                          </Stack>
+                        </DialogActions>
+                      </Dialog>
+
+                      {/* Confirm before discarding an in-progress edit. */}
+                      <Dialog
+                        open={linkedInDiscardConfirmOpen}
+                        onClose={() => setLinkedInDiscardConfirmOpen(false)}
+                        maxWidth="xs"
+                        fullWidth
+                        aria-labelledby="linkedin-discard-title"
+                      >
+                        <DialogTitle id="linkedin-discard-title">Discard your changes?</DialogTitle>
+                        <DialogContent>
+                          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                            Your edited message hasn't been saved. Closing now will discard it.
+                          </Typography>
+                        </DialogContent>
+                        <DialogActions>
+                          <Button
+                            color="inherit"
+                            onClick={() => setLinkedInDiscardConfirmOpen(false)}
+                            sx={{ textTransform: "none", fontWeight: 600 }}
+                          >
+                            Keep editing
+                          </Button>
+                          <Button
+                            color="error"
+                            variant="contained"
+                            disableElevation
+                            onClick={() => {
+                              setLinkedInDiscardConfirmOpen(false);
+                              closeLinkedInEditDiscarded();
+                            }}
+                            sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px" }}
+                          >
+                            Discard
+                          </Button>
+                        </DialogActions>
+                      </Dialog>
+                      </>
                     ) : asset.id === "asset-02" ? (
                       renderTwoPane(asset, key, done, body, renderWhatsApp(asset))
                     ) : asset.id === "asset-03" ? (

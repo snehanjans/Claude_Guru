@@ -4,3 +4,5 @@
 /android/app/build/
 .claude/
 .vercel
+.env*
+.playwright-mcp/
