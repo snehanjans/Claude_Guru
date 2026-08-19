@@ -2071,15 +2071,21 @@ export default function ProgramDetailPage() {
                             </Stack>
                           )}
 
-                          {/* Screen-reader announcements for polish start / result. */}
+                          {/* Screen-reader announcements for polish start / result.
+                              Sizes MUST carry units: in sx, a unitless 0–1 number is
+                              a fraction, so `width: 1` would mean 100% and stretch
+                              this box over the dialog. */}
                           <Box
                             aria-live="polite"
                             sx={{
                               position: "absolute",
-                              width: 1,
-                              height: 1,
+                              width: "1px",
+                              height: "1px",
+                              m: "-1px",
+                              p: 0,
+                              border: 0,
                               overflow: "hidden",
-                              clip: "rect(0 0 0 0)",
+                              clipPath: "inset(50%)",
                               whiteSpace: "nowrap",
                             }}
                           >
