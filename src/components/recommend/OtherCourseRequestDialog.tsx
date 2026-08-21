@@ -23,6 +23,7 @@ import {
   searchReferableCourses,
   submitReferralRequest,
 } from "@/lib/referralRequest";
+import type { PopperProps } from "@mui/material/Popper";
 import type { ReferableCourse } from "@/data/demo-referable-courses";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
@@ -30,6 +31,47 @@ const STEP_IN = keyframes`
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 `;
+
+/**
+ * Renders the option list inline inside the dialog instead of in a floating
+ * popper.
+ *
+ * The dialog is sized to its content, so there is no room beneath the field for
+ * a floating list — Popper positions against the viewport, not the dialog, so it
+ * spilled out of the modal. Rendering in flow makes the dialog grow to contain
+ * the list, and the listbox scrolls once it hits its max height.
+ *
+ * This is MUI's documented approach for an Autocomplete inside a popup: swap the
+ * popper slot for a plain element, stripping the Popper-only props so they don't
+ * reach the DOM.
+ */
+function InlineListPopper(props: PopperProps) {
+  const {
+    // Popper-only props — deliberately dropped.
+    anchorEl: _anchorEl,
+    disablePortal: _disablePortal,
+    placement: _placement,
+    modifiers: _modifiers,
+    popperOptions: _popperOptions,
+    transition: _transition,
+    keepMounted: _keepMounted,
+    open,
+    ...rest
+  } = props;
+  if (!open) return null;
+  return (
+    <Box
+      {...(rest as React.HTMLAttributes<HTMLDivElement>)}
+      sx={{
+        // The popper class carries absolute positioning; force it back in flow.
+        position: "static !important",
+        transform: "none !important",
+        width: "100% !important",
+        mt: 0.5,
+      }}
+    />
+  );
+}
 
 /** What was sent — drives the wording of the confirmation step. */
 interface SentRequest {
@@ -327,7 +369,15 @@ export function OtherCourseRequestDialog({
               searching ? "Searching…" : "No matching courses — you can still send this as a request."
             }
             disabled={submitting}
-            slotProps={{ listbox: { sx: { maxHeight: { xs: 200, sm: 280 } } } }}
+            slots={{ popper: InlineListPopper }}
+            slotProps={{
+              // Flatter than a floating menu, since it now sits in the dialog.
+              paper: {
+                elevation: 0,
+                sx: { border: "1px solid", borderColor: "divider", borderRadius: "10px" },
+              },
+              listbox: { sx: { maxHeight: { xs: 176, sm: 232 }, overflowY: "auto" } },
+            }}
             renderOption={(props, option) => (
               <Box component="li" {...props} key={option.id}>
                 <Box sx={{ minWidth: 0 }}>
