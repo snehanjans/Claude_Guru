@@ -32,4 +32,11 @@ export const ANALYTICS_EVENTS = {
   /** Terminal outcome for a session that used polish at least once. */
   POLISH_SAVED: "recommend.polish_with_ai.saved",
   POLISH_DISCARDED: "recommend.polish_with_ai.discarded",
+
+  /* ── "Recommend another course" ──────────────────────────────────────────
+     A submit carries either the chosen course or, when nothing matched, the raw
+     query. Those unmatched queries are the signal for what to add next.      */
+  OTHER_COURSE_OPENED: "recommend.other_course.opened",
+  OTHER_COURSE_SUBMITTED: "recommend.other_course.submitted",
+  OTHER_COURSE_FAILED: "recommend.other_course.failed",
 } as const;
