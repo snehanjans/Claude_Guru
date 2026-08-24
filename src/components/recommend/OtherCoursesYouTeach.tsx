@@ -214,8 +214,9 @@ function TeachCourseCard({
           {[course.durationLabel, course.mode].filter(Boolean).join(" · ")}
         </Typography>
 
-        <Box sx={{ mt: "auto", pt: 1.25, textAlign: "center" }}>
+        <Box sx={{ mt: "auto", pt: 1.25 }}>
           <Button
+            fullWidth
             onClick={handleCopy}
             endIcon={
               copied ? (
