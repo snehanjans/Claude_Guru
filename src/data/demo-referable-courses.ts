@@ -1,58 +1,93 @@
 /**
- * Wider Great Learning catalog, searchable from the "recommend another course"
- * flow on the Recommend page.
+ * Great Learning program catalogue.
  *
- * Distinct from `demoAmbassadorPrograms`: those four AINP programs have their own
- * cards with a ready-made referral link, so they are deliberately absent here —
- * this list is the "something else" catalog.
+ * Pulled from the public sitemap at https://www.mygreatlearning.com/sitemap.xml
+ * (gl_sitemap.xml), then read out of each page's schema.org `Course` JSON-LD —
+ * `name`, `provider.name` and `hasCourseInstance.courseWorkload`. Four pages
+ * carry no Course schema, so their titles come from the page `h1`/breadcrumb and
+ * they have no published duration.
  *
- * `eligibleForReferral` is the gate. Ineligible courses stay in the data (so the
- * shape matches a real catalog feed) but are filtered out of search, because
- * offering a guru a course we can't pay a referral on would be a broken promise.
+ * Two sitemap entries were left out because they are category hub pages rather
+ * than single programs: `data-analytics-essentials-online-course` ("Data Science
+ * Courses") and `pg-program-cyber-security-course` ("Cyber Security Courses").
+ *
+ * Regenerating: fetch gl_sitemap.xml, then for each program URL read the first
+ * ld+json block of @type Course. Slug is what the referral link is built from.
+ *
+ * Captured 2026-08-24. Titles, providers and durations are
+ * whatever the site published at that moment — re-pull rather than hand-editing.
  */
 
 export interface ReferableCourse {
-  id: string;
+  /** Path on mygreatlearning.com — the referral link is built from this. */
+  slug: string;
   title: string;
-  /** Short grouping shown under the title to disambiguate similar names. */
-  category: string;
-  durationLabel: string;
+  /** Awarding university or partner, where the page declares one. */
+  provider?: string;
+  /** Published duration, absent where the page doesn't state one. */
+  durationLabel?: string;
+  /**
+   * Whether a guru can earn a referral on this program.
+   *
+   * The site does not publish referral eligibility, so this cannot be derived
+   * from the catalogue — every entry is flagged eligible until the referral
+   * backend supplies the real answer. Treat it as a hook, not as fact.
+   */
   eligibleForReferral: boolean;
+  /** Alternate paths that resolve to the same program. */
+  aliasSlugs?: string[];
 }
 
 export const demoReferableCourses: ReferableCourse[] = [
-  // ── Data & AI ──
-  { id: "rc-01", title: "PG Program in Data Science and Business Analytics", category: "Data Science", durationLabel: "12 months", eligibleForReferral: true },
-  { id: "rc-02", title: "PG Program in Artificial Intelligence and Machine Learning", category: "AI & ML", durationLabel: "12 months", eligibleForReferral: true },
-  { id: "rc-03", title: "Deep Learning and Computer Vision", category: "AI & ML", durationLabel: "6 months", eligibleForReferral: true },
-  { id: "rc-04", title: "Natural Language Processing and Generative AI", category: "AI & ML", durationLabel: "6 months", eligibleForReferral: true },
-  { id: "rc-05", title: "Business Analytics and Data Visualisation", category: "Data Science", durationLabel: "5 months", eligibleForReferral: true },
-  { id: "rc-06", title: "Applied Statistics for Data Science", category: "Data Science", durationLabel: "3 months", eligibleForReferral: true },
-  // Cohort closed for the year — kept in the feed, excluded from search.
-  { id: "rc-07", title: "MIT Data Science and Machine Learning Certificate", category: "Data Science", durationLabel: "12 weeks", eligibleForReferral: false },
-
-  // ── Software & Cloud ──
-  { id: "rc-08", title: "PG Program in Software Engineering", category: "Software Engineering", durationLabel: "12 months", eligibleForReferral: true },
-  { id: "rc-09", title: "Full Stack Software Development", category: "Software Engineering", durationLabel: "9 months", eligibleForReferral: true },
-  { id: "rc-10", title: "Cloud Computing on AWS and Azure", category: "Cloud", durationLabel: "6 months", eligibleForReferral: true },
-  { id: "rc-11", title: "DevOps and Site Reliability Engineering", category: "Cloud", durationLabel: "6 months", eligibleForReferral: true },
-  { id: "rc-12", title: "Cybersecurity and Ethical Hacking", category: "Cybersecurity", durationLabel: "6 months", eligibleForReferral: true },
-
-  // ── Business & Management ──
-  { id: "rc-13", title: "Digital Marketing and Growth Strategy", category: "Marketing", durationLabel: "6 months", eligibleForReferral: true },
-  { id: "rc-14", title: "Product Management and Strategy", category: "Management", durationLabel: "6 months", eligibleForReferral: true },
-  { id: "rc-15", title: "Project Management Professional Preparation", category: "Management", durationLabel: "4 months", eligibleForReferral: true },
-  { id: "rc-16", title: "Financial Analysis and Valuation", category: "Finance", durationLabel: "5 months", eligibleForReferral: true },
-  { id: "rc-17", title: "Human Resource Management and People Analytics", category: "Human Resources", durationLabel: "5 months", eligibleForReferral: true },
-  { id: "rc-18", title: "Supply Chain and Operations Management", category: "Operations", durationLabel: "6 months", eligibleForReferral: true },
-  // Partner-run; referrals handled by the partner, not by us.
-  { id: "rc-19", title: "Executive MBA in Business Leadership", category: "Management", durationLabel: "24 months", eligibleForReferral: false },
-
-  // ── Design & Foundations ──
-  { id: "rc-20", title: "UI/UX Design and Product Thinking", category: "Design", durationLabel: "5 months", eligibleForReferral: true },
-  { id: "rc-21", title: "Excel and SQL for Business Reporting", category: "Data Science", durationLabel: "3 months", eligibleForReferral: true },
-  { id: "rc-22", title: "Python Programming for Beginners", category: "Software Engineering", durationLabel: "3 months", eligibleForReferral: true },
+  { slug: "nus-accelerated-management-program", title: "Accelerated Management Program", provider: "NUS Business School", eligibleForReferral: true },
+  { slug: "mit-data-science-and-machine-learning-program", title: "AI and Data Science: Leveraging Responsible AI, Data and Statistics for Practical Impact", provider: "MIT IDSS", durationLabel: "12 weeks", eligibleForReferral: true },
+  { slug: "ai-native-professional-for-finance", title: "AI Native Professional For Finance", provider: "Great Learning", durationLabel: "6 weeks", eligibleForReferral: true },
+  { slug: "ai-native-professional-for-hr", title: "AI Native Professional For HR", provider: "Great Learning", durationLabel: "6 weeks", eligibleForReferral: true },
+  { slug: "ai-native-professional-for-marketing", title: "AI Native Professional For Marketing", provider: "Great Learning", durationLabel: "6 weeks", eligibleForReferral: true },
+  { slug: "ai-native-professional", title: "AI-Native Professional: Workflows and Agents for Productivity", provider: "Great Learning", durationLabel: "6 weeks", eligibleForReferral: true },
+  { slug: "ai-for-leaders-course", title: "Artificial Intelligence PG Program for Leaders", provider: "McCombs School of Business at The University of Texas at Austin", durationLabel: "5 months", eligibleForReferral: true, aliasSlugs: ["artificial-intelligence-course-for-managers-leaders"] },
+  { slug: "iit-bombay-certificate-in-agentic-ai", title: "Certificate in Agentic AI", provider: "IIT Bombay", durationLabel: "5 months", eligibleForReferral: true },
+  { slug: "certificate-in-ai-engineering-and-mlops", title: "Certificate in AI Engineering and MLOps", provider: "IIT Bombay", durationLabel: "5 months", eligibleForReferral: true },
+  { slug: "iit-bombay-certificate-generative-ai", title: "Certificate in Generative AI", provider: "IIT Bombay", durationLabel: "5 months", eligibleForReferral: true },
+  { slug: "iit-bombay-certificate-leadership-with-ai", title: "Certificate in Leadership with AI", provider: "IIT Bombay", durationLabel: "4 months", eligibleForReferral: true },
+  { slug: "iit-bombay-supply-chain-analytics-with-ai-ml-applications", title: "Certificate in Supply Chain Analytics with AI and ML Applications", provider: "IIT Bombay", durationLabel: "6 months", eligibleForReferral: true },
+  { slug: "chief-financial-officer-programme", title: "Chief Financial Officer Programme", provider: "S. P. Jain Institute of Management & Research (SPJIMR)", durationLabel: "9 months", eligibleForReferral: true },
+  { slug: "data-analytics-online-powerbi-bootcamp", title: "Data Analytics and Power BI Bootcamp", eligibleForReferral: true },
+  { slug: "dba-aiml-online", title: "Doctor Of Business Administration in Artificial Intelligence and Machine Learning", provider: "Walsh College", durationLabel: "36 months", eligibleForReferral: true },
+  { slug: "mba-dba-gm-walsh", title: "Doctor of Business Administration in General Management", provider: "Walsh College", durationLabel: "36 months", eligibleForReferral: true },
+  { slug: "iit-bombay-pg-diploma-ai-data-science", title: "e-Postgraduate Diploma (ePGD) in Artificial Intelligence and Data Science", provider: "IIT Bombay", durationLabel: "18 months", eligibleForReferral: true },
+  { slug: "iit-bombay-e-postgraduate-diploma-computer-science-engineering", title: "e-Postgraduate Diploma (ePGD) in Computer Science And Engineering", provider: "IIT Bombay", durationLabel: "12 months", eligibleForReferral: true },
+  { slug: "iit-bombay-e-postgraduate-diploma-e-mobility", title: "e-Postgraduate Diploma in E-Mobility", provider: "IIT Bombay", durationLabel: "18 months", eligibleForReferral: true },
+  { slug: "advanced-management-programme-in-ai-leadership", title: "Executive Certificate Program in AI for Business Leaders", provider: "S. P. Jain Institute of Management & Research (SPJIMR)", durationLabel: "7 months", eligibleForReferral: true },
+  { slug: "executive-certificate-programme-in-ai-and-gen-ai-for-managers", title: "Executive Certificate Programme in Artificial Intelligence and Generative AI for Managers", provider: "S. P. Jain Institute of Management & Research (SPJIMR)", durationLabel: "5 months", eligibleForReferral: true },
+  { slug: "pg-program-management-executive", title: "Executive PG Program in Management", provider: "Great Lakes Executive Learning", durationLabel: "12 months", eligibleForReferral: true },
+  { slug: "mtech-artificial-intelligence-srm", title: "M.Tech in Artificial Intelligence", eligibleForReferral: true },
+  { slug: "ms-data-science-deakin-programme", title: "Master of Data Science (Global) Program", provider: "Deakin University", eligibleForReferral: true },
+  { slug: "walsh-ms-aiml-online", title: "MS in Artificial Intelligence & Machine Learning", provider: "Walsh College", durationLabel: "24 months", eligibleForReferral: true },
+  { slug: "ms-data-science-programme", title: "MS in Data Science Programme", provider: "Northwestern University", durationLabel: "18 months", eligibleForReferral: true },
+  { slug: "amrita-online-bba", title: "Online BBA from Amrita Vishwa Vidyapeetham", provider: "Amrita Online University", durationLabel: "36 months", eligibleForReferral: true },
+  { slug: "amrita-online-bca", title: "Online BCA from Amrita Vishwa Vidyapeetham", provider: "Amrita Online University", durationLabel: "36 months", eligibleForReferral: true },
+  { slug: "amrita-online-mba", title: "Online MBA from Amrita Vishwa Vidyapeetham", provider: "Amrita Online University", durationLabel: "24 months", eligibleForReferral: true },
+  { slug: "amrita-online-mca", title: "Online MCA from Amrita Vishwa Vidyapeetham", provider: "Amrita Online University", durationLabel: "24 months", eligibleForReferral: true },
+  { slug: "pg-program-artificial-intelligence-course", title: "PG Program in Artificial Intelligence & Machine Learning", provider: "McCombs School of Business at The University of Texas at Austin", durationLabel: "12 months", eligibleForReferral: true, aliasSlugs: ["pg-program-online-artificial-intelligence-machine-learning"] },
+  { slug: "pg-program-cloud-computing-course", title: "PG Program in Cloud Computing and DevOps", provider: "Great Lakes Executive Learning", durationLabel: "8 months", eligibleForReferral: true, aliasSlugs: ["pg-program-online-cloud-computing-course"] },
+  { slug: "pg-program-data-science-business-analytics-course", title: "Post Graduate Program in Data Science with Generative AI", provider: "McCombs School of Business at The University of Texas at Austin", durationLabel: "12 months", eligibleForReferral: true, aliasSlugs: ["pg-program-data-science-and-business-analytics-course"] },
+  { slug: "gl-pg-program-cloud-computing-course", title: "Post-Graduate Program in Cloud Computing", eligibleForReferral: true },
 ];
 
-/** Courses a guru can actually earn a referral on. */
-export const referableCourses = demoReferableCourses.filter((c) => c.eligibleForReferral);
+/**
+ * The four AI-Native Professional programs have their own cards on the Programs
+ * tab, each with a ready-made referral link, so they're excluded from the
+ * "recommend another course" search to avoid offering the same thing twice.
+ */
+export const AINP_SLUGS = new Set([
+  "ai-native-professional",
+  "ai-native-professional-for-finance",
+  "ai-native-professional-for-hr",
+  "ai-native-professional-for-marketing",
+]);
+
+/** Courses offered in the "recommend another course" search. */
+export const referableCourses = demoReferableCourses.filter(
+  (c) => c.eligibleForReferral && !AINP_SLUGS.has(c.slug),
+);

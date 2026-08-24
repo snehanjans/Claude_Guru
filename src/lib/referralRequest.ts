@@ -28,13 +28,24 @@ export class ReferralRequestError extends Error {
 /* ── Catalog search ───────────────────────────────────────────────────────── */
 
 /**
- * Title-substring match over referral-eligible courses only. Ineligible ones are
- * never surfaced — see demo-referable-courses.ts.
+ * Substring match over referral-eligible courses only. Ineligible ones are never
+ * surfaced — see demo-referable-courses.ts.
+ *
+ * Matches the provider as well as the title. In the real catalogue the awarding
+ * institution is a separate field, so a title-only match found nothing for
+ * "IIT", "Deakin" or "MIT" — which is exactly how a guru refers to these
+ * programs. Title matches are ranked first so an exact-ish title hit still wins.
  */
 export function filterReferableCourses(query: string): ReferableCourse[] {
   const q = query.trim().toLowerCase();
   if (q.length < MIN_QUERY_LENGTH) return [];
-  return referableCourses.filter((c) => c.title.toLowerCase().includes(q));
+  const titleHits: ReferableCourse[] = [];
+  const providerHits: ReferableCourse[] = [];
+  for (const c of referableCourses) {
+    if (c.title.toLowerCase().includes(q)) titleHits.push(c);
+    else if (c.provider?.toLowerCase().includes(q)) providerHits.push(c);
+  }
+  return [...titleHits, ...providerHits];
 }
 
 export function searchReferableCourses(

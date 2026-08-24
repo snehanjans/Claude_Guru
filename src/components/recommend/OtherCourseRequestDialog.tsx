@@ -27,6 +27,10 @@ import type { PopperProps } from "@mui/material/Popper";
 import type { ReferableCourse } from "@/data/demo-referable-courses";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
+/** Provider · duration, skipping whichever the catalogue doesn't publish. */
+const courseMeta = (c: ReferableCourse) =>
+  [c.provider, c.durationLabel].filter(Boolean).join(" · ");
+
 const STEP_IN = keyframes`
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
@@ -204,7 +208,7 @@ export function OtherCourseRequestDialog({
     try {
       const { email } = await submitReferralRequest({
         kind,
-        courseId: selected?.id,
+        courseId: selected?.slug,
         courseTitle: selected?.title,
         query: selected ? undefined : debounced.trim(),
         guruEmail,
@@ -213,7 +217,7 @@ export function OtherCourseRequestDialog({
       if (controller.signal.aborted) return;
       track(ANALYTICS_EVENTS.OTHER_COURSE_SUBMITTED, {
         kind,
-        courseId: selected?.id,
+        courseId: selected?.slug,
         courseTitle: selected?.title,
         // The unmatched text is the point of the event — it tells us what to add.
         query: selected ? undefined : debounced.trim(),
@@ -231,7 +235,7 @@ export function OtherCourseRequestDialog({
       setError("Couldn't send that request. Please try again.");
       track(ANALYTICS_EVENTS.OTHER_COURSE_FAILED, {
         kind,
-        courseId: selected?.id,
+        courseId: selected?.slug,
         query: selected ? undefined : debounced.trim(),
         reason: err instanceof ReferralRequestError ? err.message : "unexpected",
       });
@@ -364,7 +368,7 @@ export function OtherCourseRequestDialog({
             onClose={() => setListOpen(false)}
             loading={searching}
             getOptionLabel={(o) => o.title}
-            isOptionEqualToValue={(a, b) => a.id === b.id}
+            isOptionEqualToValue={(a, b) => a.slug === b.slug}
             noOptionsText={
               searching ? "Searching…" : "No matching courses — you can still send this as a request."
             }
@@ -379,14 +383,16 @@ export function OtherCourseRequestDialog({
               listbox: { sx: { maxHeight: { xs: 176, sm: 232 }, overflowY: "auto" } },
             }}
             renderOption={(props, option) => (
-              <Box component="li" {...props} key={option.id}>
+              <Box component="li" {...props} key={option.slug}>
                 <Box sx={{ minWidth: 0 }}>
                   <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.35 }}>
                     {option.title}
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                    {option.category} · {option.durationLabel}
-                  </Typography>
+                  {courseMeta(option) && (
+                    <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+                      {courseMeta(option)}
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             )}
@@ -438,9 +444,11 @@ export function OtherCourseRequestDialog({
                 <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.4 }}>
                   {selected.title}
                 </Typography>
-                <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
-                  {selected.category} · {selected.durationLabel}
-                </Typography>
+                {courseMeta(selected) && (
+                  <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+                    {courseMeta(selected)}
+                  </Typography>
+                )}
               </Box>
               {/* Named "Change" rather than "Clear" so it doesn't collide with the
                   field's own clear icon, which already exposes that label. */}
