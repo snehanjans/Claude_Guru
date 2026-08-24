@@ -16,13 +16,9 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import {
-  demoAmbassadorPrograms,
-  GURU_MENTOR_PROGRAM_IDS,
-  UNIVERSITY_FLAT_USD,
-  referralLinkFor,
-} from "@/data/demo-ambassador";
-import type { AmbassadorProgram } from "@/lib/types";
+import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import { UNIVERSITY_FLAT_USD, GURU_REF, REFERRAL_BASE } from "@/data/demo-ambassador";
+import { guruMentoredCourses, type ReferableCourse } from "@/data/demo-referable-courses";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
@@ -30,7 +26,7 @@ const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const COPIED_MS = 2000;
 /** Card width per breakpoint. On mobile the card is under half the viewport so
  *  the next one peeks in, hinting the row scrolls. */
-const CARD_W = { xs: 232, sm: 244, md: 232 };
+const CARD_W = { xs: 236, sm: 268, md: 288 };
 
 const clamp = (lines: number) => ({
   display: "-webkit-box",
@@ -53,9 +49,15 @@ function institutionInitials(name: string): string {
   return (initials.join("") || name.slice(0, 2)).toUpperCase();
 }
 
-/** Landscape banner: brand gradient + pattern wash, with the logo badge. */
-function InstitutionBanner({ program, index }: { program: AmbassadorProgram; index: number }) {
+/**
+ * Landscape banner: the program's own marketing image, with the institution
+ * badge over it. Falls back to a brand gradient + pattern wash if the remote
+ * image fails, so a dead CDN URL degrades instead of leaving a blank card.
+ */
+function InstitutionBanner({ course, index }: { course: ReferableCourse; index: number }) {
+  const [imgFailed, setImgFailed] = useState(false);
   const pattern = `/course-patterns/p${(index % 6) + 1}.svg`;
+  const showImage = Boolean(course.image) && !imgFailed;
   return (
     <Box
       sx={{
@@ -72,7 +74,8 @@ function InstitutionBanner({ program, index }: { program: AmbassadorProgram; ind
     >
       <Box
         component="img"
-        src={pattern}
+        src={showImage ? course.image : pattern}
+        onError={() => setImgFailed(true)}
         alt=""
         aria-hidden="true"
         sx={{
@@ -81,7 +84,7 @@ function InstitutionBanner({ program, index }: { program: AmbassadorProgram; ind
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          opacity: 0.28,
+          opacity: showImage ? 1 : 0.28,
           pointerEvents: "none",
         }}
       />
@@ -105,9 +108,9 @@ function InstitutionBanner({ program, index }: { program: AmbassadorProgram; ind
         <SchoolOutlinedIcon sx={{ fontSize: 14, color: "primary.main", flexShrink: 0 }} />
         <Typography
           noWrap
-          sx={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.04em", color: "#111" }}
+          sx={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.03em", color: "#111" }}
         >
-          {institutionInitials(program.university)}
+          {course.providerShort ?? institutionInitials(course.provider ?? course.title)}
         </Typography>
       </Stack>
     </Box>
@@ -116,11 +119,11 @@ function InstitutionBanner({ program, index }: { program: AmbassadorProgram; ind
 
 /* ── One course card ──────────────────────────────────────────────────────── */
 function TeachCourseCard({
-  program,
+  course,
   index,
   onCopied,
 }: {
-  program: AmbassadorProgram;
+  course: ReferableCourse;
   index: number;
   onCopied: (message: string) => void;
 }) {
@@ -131,7 +134,8 @@ function TeachCourseCard({
 
   useEffect(() => () => { if (timerRef.current) window.clearTimeout(timerRef.current); }, []);
 
-  const link = referralLinkFor(program.scholarshipCode);
+  // Program page + the guru's ref tag, matching how the AINP cards build theirs.
+  const link = `${REFERRAL_BASE}${course.slug}?ref=${GURU_REF}`;
 
   const flash = () => {
     setCopied(true);
@@ -140,13 +144,13 @@ function TeachCourseCard({
   };
 
   const handleCopy = async () => {
-    track(ANALYTICS_EVENTS.TEACH_LINK_COPIED, { courseId: program.id, course: program.title });
+    track(ANALYTICS_EVENTS.TEACH_LINK_COPIED, { courseId: course.slug, course: course.title });
     try {
       if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
       await navigator.clipboard.writeText(link);
       setNeedsManualCopy(false);
       flash();
-      onCopied(`Referral link for ${program.title} copied.`);
+      onCopied(`Referral link for ${course.title} copied.`);
     } catch {
       // Clipboard blocked (permissions, insecure context). Reveal the link and
       // select it so the guru can copy manually rather than losing the action.
@@ -183,7 +187,7 @@ function TeachCourseCard({
         "&:focus-within": { borderColor: (t) => alpha(t.palette.primary.main, 0.55) },
       }}
     >
-      <InstitutionBanner program={program} index={index} />
+      <InstitutionBanner course={course} index={index} />
       <CardContent
         sx={{ p: 1.75, display: "flex", flexDirection: "column", flex: 1, "&:last-child": { pb: 1.75 } }}
       >
@@ -197,22 +201,22 @@ function TeachCourseCard({
             ...clamp(1),
           }}
         >
-          {program.university}
+          {course.providerShort ?? course.provider}
         </Typography>
         <Typography
           variant="subtitle2"
           sx={{ mt: 0.5, fontWeight: 700, lineHeight: 1.35, minHeight: "2.7em", ...clamp(2) }}
         >
-          {program.title}
+          {course.title}
         </Typography>
         <Typography sx={{ mt: 0.75, fontSize: 12.5, color: "text.secondary" }}>
-          {[program.durationLabel, program.mode].filter(Boolean).join(" · ")}
+          {[course.durationLabel, course.mode].filter(Boolean).join(" · ")}
         </Typography>
 
         <Box sx={{ mt: "auto", pt: 1.25, textAlign: "center" }}>
           <Button
             onClick={handleCopy}
-            startIcon={
+            endIcon={
               copied ? (
                 <CheckRoundedIcon sx={{ fontSize: 16 }} />
               ) : (
@@ -267,14 +271,8 @@ export function OtherCoursesYouTeach() {
   const [atEnd, setAtEnd] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  // Only programs the guru actually mentors, from the flat-bonus catalogue.
-  const courses = useMemo(
-    () =>
-      demoAmbassadorPrograms.filter(
-        (p) => p.family === "university" && GURU_MENTOR_PROGRAM_IDS.has(p.id),
-      ),
-    [],
-  );
+  // Only programs the guru is listed as a mentor on.
+  const courses = useMemo(() => guruMentoredCourses, []);
 
   const syncArrows = useCallback(() => {
     const el = scrollerRef.current;
@@ -447,8 +445,8 @@ export function OtherCoursesYouTeach() {
                   }}
                 >
                   {courses.map((p, i) => (
-                    <Box key={p.id} data-course-card sx={{ display: "flex", flex: "0 0 auto" }}>
-                      <TeachCourseCard program={p} index={i} onCopied={setStatus} />
+                    <Box key={p.slug} data-course-card sx={{ display: "flex", flex: "0 0 auto" }}>
+                      <TeachCourseCard course={p} index={i} onCopied={setStatus} />
                     </Box>
                   ))}
                 </Box>
@@ -479,14 +477,15 @@ export function OtherCoursesYouTeach() {
                     Want to explore courses from other domains?
                   </Typography>
                   <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.55 }}>
-                    Browse every program by domain, university and duration, and grab a referral
-                    link for the ones that fit your network.
+                    Browse every program by domain, university and duration, then request a
+                    referral link for the one you want.
                   </Typography>
                 </Box>
                 <Button
                   component={RouterLink}
                   to="/courses"
                   variant="outlined"
+                  endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 18 }} />}
                   sx={{
                     flexShrink: 0,
                     textTransform: "none",
@@ -495,7 +494,7 @@ export function OtherCoursesYouTeach() {
                     width: { xs: "100%", sm: "auto" },
                   }}
                 >
-                  See all courses →
+                  See all courses
                 </Button>
               </Stack>
             </CardContent>
