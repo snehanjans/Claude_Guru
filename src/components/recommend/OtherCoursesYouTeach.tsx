@@ -8,6 +8,7 @@ import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Collapse from "@mui/material/Collapse";
+import Divider from "@mui/material/Divider";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { alpha, useTheme } from "@mui/material/styles";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -389,7 +390,14 @@ export function OtherCoursesYouTeach() {
       </Box>
 
       <Collapse in={open} unmountOnExit>
-        <Box id="other-courses-you-teach-panel" sx={{ px: { xs: 2, sm: 2.25 }, pb: 2.25 }}>
+        {/* Separates the header from the content. Lives inside the Collapse and
+            spans the full width, so a collapsed section stays a clean single
+            row rather than carrying a stray rule along its bottom edge. */}
+        <Divider />
+        <Box
+          id="other-courses-you-teach-panel"
+          sx={{ px: { xs: 2, sm: 2.25 }, pt: { xs: 2, sm: 2.25 }, pb: 2.25 }}
+        >
           {courses.length === 0 ? (
             <Box sx={{ py: 1 }}>
               <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.6 }}>
