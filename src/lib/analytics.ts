@@ -39,4 +39,9 @@ export const ANALYTICS_EVENTS = {
   OTHER_COURSE_OPENED: "recommend.other_course.opened",
   OTHER_COURSE_SUBMITTED: "recommend.other_course.submitted",
   OTHER_COURSE_FAILED: "recommend.other_course.failed",
+
+  /* ── "Other courses you teach" carousel ────────────────────────────────── */
+  TEACH_SECTION_EXPANDED: "recommend.other_courses_you_teach.expanded",
+  TEACH_CAROUSEL_SCROLLED: "recommend.other_courses_you_teach.scrolled",
+  TEACH_LINK_COPIED: "recommend.other_courses_you_teach.link_copied",
 } as const;

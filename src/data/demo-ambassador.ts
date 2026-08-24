@@ -39,6 +39,23 @@ export const REFERRAL_BASE = "https://www.mygreatlearning.com/";
 export const referralLinkFor = (code: string) =>
   `${REFERRAL_BASE}?utm_source=guru&utm_medium=referral&utm_campaign=${code}`;
 
+/**
+ * Programs this guru is listed as a mentor / instructor on, beyond the AINP four
+ * that have their own cards.
+ *
+ * There is no guru→program mapping in the demo data (the Courses page derives
+ * "courses you teach" from session records, which aren't linked to ambassador
+ * programs), so this is the explicit stand-in. Replace it with the real
+ * mentor roster when one is available: the carousel shows the intersection of
+ * this set and the university-family catalogue, so an empty set correctly
+ * yields the "not listed as a mentor" empty state.
+ */
+export const GURU_MENTOR_PROGRAM_IDS: ReadonlySet<string> = new Set([
+  "pg-ai-ml",
+  "epgd-ai-ds",
+  "ai-pg-leaders",
+]);
+
 /** Registration link for a guru-run webinar — attribution rides on the guru's program code. */
 export const webinarRegLinkFor = (webinarId: string, code: string) =>
   `https://www.mygreatlearning.com/webinar/${webinarId}?utm_source=guru&utm_medium=webinar&utm_campaign=${code}`;
