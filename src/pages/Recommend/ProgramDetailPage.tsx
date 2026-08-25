@@ -70,6 +70,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { MessageEditDialog } from "@/components/recommend/MessageEditDialog";
+import { CollateralMessagePanel } from "@/components/recommend/CollateralMessagePanel";
 import { saveCollateralEdit, collateralEditKey } from "@/store/slices/collateralEditsSlice";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
@@ -748,191 +749,24 @@ export default function ProgramDetailPage() {
   };
 
   /**
-   * Shared right-hand "message to post" panel — used by all four channels so
-   * the edit affordance, truncation and copy behaviour stay identical.
+   * The channel's "message to post" panel. The panel itself is shared with the
+   * catalogue course pages (CollateralMessagePanel); this supplies the program's
+   * message, the guru's saved edit and the copy.
    */
-  const renderMessagePanel = (asset: Collateral, key: string, done: boolean) => {
-    const edited = Boolean(editFor(asset.id));
-    const isLinkedIn = asset.id === "asset-01";
-    const message = displayMessageFor(asset);
-    // Clip on-card so a long message can't stretch the panel; the full text is
-    // one click away in the modal.
-    const isLong = message.length > 280;
-    const shown = isLong ? message.slice(0, 280).replace(/\s+\S*$/, "") : message;
-    const openEditor = () => setEditingAssetId(asset.id);
-
-    return (
-      <Box
-        sx={{
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          p: 2,
-          borderRadius: "14px",
-          border: "1px solid",
-          borderColor: "divider",
-          bgcolor: (t) => (t.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : t.palette.grey[50]),
-        }}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          spacing={1}
-          sx={{ mb: "20px" }}
-        >
-          <Typography
-            sx={{
-              fontSize: "0.7rem",
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "text.secondary",
-              lineHeight: 1,
-            }}
-          >
-            Message to post
-          </Typography>
-          <Button
-            disableElevation
-            onClick={openEditor}
-            startIcon={<EditOutlinedIcon sx={{ fontSize: 17 }} />}
-            sx={{
-              minWidth: 0,
-              py: 0.625,
-              px: 1.5,
-              fontSize: 14,
-              fontWeight: 700,
-              textTransform: "none",
-              borderRadius: "8px",
-              color: "primary.main",
-              bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
-              "&:hover": { bgcolor: (t) => alpha(t.palette.primary.main, 0.16) },
-            }}
-          >
-            Edit
-          </Button>
-        </Stack>
-
-        {SUBJECT_ASSET_IDS.has(asset.id) && (
-          <Typography
-            variant="body2"
-            sx={{ mb: 1, color: "text.primary", fontWeight: 700, lineHeight: 1.45 }}
-          >
-            {emailSubjectFor(asset.id)}
-          </Typography>
-        )}
-
-        <Typography
-          variant="body2"
-          sx={{ lineHeight: 1.55, whiteSpace: "pre-line", color: "text.primary" }}
-        >
-          {renderRichText(shown)}
-          {isLong && (
-            <>
-              {"… "}
-              <Box
-                component="span"
-                role="button"
-                tabIndex={0}
-                onClick={openEditor}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    openEditor();
-                  }
-                }}
-                sx={{
-                  color: "primary.main",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  outline: "none",
-                  "&:hover, &:focus-visible": { textDecoration: "underline" },
-                }}
-              >
-                Read more
-              </Box>
-            </>
-          )}
-        </Typography>
-
-        {/* Before an edit the link is shown as its own non-editable line. Once
-            edited it lives inline in the saved text, so showing it again here
-            would duplicate it. */}
-        {!edited && (
-          <Typography
-            variant="body2"
-            sx={{ mt: 1, color: "primary.main", fontWeight: 600, wordBreak: "break-all", lineHeight: 1.45 }}
-          >
-            {link}
-          </Typography>
-        )}
-
-        <Box sx={{ mt: "auto", pt: 2.5 }}>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{
-              p: 1.25,
-              mb: 1.5,
-              borderRadius: "10px",
-              bgcolor: (t) => (t.palette.mode === "dark" ? "rgba(251,191,36,0.12)" : "rgba(217,119,6,0.09)"),
-              border: "1px solid",
-              borderColor: (t) => (t.palette.mode === "dark" ? "rgba(251,191,36,0.35)" : "rgba(217,119,6,0.28)"),
-            }}
-          >
-            <InfoOutlinedIcon sx={{ fontSize: 18, color: "var(--gl-warning-icon)", flexShrink: 0, mt: "1px" }} />
-            <Typography variant="body2" sx={{ fontSize: 13, lineHeight: 1.5, color: "text.secondary" }}>
-              {INFO_TEXT[asset.id]}
-            </Typography>
-          </Stack>
-          {/* Each channel keeps the copy button it already had — LinkedIn's
-              solid share CTA, a tonal "Copy text" everywhere else — and all of
-              them now copy the guru's edited version. */}
-          <Button
-            fullWidth
-            disableElevation
-            variant={isLinkedIn ? "contained" : "text"}
-            color={done ? "success" : "primary"}
-            startIcon={
-              done ? (
-                <CheckRoundedIcon sx={{ fontSize: 18 }} />
-              ) : isLinkedIn ? (
-                <LinkedInIcon sx={{ fontSize: 20 }} />
-              ) : (
-                <ContentCopyOutlinedIcon sx={{ fontSize: 18 }} />
-              )
-            }
-            onClick={() => copy(key, payloadFor(asset), `${asset.label} copied to clipboard.`)}
-            sx={{
-              py: 1,
-              textTransform: "none",
-              fontWeight: 700,
-              borderRadius: "10px",
-              ...(isLinkedIn
-                ? {}
-                : {
-                    color: done ? "success.main" : "primary.main",
-                    bgcolor: (t) =>
-                      done ? alpha(t.palette.success.main, 0.1) : alpha(t.palette.primary.main, 0.1),
-                    "&:hover": {
-                      bgcolor: (t) =>
-                        done
-                          ? alpha(t.palette.success.main, 0.16)
-                          : alpha(t.palette.primary.main, 0.16),
-                    },
-                  }),
-              transition: `transform 130ms ${EASE_OUT}, background-color 130ms ${EASE_OUT}`,
-              "&:active": { transform: "scale(0.99)" },
-              "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
-            }}
-          >
-            {done ? "Copied" : isLinkedIn ? "Copy and Share on LinkedIn" : "Copy text"}
-          </Button>
-        </Box>
-      </Box>
-    );
-  };
+  const renderMessagePanel = (asset: Collateral, key: string, done: boolean) => (
+    <CollateralMessagePanel
+      message={displayMessageFor(asset)}
+      subject={SUBJECT_ASSET_IDS.has(asset.id) ? emailSubjectFor(asset.id) : undefined}
+      link={link}
+      edited={Boolean(editFor(asset.id))}
+      info={INFO_TEXT[asset.id]}
+      variant={asset.id === "asset-01" ? "linkedin" : "default"}
+      copied={done}
+      onEdit={() => setEditingAssetId(asset.id)}
+      onCopy={() => copy(key, payloadFor(asset), `${asset.label} copied to clipboard.`)}
+      highlight={renderRichText}
+    />
+  );
 
   /** Line clamp for preview text so a long message can't break a card. */
   const clampLines = (lines: number) => ({
