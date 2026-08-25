@@ -180,11 +180,10 @@ export function OtherCoursesYouTeach() {
       >
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-            Other courses you teach
+            Every course you teach, one place to refer
           </Typography>
           <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.55 }}>
-            Grab a referral link for any of them. Earn ${UNIVERSITY_FLAT_USD} for every learner who
-            enrols.
+            Refer any of them. You earn ${UNIVERSITY_FLAT_USD}, and your learner gets a scholarship.
           </Typography>
         </Box>
         <ExpandMoreIcon
