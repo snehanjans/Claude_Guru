@@ -590,17 +590,24 @@ export default function CourseDetailPage() {
             {detail.highlights.map((h) => (
               <Grid key={h.title} size={{ xs: 12, sm: 6 }}>
                 <Stack direction="row" spacing={1.25}>
+                  {/* The dot centres on the title's first line rather than the
+                      row's top edge: the wrapper is exactly body2's line box
+                      (0.875rem × 1.4), so it stays aligned if the type scale
+                      changes. A margin here would be overridden by Stack's own
+                      spacing rules. */}
                   <Box
                     sx={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: "50%",
-                      bgcolor: "text.disabled",
                       flexShrink: 0,
-                      // Centres the dot on the first line of the title.
-                      mt: "7px",
+                      display: "flex",
+                      alignItems: "center",
+                      fontSize: "0.875rem",
+                      height: "1.4em",
                     }}
-                  />
+                  >
+                    <Box
+                      sx={{ width: 5, height: 5, borderRadius: "50%", bgcolor: "text.disabled" }}
+                    />
+                  </Box>
                   <Box sx={{ minWidth: 0 }}>
                     <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.4 }}>
                       {h.title}
@@ -640,13 +647,6 @@ export default function CourseDetailPage() {
         >
           View brochure
         </Button>
-        {/* Said plainly when there's no brochure page: those programs hand the
-            brochure out through a form, and the button can't pretend otherwise. */}
-        {!detail?.brochureUrl && (
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-            This program sends its brochure by email — the program page has the request form.
-          </Typography>
-        )}
       </Box>
         </>
       )}
