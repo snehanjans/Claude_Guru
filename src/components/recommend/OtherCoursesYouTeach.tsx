@@ -122,6 +122,21 @@ export function OtherCoursesYouTeach() {
     if (next) track(ANALYTICS_EVENTS.TEACH_SECTION_EXPANDED, { courses: courses.length });
   };
 
+  /*
+   * Bring the panel into view once it's open. The section sits below the program
+   * cards, so expanding it puts the carousel off-screen — the guru presses the
+   * header and nothing visibly happens.
+   *
+   * Runs when the expand animation finishes rather than when it starts: until
+   * the panel has its height the page isn't tall enough to scroll that far, and
+   * an early attempt stops short. Smooth, because this follows a deliberate
+   * press — it shows the page moving rather than teleporting.
+   */
+  const revealPanel = useCallback(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    rootRef.current?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  }, []);
+
   return (
     <Box
       id={TEACH_SECTION_ID}
@@ -183,7 +198,7 @@ export function OtherCoursesYouTeach() {
         />
       </Box>
 
-      <Collapse in={open} unmountOnExit>
+      <Collapse in={open} unmountOnExit onEntered={revealPanel}>
         {/* Separates the header from the content. Lives inside the Collapse and
             spans the full width, so a collapsed section stays a clean single
             row rather than carrying a stray rule along its bottom edge. */}
