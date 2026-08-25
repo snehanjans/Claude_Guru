@@ -88,6 +88,17 @@ const INFO_TEXT: Record<string, string> = {
 
 type CourseTab = "overview" | "collaterals" | "faq";
 
+/** Eyebrow inside the earnings callout — used for both of its halves. */
+const CALLOUT_LABEL = {
+  fontSize: "0.66rem",
+  fontWeight: 700,
+  letterSpacing: "0.06em",
+  textTransform: "uppercase" as const,
+  color: "var(--gl-status-confirmed-text)",
+  lineHeight: 1,
+  mb: 1,
+};
+
 /** Small uppercase section heading, as used on the AINP program page. */
 function SectionLabel({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
@@ -530,19 +541,7 @@ export default function CourseDetailPage() {
           border: "1px solid var(--gl-status-confirmed-border)",
         }}
       >
-        <Typography
-          sx={{
-            fontSize: "0.66rem",
-            fontWeight: 700,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--gl-status-confirmed-text)",
-            lineHeight: 1,
-            mb: 1,
-          }}
-        >
-          You earn
-        </Typography>
+        <Typography sx={CALLOUT_LABEL}>You earn</Typography>
         <Stack direction="row" spacing={1} alignItems="baseline">
           <Typography
             sx={{
@@ -556,14 +555,28 @@ export default function CourseDetailPage() {
           >
             {fmtUsd(UNIVERSITY_FLAT_USD)}
           </Typography>
-          <Typography variant="body2" sx={{ color: "text.primary", lineHeight: 1.45 }}>
-            for every learner who enrols through your link — {fmtInr(UNIVERSITY_FLAT_INR)} where the
-            learner pays in rupees.
+          <Typography variant="body2" sx={{ color: "text.primary", lineHeight: 1.45, ...TABULAR }}>
+            for every learner who enrols through your link. ({fmtInr(UNIVERSITY_FLAT_INR)} in INR)
           </Typography>
         </Stack>
         <Typography variant="caption" sx={{ display: "block", mt: 1, color: "text.secondary" }}>
           Paid one month after course start, in your payout currency.
         </Typography>
+
+        {/* The learner's side of the same referral — same callout, since the two
+            are one offer rather than two unrelated facts. */}
+        <Box
+          sx={{
+            mt: 1.75,
+            pt: 1.75,
+            borderTop: "1px solid var(--gl-status-confirmed-border)",
+          }}
+        >
+          <Typography sx={CALLOUT_LABEL}>Your learner gets</Typography>
+          <Typography variant="body2" sx={{ color: "text.primary", lineHeight: 1.45 }}>
+            A scholarship applied at checkout, reducing their program fee.
+          </Typography>
+        </Box>
       </Box>
 
       {/* what this course teaches — the program page's highlights */}
