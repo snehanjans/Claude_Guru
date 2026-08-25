@@ -7,7 +7,6 @@ import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import useMediaQuery from "@mui/material/useMediaQuery";
 import { alpha, useTheme } from "@mui/material/styles";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
@@ -50,7 +49,6 @@ function SectionHeading({ label }: { label: string }) {
 export default function CourseCatalogPage() {
   const theme = useTheme();
   const navigate = useNavigate();
-  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const [query, setQuery] = useState("");
   // Keeps typing responsive while the (large) grid re-filters.
   const deferredQuery = useDeferredValue(query);
@@ -80,9 +78,26 @@ export default function CourseCatalogPage() {
   const domains = useMemo(() => groupByDomain(referableCourses).map((g) => g.domain), []);
 
   return (
-    /* Full-bleed page: it renders outside AppLayout, so there's no app rail and
-       no content width cap — this page owns its whole viewport. */
-    <Box sx={{ minHeight: "100dvh", bgcolor: "background.default" }}>
+    /*
+     * Full-bleed page: renders outside AppLayout, so there's no app rail and no
+     * content width cap — it owns its whole viewport.
+     *
+     * It also has to own its scrolling. index.css sets `body { overflow: hidden }`
+     * on desktop because AppLayout supplies the scroll container; a page outside
+     * that shell therefore can't scroll the document at all. So the nav is a
+     * fixed flex item and the content below it scrolls. Under 600px the global
+     * rule flips to `overflow: visible` for native viewport scrolling, so there
+     * the page defers to the body rather than nesting a second scroller.
+     */
+    <Box
+      sx={{
+        bgcolor: "background.default",
+        display: "flex",
+        flexDirection: "column",
+        height: { xs: "auto", sm: "100dvh" },
+        overflow: { xs: "visible", sm: "hidden" },
+      }}
+    >
       {/* ── Top nav, spanning the page: logo left, search right ──────────── */}
       <Stack
         component="nav"
@@ -137,10 +152,23 @@ export default function CourseCatalogPage() {
         />
       </Stack>
 
-      <Grid container spacing={{ xs: 2, md: 4 }} sx={{ px: GUTTER, py: { xs: 2.5, md: 3.5 } }}>
+      <Box
+        className="themed-scrollbar"
+        sx={{
+          flex: { sm: 1 },
+          minHeight: 0,
+          overflowY: { xs: "visible", sm: "auto" },
+          overscrollBehavior: "contain",
+        }}
+      >
+        <Grid
+          container
+          spacing={{ xs: 2, md: 4 }}
+          sx={{ px: GUTTER, pt: { xs: 2.5, md: 3.5 }, pb: { xs: 6, md: 10 } }}
+        >
         {/* ── Sidebar: heading + domain nav ──────────────────────────────── */}
         <Grid size={{ xs: 12, md: 3 }}>
-          <Box sx={{ position: { md: "sticky" }, top: { md: 88 } }}>
+          <Box sx={{ position: { md: "sticky" }, top: { md: 8 } }}>
             <Typography
               sx={{
                 fontSize: "0.72rem",
@@ -237,7 +265,8 @@ export default function CourseCatalogPage() {
             ))
           )}
         </Grid>
-      </Grid>
+        </Grid>
+      </Box>
 
       {/* Copy confirmations and result counts for screen readers. */}
       <Box
@@ -257,7 +286,6 @@ export default function CourseCatalogPage() {
         {status || (q ? `${total} course${total === 1 ? "" : "s"} found.` : "")}
       </Box>
 
-      {!isDesktop && <Box sx={{ height: 24 }} />}
     </Box>
   );
 }
