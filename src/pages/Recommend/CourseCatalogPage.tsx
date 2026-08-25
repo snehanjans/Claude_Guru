@@ -20,6 +20,12 @@ import { CourseCard } from "@/components/recommend/CourseCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+/**
+ * Page gutter. 80px from md up, as specified; below that it steps down, since
+ * 160px of combined padding would leave a phone with almost no content width.
+ * Shared by the nav and the grid so their edges line up.
+ */
+const GUTTER = { xs: 2, sm: 3, md: "80px" };
 /** Rule-flanked section heading, matching the reference's section dividers. */
 function SectionHeading({ label }: { label: string }) {
   return (
@@ -87,7 +93,7 @@ export default function CourseCatalogPage() {
           position: "sticky",
           top: 0,
           zIndex: 10,
-          px: { xs: 2, sm: 3 },
+          px: GUTTER,
           py: 1.5,
           bgcolor: "background.paper",
           borderBottom: "1px solid",
@@ -131,7 +137,7 @@ export default function CourseCatalogPage() {
         />
       </Stack>
 
-      <Grid container spacing={{ xs: 2, md: 4 }} sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2.5, md: 3.5 } }}>
+      <Grid container spacing={{ xs: 2, md: 4 }} sx={{ px: GUTTER, py: { xs: 2.5, md: 3.5 } }}>
         {/* ── Sidebar: heading + domain nav ──────────────────────────────── */}
         <Grid size={{ xs: 12, md: 3 }}>
           <Box sx={{ position: { md: "sticky" }, top: { md: 88 } }}>
