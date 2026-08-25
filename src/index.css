@@ -329,6 +329,39 @@ body {
   overflow: hidden;
 }
 
+/*
+ * Desktop shell sizing.
+ *
+ * AppLayout is a fixed-height shell and the body doesn't scroll, so if the app
+ * is pinned to the nominal viewport height (100vh) anything that eats height
+ * above it — an in-page banner injected by an extension, a body offset — pushes
+ * the bottom of the shell below the visible area for good: the sidebar's footer
+ * and the last of the page content can't be scrolled back into view.
+ *
+ * Sizing the shell to its container instead makes it shrink by whatever was
+ * taken. Identical to 100vh when nothing is above #root, which is the norm.
+ *
+ * Scoped to the breakpoint where AppLayout switches to its fixed-height shell
+ * (MUI md, 900px); narrower than that the layout is auto-height and scrolls
+ * natively, and #root must be left alone.
+ */
+@media (min-width: 900px) {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #root {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
 /* Mobile: allow native viewport scrolling (prevents nested scroll bounce on iOS) */
 @media (max-width: 599.95px) {
   body {

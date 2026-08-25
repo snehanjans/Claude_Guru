@@ -80,7 +80,8 @@ export function AppLayout() {
         display: "grid",
         gridTemplateColumns: { xs: "minmax(0, 1fr)", md: isNavCollapsed ? "80px minmax(0, 1fr)" : "256px minmax(0, 1fr)" },
         transition: "grid-template-columns 0.2s",
-        height: { xs: "auto", md: "100vh" },
+        // 100% of #root, not 100vh — see the desktop shell note in index.css.
+        height: { xs: "auto", md: "100%" },
         minHeight: { xs: "100vh", md: "auto" },
       }}
     >

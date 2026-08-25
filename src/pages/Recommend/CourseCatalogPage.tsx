@@ -117,6 +117,9 @@ export default function CourseCatalogPage() {
         display: "flex",
         flexDirection: "column",
         height: { xs: "auto", sm: "100dvh" },
+        // Never taller than #root, so anything above the app shrinks this page
+        // instead of pushing its bottom out of reach (see index.css).
+        maxHeight: { sm: "100%" },
         overflow: { xs: "visible", sm: "hidden" },
       }}
     >
