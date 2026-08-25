@@ -137,8 +137,8 @@ export function CourseCard({
    * The card hands off to the course's own page rather than copying straight to
    * the clipboard: that page is where the referral link, the terms and the
    * earning are shown, so the guru sees what they're sharing before they share
-   * it. `from` is carried along so the page's back link returns where they came
-   * from — the carousel and the catalogue both render this card.
+   * it. The page's back link always returns to Recommend, so the surface the
+   * card sits on only matters for the section anchor and the analytics.
    */
   const openCourse = () => {
     track(ANALYTICS_EVENTS.COURSE_OPENED, {
@@ -147,7 +147,7 @@ export function CourseCard({
       from: location.pathname,
     });
     if (returnAnchor) rememberSection(location.pathname, returnAnchor);
-    navigate(`/recommend/course/${course.slug}`, { state: { from: location.pathname } });
+    navigate(`/recommend/course/${course.slug}`);
   };
 
   return (

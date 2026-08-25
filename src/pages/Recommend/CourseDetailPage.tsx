@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Accordion from "@mui/material/Accordion";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import AccordionSummary from "@mui/material/AccordionSummary";
@@ -124,7 +124,6 @@ function SectionLabel({ icon, children }: { icon: ReactNode; children: ReactNode
 export default function CourseDetailPage() {
   const { slug = "" } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useAppDispatch();
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<CourseTab>("overview");
@@ -148,15 +147,6 @@ export default function CourseDetailPage() {
     const t = window.setTimeout(() => setCopied(false), COPIED_MS);
     return () => window.clearTimeout(t);
   }, [copied]);
-
-  /* Where the back link goes. The card passes the surface it was clicked on, so
-     the catalogue sends them back to the catalogue and the carousel back to
-     Recommend; a deep link with no state falls back to the catalogue. */
-  const from = (location.state as { from?: string } | null)?.from;
-  const back =
-    from === "/recommend"
-      ? { to: "/recommend", label: "Recommend" }
-      : { to: "/recommend/courses", label: "All courses" };
 
   if (!course) {
     return (
@@ -314,7 +304,10 @@ export default function CourseDetailPage() {
       <Button
         variant="text"
         startIcon={<ArrowBackRoundedIcon sx={{ fontSize: 18 }} />}
-        onClick={() => navigate(back.to)}
+        /* Always back to Recommend, whichever surface the card was on — that's
+           the guru's home for referrals, and the catalogue is a detour off it.
+           Leaving from the carousel also returns them to that section. */
+        onClick={() => navigate("/recommend")}
         sx={{
           ml: -1,
           mb: 1.5,
@@ -328,7 +321,7 @@ export default function CourseDetailPage() {
           "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
         }}
       >
-        {back.label}
+        Recommend
       </Button>
 
       {/* header */}
