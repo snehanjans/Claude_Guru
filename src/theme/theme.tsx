@@ -1,8 +1,9 @@
 import * as React from "react";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { alpha, createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { getCssVars, getTokens, type GlTokens } from "./tokens";
 
 declare module "@mui/material/Button" {
   interface ButtonPropsVariantOverrides {
@@ -11,98 +12,134 @@ declare module "@mui/material/Button" {
 }
 
 /**
- * Builds an MUI theme using the Great Learning design-system colors.
- * Light primary: #196ae5, Secondary: #ff9800
- * Dark primary: #66bbff, Secondary: #ffcc80
+ * The Great Learning palette carries more than MUI's palette contract covers:
+ * per-role alpha shades, five paper elevations, and the extended color ramps.
+ * Surface them all on `theme.palette` so a mistyped stop
+ * (`palette.blue["550"]`) is a compile error instead of a silent `undefined`.
+ */
+type GlPaletteExtras = Pick<
+  GlTokens,
+  | "other"
+  | "white"
+  | "black"
+  | "extGrey"
+  | "greyA"
+  | "indigo"
+  | "deepPurple"
+  | "orange"
+  | "pink"
+  | "red"
+  | "purple"
+  | "purpleA"
+  | "lightBlue"
+  | "lightBlueA"
+  | "yellow"
+  | "yellowA"
+  | "cyan"
+  | "teal"
+  | "tealA"
+  | "blue"
+  | "blueA"
+  | "blueGray"
+>;
+
+declare module "@mui/material/styles" {
+  interface Palette extends GlPaletteExtras {}
+  interface PaletteOptions extends Partial<GlPaletteExtras> {}
+
+  /* Per-role alpha shades (`primary["shades-12-p"]`) and the two extra
+     status shades, all shipped by colors.ts but absent from MUI's contract. */
+  interface PaletteColor {
+    contrast: string;
+    "shades-hover": string;
+    "shades-select"?: string;
+    "shades-12-p": string;
+    "shades-30-p": string;
+    "shades-50-p": string;
+    "shades-160-p"?: string;
+    "shades-190-p"?: string;
+  }
+  interface SimplePaletteColorOptions {
+    contrast?: string;
+    "shades-hover"?: string;
+    "shades-select"?: string;
+    "shades-12-p"?: string;
+    "shades-30-p"?: string;
+    "shades-50-p"?: string;
+    "shades-160-p"?: string;
+    "shades-190-p"?: string;
+  }
+
+  interface TypeBackground {
+    "paper-elevation-0": string;
+    "paper-elevation-2": string;
+    "paper-elevation-8": string;
+    "paper-elevation-16": string;
+    "paper-elevation-24": string;
+  }
+}
+
+/**
+ * Builds an MUI theme from the Great Learning design-system tokens.
+ * Every color here reads from `colors.ts` via `getTokens` — no literals.
  */
 function buildTheme(mode: "light" | "dark") {
-  const borderColor =
-    mode === "light"
-      ? "rgba(33, 33, 33, 0.08)"
-      : "rgba(255, 255, 255, 0.1)";
+  const t = getTokens(mode);
+  const borderColor = t.other.divider;
 
   return createTheme({
     palette: {
       mode,
-      primary: {
-        main: mode === "light" ? "#196ae5" : "#66bbff",
-        dark: mode === "light" ? "#0f4089" : "#3a9ae8",
-        light: mode === "light" ? "#4788ea" : "#e8f0fc",
-        contrastText: mode === "light" ? "#ffffff" : "rgba(0, 0, 0, 0.87)",
-      },
-      secondary: {
-        main: mode === "light" ? "#ff9800" : "#ffcc80",
-        dark: mode === "light" ? "#ef6c00" : "#ca9b52",
-        light: mode === "light" ? "#ffb74d" : "#ffffb0",
-        contrastText: mode === "light" ? "#ffffff" : "rgba(0, 0, 0, 0.87)",
-      },
-      error: {
-        main: mode === "light" ? "#ff3333" : "#f44336",
-        dark: mode === "light" ? "#d10b25" : "#d32f2f",
-        light: mode === "light" ? "#f9494f" : "#e57373",
-        contrastText: "#ffffff",
-      },
-      warning: {
-        main: mode === "light" ? "#ffbf00" : "#ffa726",
-        dark: mode === "light" ? "#ff6d00" : "#f57c00",
-        light: mode === "light" ? "#ffd44d" : "#ffb74d",
-        contrastText: mode === "light" ? "#ffffff" : "rgba(0, 0, 0, 0.87)",
-      },
-      info: {
-        main: mode === "light" ? "#196ae5" : "#29b6f6",
-        dark: mode === "light" ? "#0f4089" : "#0288d1",
-        light: mode === "light" ? "#4788ea" : "#4fc3f7",
-        contrastText: mode === "light" ? "#ffffff" : "rgba(0, 0, 0, 0.87)",
-      },
-      success: {
-        main: mode === "light" ? "#22bb34" : "#66bb6a",
-        dark: mode === "light" ? "#00880f" : "#388e3c",
-        light: mode === "light" ? "#74d176" : "#81c784",
-        contrastText: mode === "light" ? "#ffffff" : "rgba(0, 0, 0, 0.87)",
-      },
+      primary: { ...t.primary, contrastText: t.primary.contrast },
+      secondary: { ...t.secondary, contrastText: t.secondary.contrast },
+      error: { ...t.error, contrastText: t.error.contrast },
+      warning: { ...t.warning, contrastText: t.warning.contrast },
+      info: { ...t.info, contrastText: t.info.contrast },
+      success: { ...t.success, contrastText: t.success.contrast },
       background: {
-        default: mode === "light" ? "#fafafa" : "#121212",
-        paper: mode === "light" ? "#ffffff" : "#1B1B1B",
+        ...t.background,
+        /* MUI's single `paper` slot maps to elevation 0; the other four are
+           applied per-elevation in the MuiPaper override below. */
+        paper: t.background["paper-elevation-0"],
       },
       text: {
-        primary:
-          mode === "light" ? "rgba(33, 33, 33, 0.92)" : "#ffffff",
-        secondary:
-          mode === "light"
-            ? "rgba(33, 33, 33, 0.72)"
-            : "rgba(255, 255, 255, 0.7)",
-        disabled:
-          mode === "light"
-            ? "rgba(33, 33, 33, 0.24)"
-            : "rgba(255, 255, 255, 0.5)",
+        primary: t.text.primary,
+        secondary: t.text.secondary,
+        disabled: t.text.disabled,
       },
       action: {
-        active:
-          mode === "light"
-            ? "rgba(33, 33, 33, 0.64)"
-            : "rgba(255, 255, 255, 0.64)",
-        hover:
-          mode === "light"
-            ? "rgba(33, 33, 33, 0.04)"
-            : "rgba(255, 255, 255, 0.08)",
-        selected:
-          mode === "light"
-            ? "rgba(33, 33, 33, 0.08)"
-            : "rgba(255, 255, 255, 0.16)",
-        disabled:
-          mode === "light"
-            ? "rgba(33, 33, 33, 0.26)"
-            : "rgba(255, 255, 255, 0.3)",
-        disabledBackground:
-          mode === "light"
-            ? "rgba(33, 33, 33, 0.12)"
-            : "rgba(255, 255, 255, 0.12)",
-        focus:
-          mode === "light"
-            ? "rgba(33, 33, 33, 0.12)"
-            : "rgba(255, 255, 255, 0.12)",
+        active: t.action.active,
+        hover: t.action.hover,
+        selected: t.action.selected,
+        disabled: t.action.disabled,
+        disabledBackground: t.action["disabled-background"],
+        focus: t.action.focus,
       },
       divider: borderColor,
+
+      /* Extended ramps + the `other` group, surfaced via module augmentation. */
+      other: t.other,
+      white: t.white,
+      black: t.black,
+      extGrey: t.extGrey,
+      greyA: t.greyA,
+      indigo: t.indigo,
+      deepPurple: t.deepPurple,
+      orange: t.orange,
+      pink: t.pink,
+      red: t.red,
+      purple: t.purple,
+      purpleA: t.purpleA,
+      lightBlue: t.lightBlue,
+      lightBlueA: t.lightBlueA,
+      yellow: t.yellow,
+      yellowA: t.yellowA,
+      cyan: t.cyan,
+      teal: t.teal,
+      tealA: t.tealA,
+      blue: t.blue,
+      blueA: t.blueA,
+      blueGray: t.blueGray,
     },
 
     /* ── Shape ──────────────────────────────────────────────────── */
@@ -200,6 +237,16 @@ function buildTheme(mode: "light" | "dark") {
 
     /* ── Component Overrides ───────────────────────────────────── */
     components: {
+      /* Emit the whole GL palette as `:root` custom properties, so index.css
+         and any `var(--…)` call site resolves from the same source as the MUI
+         palette above. Living inside the theme means these re-emit on every
+         light/dark switch — no `.dark` class block needed. */
+      MuiCssBaseline: {
+        styleOverrides: {
+          ":root": getCssVars(mode),
+        },
+      },
+
       /* Button - 8px radius, no elevation, no uppercase */
       MuiButton: {
         defaultProps: { disableElevation: true },
@@ -219,27 +266,25 @@ function buildTheme(mode: "light" | "dark") {
           {
             props: { variant: "soft" },
             style: {
-              backgroundColor:
-                mode === "light"
-                  ? "rgba(25, 106, 229, 0.10)"
-                  : "rgba(102, 187, 255, 0.15)",
-              color:
-                mode === "light" ? "#0f4089" : "#66bbff",
+              /* The soft variant's alpha steps (10/17/5%) have no exact token,
+                 so they are computed off primary rather than hand-written. */
+              backgroundColor: alpha(t.primary.main, mode === "light" ? 0.1 : 0.15),
+              color: mode === "light" ? t.primary.dark : t.primary.main,
               "&:hover": {
-                backgroundColor:
-                  mode === "light"
-                    ? "rgba(25, 106, 229, 0.17)"
-                    : "rgba(102, 187, 255, 0.22)",
+                backgroundColor: alpha(
+                  t.primary.main,
+                  mode === "light" ? 0.17 : 0.22,
+                ),
               },
               "&:disabled": {
-                backgroundColor:
-                  mode === "light"
-                    ? "rgba(25, 106, 229, 0.05)"
-                    : "rgba(102, 187, 255, 0.08)",
-                color:
-                  mode === "light"
-                    ? "rgba(15, 64, 137, 0.4)"
-                    : "rgba(102, 187, 255, 0.4)",
+                backgroundColor: alpha(
+                  t.primary.main,
+                  mode === "light" ? 0.05 : 0.08,
+                ),
+                color: alpha(
+                  mode === "light" ? t.primary.dark : t.primary.main,
+                  0.4,
+                ),
               },
             },
           },
@@ -287,6 +332,12 @@ function buildTheme(mode: "light" | "dark") {
           outlined: {
             borderColor,
           },
+          /* colors.ts ships a distinct surface per elevation; MUI's single
+             `background.paper` can only carry elevation 0. */
+          elevation2: { backgroundColor: t.background["paper-elevation-2"] },
+          elevation8: { backgroundColor: t.background["paper-elevation-8"] },
+          elevation16: { backgroundColor: t.background["paper-elevation-16"] },
+          elevation24: { backgroundColor: t.background["paper-elevation-24"] },
         },
       },
 
@@ -332,8 +383,10 @@ function buildTheme(mode: "light" | "dark") {
         styleOverrides: {
           paper: {
             borderRadius: 16,
-            boxShadow:
-              "0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
+            boxShadow: `0 4px 24px ${t.black["shades-8-p"]}, 0 1px 4px ${alpha(
+              t.black.main,
+              0.04,
+            )}`,
             border: "1px solid",
             borderColor,
           },
@@ -371,10 +424,9 @@ function buildTheme(mode: "light" | "dark") {
           head: {
             fontWeight: 600,
             fontSize: "0.75rem",
-            color:
-              mode === "light"
-                ? "rgba(33, 33, 33, 0.6)"
-                : "rgba(255, 255, 255, 0.6)",
+            /* Was a bespoke 60% ink; the palette's secondary text (72%/70%) is
+               the semantic equivalent and needs no mode branch. */
+            color: t.text.secondary,
           },
         },
       },
