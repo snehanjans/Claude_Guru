@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
@@ -6,17 +7,13 @@ import CardContent from "@mui/material/CardContent";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
-import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
-import { GURU_REF, REFERRAL_BASE } from "@/data/demo-ambassador";
 import type { ReferableCourse } from "@/data/demo-referable-courses";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
-/** How long the "Copied" state shows before reverting. */
-const COPIED_MS = 2000;
 /** Carousel card width per breakpoint; on mobile the next card peeks in. */
 export const CAROUSEL_CARD_W = { xs: 236, sm: 268, md: 288 };
 
@@ -46,7 +43,16 @@ function institutionInitials(name: string): string {
  * badge over it. Falls back to a brand gradient + pattern wash if the remote
  * image fails, so a dead CDN URL degrades instead of leaving a blank card.
  */
-function InstitutionBanner({ course, index }: { course: ReferableCourse; index: number }) {
+export function InstitutionBanner({
+  course,
+  index,
+  height,
+}: {
+  course: ReferableCourse;
+  index: number;
+  /** Fixed height, for the detail page's hero; omit to keep the card's 16:9. */
+  height?: Record<string, number> | number;
+}) {
   const [imgFailed, setImgFailed] = useState(false);
   const pattern = `/course-patterns/p${(index % 6) + 1}.svg`;
   const showImage = Boolean(course.image) && !imgFailed;
@@ -54,8 +60,9 @@ function InstitutionBanner({ course, index }: { course: ReferableCourse; index: 
     <Box
       sx={{
         position: "relative",
-        // Fixed ratio, so cards stay uniform however many are in view.
-        aspectRatio: "16 / 9",
+        // Fixed ratio, so cards stay uniform however many are in view. A hero
+        // sets a height instead — 16:9 across 840px would be far too tall.
+        ...(height ? { height } : { aspectRatio: "16 / 9" }),
         overflow: "hidden",
         background: (t) =>
           `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.primary.main} 62%, ${alpha(
@@ -118,54 +125,30 @@ function InstitutionBanner({ course, index }: { course: ReferableCourse; index: 
 export function CourseCard({
   course,
   index,
-  onCopied,
   width,
 }: {
   course: ReferableCourse;
   index: number;
-  onCopied: (message: string) => void;
   /** Fixed width for carousel use; omit to fill the grid cell. */
   width?: Record<string, number> | number;
 }) {
-  const [copied, setCopied] = useState(false);
-  const [needsManualCopy, setNeedsManualCopy] = useState(false);
-  const linkRef = useRef<HTMLSpanElement>(null);
-  const timerRef = useRef<number | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => () => { if (timerRef.current) window.clearTimeout(timerRef.current); }, []);
-
-  // Program page + the guru's ref tag, matching how the AINP cards build theirs.
-  const link = `${REFERRAL_BASE}${course.slug}?ref=${GURU_REF}`;
-
-  const flash = () => {
-    setCopied(true);
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => setCopied(false), COPIED_MS);
-  };
-
-  const handleCopy = async () => {
-    track(ANALYTICS_EVENTS.TEACH_LINK_COPIED, { courseId: course.slug, course: course.title });
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
-      await navigator.clipboard.writeText(link);
-      setNeedsManualCopy(false);
-      flash();
-      onCopied(`Referral link for ${course.title} copied.`);
-    } catch {
-      // Clipboard blocked (permissions, insecure context). Reveal the link and
-      // select it so the guru can copy manually rather than losing the action.
-      setNeedsManualCopy(true);
-      onCopied("Couldn't copy automatically. The link is selected — press Ctrl or Cmd + C.");
-      window.setTimeout(() => {
-        const el = linkRef.current;
-        if (!el) return;
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        const sel = window.getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      }, 0);
-    }
+  /*
+   * The card hands off to the course's own page rather than copying straight to
+   * the clipboard: that page is where the referral link, the terms and the
+   * earning are shown, so the guru sees what they're sharing before they share
+   * it. `from` is carried along so the page's back link returns where they came
+   * from — the carousel and the catalogue both render this card.
+   */
+  const openCourse = () => {
+    track(ANALYTICS_EVENTS.COURSE_OPENED, {
+      courseId: course.slug,
+      course: course.title,
+      from: location.pathname,
+    });
+    navigate(`/recommend/course/${course.slug}`, { state: { from: location.pathname } });
   };
 
   return (
@@ -216,19 +199,15 @@ export function CourseCard({
         <Box sx={{ mt: "auto", pt: 1.25 }}>
           <Button
             fullWidth
-            onClick={handleCopy}
-            endIcon={
-              copied ? (
-                <CheckRoundedIcon sx={{ fontSize: 16 }} />
-              ) : (
-                <ContentCopyOutlinedIcon sx={{ fontSize: 16 }} />
-              )
-            }
+            onClick={openCourse}
+            endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />}
+            // Names the course, so a screen reader hears which card this is.
+            aria-label={`Get referral link for ${course.title}`}
             sx={{
               textTransform: "none",
               fontWeight: 700,
               fontSize: 13,
-              color: copied ? "success.main" : "primary.main",
+              color: "primary.main",
               "&:hover": { bgcolor: "action.hover" },
               "&.Mui-focusVisible": {
                 outline: (t) => `2px solid ${t.palette.primary.main}`,
@@ -236,26 +215,8 @@ export function CourseCard({
               },
             }}
           >
-            {copied ? "Copied" : "Copy Referral Link"}
+            Get referral link
           </Button>
-          {/* Only rendered when the clipboard API failed, so there's something
-              real to select and copy by hand. */}
-          {needsManualCopy && (
-            <Typography
-              ref={linkRef}
-              component="span"
-              sx={{
-                display: "block",
-                mt: 0.5,
-                fontSize: 11,
-                color: "text.secondary",
-                wordBreak: "break-all",
-                userSelect: "all",
-              }}
-            >
-              {link}
-            </Typography>
-          )}
         </Box>
       </CardContent>
     </Card>

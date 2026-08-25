@@ -91,6 +91,16 @@ export const demoReferableCourses: ReferableCourse[] = [
  * tab, each with a ready-made referral link, so they're excluded from the
  * course search to avoid offering the same thing twice.
  */
+/**
+ * Course for a slug, resolving the alternate paths some programs publish, so a
+ * referral link built from an alias still finds its program.
+ */
+export function findReferableCourse(slug: string): ReferableCourse | undefined {
+  return demoReferableCourses.find(
+    (c) => c.slug === slug || c.aliasSlugs?.includes(slug),
+  );
+}
+
 export const AINP_SLUGS = new Set([
   "ai-native-professional",
   "ai-native-professional-for-finance",

@@ -43,5 +43,10 @@ export const ANALYTICS_EVENTS = {
   /* ── "Other courses you teach" carousel ────────────────────────────────── */
   TEACH_SECTION_EXPANDED: "recommend.other_courses_you_teach.expanded",
   TEACH_CAROUSEL_SCROLLED: "recommend.other_courses_you_teach.scrolled",
-  TEACH_LINK_COPIED: "recommend.other_courses_you_teach.link_copied",
+
+  /* ── Catalogue course pages ──────────────────────────────────────────────
+     A course card opens its page, and the copy happens there. `from` on the
+     open event says which surface sent them — carousel or catalogue.        */
+  COURSE_OPENED: "recommend.course.opened",
+  COURSE_LINK_COPIED: "recommend.course.link_copied",
 } as const;

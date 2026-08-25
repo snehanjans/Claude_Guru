@@ -13,6 +13,7 @@ const PaymentsPage = lazy(() => import("@/pages/Payments"));
 const RecommendPage = lazy(() => import("@/pages/Recommend"));
 const ProgramDetailPage = lazy(() => import("@/pages/Recommend/ProgramDetailPage"));
 const CourseCatalogPage = lazy(() => import("@/pages/Recommend/CourseCatalogPage"));
+const CourseDetailPage = lazy(() => import("@/pages/Recommend/CourseDetailPage"));
 const ProfilePage = lazy(() => import("@/pages/Profile"));
 const PreferencesPage = lazy(() => import("@/pages/Preferences"));
 const ComponentsPage = lazy(() => import("@/pages/Components"));
@@ -51,6 +52,8 @@ export default function App() {
         <Route element={<RecommendScope />}>
           <Route path="/recommend" element={<Suspense><RecommendPage /></Suspense>} />
           <Route path="/recommend/program/:programId" element={<Suspense><ProgramDetailPage /></Suspense>} />
+          {/* Catalogue course — lighter than the AINP program page above. */}
+          <Route path="/recommend/course/:slug" element={<Suspense><CourseDetailPage /></Suspense>} />
         </Route>
         <Route path="/support" element={<Suspense><SupportPage /></Suspense>} />
         <Route path="/profile" element={<Suspense><ProfilePage /></Suspense>} />

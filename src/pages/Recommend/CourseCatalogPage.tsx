@@ -62,7 +62,6 @@ export default function CourseCatalogPage() {
   // Keeps typing responsive while the (large) grid re-filters.
   const deferredQuery = useDeferredValue(query);
   const [activeDomain, setActiveDomain] = useState<string | null>(null);
-  const [status, setStatus] = useState("");
 
   const q = deferredQuery.trim().toLowerCase();
 
@@ -267,7 +266,7 @@ export default function CourseCatalogPage() {
               <Grid container spacing={2}>
                 {guruMentoredCourses.slice(0, 3).map((c, i) => (
                   <Grid key={c.slug} size={{ xs: 12, sm: 6, lg: 4 }}>
-                    <CourseCard course={c} index={i} onCopied={setStatus} />
+                    <CourseCard course={c} index={i} />
                   </Grid>
                 ))}
               </Grid>
@@ -287,7 +286,7 @@ export default function CourseCatalogPage() {
                 <Grid container spacing={2}>
                   {g.courses.map((c, i) => (
                     <Grid key={c.slug} size={{ xs: 12, sm: 6, lg: 4 }}>
-                      <CourseCard course={c} index={i} onCopied={setStatus} />
+                      <CourseCard course={c} index={i} />
                     </Grid>
                   ))}
                 </Grid>
@@ -298,7 +297,7 @@ export default function CourseCatalogPage() {
         </Grid>
       </Box>
 
-      {/* Copy confirmations and result counts for screen readers. */}
+      {/* Result counts for screen readers, as the search filters the grid. */}
       <Box
         aria-live="polite"
         sx={{
@@ -313,7 +312,7 @@ export default function CourseCatalogPage() {
           whiteSpace: "nowrap",
         }}
       >
-        {status || (q ? `${total} course${total === 1 ? "" : "s"} found.` : "")}
+        {q ? `${total} course${total === 1 ? "" : "s"} found.` : ""}
       </Box>
 
     </Box>

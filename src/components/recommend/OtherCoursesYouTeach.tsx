@@ -26,7 +26,6 @@ export function OtherCoursesYouTeach() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState("");
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -213,7 +212,7 @@ export function OtherCoursesYouTeach() {
                 >
                   {courses.map((p, i) => (
                     <Box key={p.slug} data-course-card sx={{ display: "flex", flex: "0 0 auto" }}>
-                      <CourseCard course={p} index={i} onCopied={setStatus} width={CAROUSEL_CARD_W} />
+                      <CourseCard course={p} index={i} width={CAROUSEL_CARD_W} />
                     </Box>
                   ))}
                 </Box>
@@ -267,24 +266,6 @@ export function OtherCoursesYouTeach() {
             </CardContent>
           </Card>
 
-
-          {/* Copy confirmation / clipboard-fallback guidance. */}
-          <Box
-            aria-live="polite"
-            sx={{
-              position: "absolute",
-              width: "1px",
-              height: "1px",
-              m: "-1px",
-              p: 0,
-              border: 0,
-              overflow: "hidden",
-              clipPath: "inset(50%)",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {status}
-          </Box>
         </Box>
       </Collapse>
     </Box>
