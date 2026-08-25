@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
+import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
@@ -28,6 +29,7 @@ import {
   UNIVERSITY_FLAT_USD,
 } from "@/data/demo-ambassador";
 import { findReferableCourse, guruMentoredCourses } from "@/data/demo-referable-courses";
+import { courseDetailFor } from "@/data/demo-course-details";
 import { useAppDispatch } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -38,15 +40,38 @@ const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 /** How long the copy button holds its confirmed state. */
 const COPIED_MS = 1600;
 
+/** Small uppercase section heading, as used on the AINP program page. */
+function SectionLabel({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+      {icon}
+      <Typography
+        sx={{
+          fontSize: "0.72rem",
+          fontWeight: 700,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "text.secondary",
+          lineHeight: 1,
+        }}
+      >
+        {children}
+      </Typography>
+    </Stack>
+  );
+}
+
 /**
  * Referral page for a catalogue course.
  *
- * Deliberately lighter than the AINP program page: the catalogue is scraped
- * from mygreatlearning.com, which publishes a title, provider, duration and
- * banner — and no fee, curriculum, cohort date or FAQ. Rather than invent those,
- * this page shows what we hold and sends the guru to the program page itself for
- * the rest. It carries no Social Media Kit tab for the same reason: no
- * collateral exists for these programs, only for the AINP four.
+ * Carries the AINP page's sections that this catalogue can actually fill: the
+ * overview line, the facts row, Share & earn, what the guru earns, the program
+ * highlights and the brochure. The overview and highlights are the program
+ * page's own copy (see demo-course-details.ts).
+ *
+ * Still absent, and not invented: the fee and cohort date the pages don't
+ * publish uniformly, and the Social Media Kit and FAQ tabs — no collateral or
+ * referral FAQ exists for these programs, only for the AINP four.
  */
 export default function CourseDetailPage() {
   const { slug = "" } = useParams();
@@ -95,6 +120,10 @@ export default function CourseDetailPage() {
 
   const link = `${REFERRAL_BASE}${course.slug}?ref=${GURU_REF}`;
   const programUrl = `${REFERRAL_BASE}${course.slug}`;
+  const detail = courseDetailFor(course.slug);
+  // Most programs publish a brochure page; the rest put it behind a lead form on
+  // the program page, so that page is the fallback — as on the AINP page.
+  const brochureUrl = detail?.brochureUrl ?? programUrl;
   const mentored = guruMentoredCourses.some((c) => c.slug === course.slug);
 
   const copyLink = async () => {
@@ -178,6 +207,13 @@ export default function CourseDetailPage() {
       <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}>
         {course.title}
       </Typography>
+
+      {/* the program page's own one-liner */}
+      {detail?.overview && (
+        <Typography sx={{ mt: 2, fontSize: 15, lineHeight: 1.65, color: "text.secondary" }}>
+          {detail.overview}
+        </Typography>
+      )}
 
       {/* facts — only what the catalogue actually publishes */}
       <Box
@@ -308,7 +344,6 @@ export default function CourseDetailPage() {
       <Box
         sx={{
           mt: 2,
-          mb: 2,
           p: { xs: 2, sm: 2.25 },
           borderRadius: "14px",
           bgcolor: "var(--gl-status-confirmed-bg)",
@@ -349,6 +384,76 @@ export default function CourseDetailPage() {
         <Typography variant="caption" sx={{ display: "block", mt: 1, color: "text.secondary" }}>
           Paid one month after course start, in your payout currency.
         </Typography>
+      </Box>
+
+      {/* what this course teaches — the program page's highlights */}
+      {detail?.highlights.length ? (
+        <>
+          <Divider sx={{ my: 3 }} />
+          <SectionLabel icon={<SchoolOutlinedIcon sx={{ fontSize: 18, color: "primary.main" }} />}>
+            What this course teaches
+          </SectionLabel>
+          <Grid container columnSpacing={3} rowSpacing={2} sx={{ maxWidth: 720 }}>
+            {detail.highlights.map((h) => (
+              <Grid key={h.title} size={{ xs: 12, sm: 6 }}>
+                <Stack direction="row" spacing={1.25}>
+                  <Box
+                    sx={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      bgcolor: "text.disabled",
+                      flexShrink: 0,
+                      // Centres the dot on the first line of the title.
+                      mt: "7px",
+                    }}
+                  />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.4 }}>
+                      {h.title}
+                    </Typography>
+                    {/* Some pages publish a title only. */}
+                    {h.detail && (
+                      <Typography
+                        sx={{ mt: 0.25, fontSize: 13.5, lineHeight: 1.5, color: "text.secondary" }}
+                      >
+                        {h.detail}
+                      </Typography>
+                    )}
+                  </Box>
+                </Stack>
+              </Grid>
+            ))}
+          </Grid>
+        </>
+      ) : null}
+
+      <Box sx={{ mt: 2.5, mb: 2 }}>
+        <Button
+          variant="contained"
+          component="a"
+          href={brochureUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          endIcon={<OpenInNewRoundedIcon sx={{ fontSize: 16 }} />}
+          sx={{
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: "10px",
+            transition: `transform 130ms ${EASE_OUT}`,
+            "&:active": { transform: "scale(0.97)" },
+            "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+          }}
+        >
+          View brochure
+        </Button>
+        {/* Said plainly when there's no brochure page: those programs hand the
+            brochure out through a form, and the button can't pretend otherwise. */}
+        {!detail?.brochureUrl && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+            This program sends its brochure by email — the program page has the request form.
+          </Typography>
+        )}
       </Box>
     </Box>
   );
