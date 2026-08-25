@@ -304,9 +304,9 @@ export default function CourseDetailPage() {
       <Button
         variant="text"
         startIcon={<ArrowBackRoundedIcon sx={{ fontSize: 18 }} />}
-        /* Always back to Recommend, whichever surface the card was on — that's
-           the guru's home for referrals, and the catalogue is a detour off it.
-           Leaving from the carousel also returns them to that section. */
+        /* Labelled "All courses" but pointing at Recommend, on purpose: that's
+           the guru's home for referrals and where every course they can share is
+           listed. Leaving from the carousel also returns them to that section. */
         onClick={() => navigate("/recommend")}
         sx={{
           ml: -1,
@@ -321,7 +321,7 @@ export default function CourseDetailPage() {
           "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
         }}
       >
-        Recommend
+        All courses
       </Button>
 
       {/* header */}
