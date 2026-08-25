@@ -31,7 +31,6 @@ import { findReferableCourse, guruMentoredCourses } from "@/data/demo-referable-
 import { useAppDispatch } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { InstitutionBanner } from "@/components/recommend/CourseCard";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
@@ -96,9 +95,6 @@ export default function CourseDetailPage() {
 
   const link = `${REFERRAL_BASE}${course.slug}?ref=${GURU_REF}`;
   const programUrl = `${REFERRAL_BASE}${course.slug}`;
-  // Position in the roster, so the banner's gradient fallback matches the card
-  // the guru just clicked rather than restarting at the first pattern.
-  const index = Math.max(0, guruMentoredCourses.findIndex((c) => c.slug === course.slug));
   const mentored = guruMentoredCourses.some((c) => c.slug === course.slug);
 
   const copyLink = async () => {
@@ -182,19 +178,6 @@ export default function CourseDetailPage() {
       <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}>
         {course.title}
       </Typography>
-
-      {/* banner — the program's own marketing image, same component as the card */}
-      <Box
-        sx={{
-          mt: 2.5,
-          borderRadius: "14px",
-          overflow: "hidden",
-          border: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <InstitutionBanner course={course} index={index} height={{ xs: 160, sm: 220 }} />
-      </Box>
 
       {/* facts — only what the catalogue actually publishes */}
       <Box

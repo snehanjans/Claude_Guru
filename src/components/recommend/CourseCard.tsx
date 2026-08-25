@@ -43,16 +43,7 @@ function institutionInitials(name: string): string {
  * badge over it. Falls back to a brand gradient + pattern wash if the remote
  * image fails, so a dead CDN URL degrades instead of leaving a blank card.
  */
-export function InstitutionBanner({
-  course,
-  index,
-  height,
-}: {
-  course: ReferableCourse;
-  index: number;
-  /** Fixed height, for the detail page's hero; omit to keep the card's 16:9. */
-  height?: Record<string, number> | number;
-}) {
+function InstitutionBanner({ course, index }: { course: ReferableCourse; index: number }) {
   const [imgFailed, setImgFailed] = useState(false);
   const pattern = `/course-patterns/p${(index % 6) + 1}.svg`;
   const showImage = Boolean(course.image) && !imgFailed;
@@ -60,9 +51,8 @@ export function InstitutionBanner({
     <Box
       sx={{
         position: "relative",
-        // Fixed ratio, so cards stay uniform however many are in view. A hero
-        // sets a height instead — 16:9 across 840px would be far too tall.
-        ...(height ? { height } : { aspectRatio: "16 / 9" }),
+        // Fixed ratio, so cards stay uniform however many are in view.
+        aspectRatio: "16 / 9",
         overflow: "hidden",
         background: (t) =>
           `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.primary.main} 62%, ${alpha(
