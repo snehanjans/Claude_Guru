@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
@@ -17,6 +17,7 @@ import { guruMentoredCourses } from "@/data/demo-referable-courses";
 import { groupByDomain, type DomainGroup } from "@/lib/courseDomains";
 import { CourseCard } from "@/components/recommend/CourseCard";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { useScrollMemory } from "@/lib/scrollRestore";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 /**
@@ -62,6 +63,19 @@ export default function CourseCatalogPage() {
   // Keeps typing responsive while the (large) grid re-filters.
   const deferredQuery = useDeferredValue(query);
   const [activeDomain, setActiveDomain] = useState<string | null>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  /*
+   * Long grid with no single anchor, so the offset itself is what's worth
+   * keeping — a guru who opened a course two-thirds down comes back to it.
+   * Which element scrolls depends on the viewport (see the root Box below), so
+   * this resolves it at run time rather than assuming the container.
+   */
+  useScrollMemory("recommend-courses", () => {
+    const el = scrollerRef.current;
+    if (!el) return null;
+    return getComputedStyle(el).overflowY === "auto" ? el : window;
+  });
 
   const q = deferredQuery.trim().toLowerCase();
 
@@ -161,6 +175,7 @@ export default function CourseCatalogPage() {
       </Stack>
 
       <Box
+        ref={scrollerRef}
         className="themed-scrollbar"
         sx={{
           flex: { sm: 1 },

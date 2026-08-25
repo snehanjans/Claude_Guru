@@ -11,6 +11,7 @@ import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import type { ReferableCourse } from "@/data/demo-referable-courses";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { rememberSection } from "@/lib/scrollRestore";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
@@ -116,11 +117,18 @@ export function CourseCard({
   course,
   index,
   width,
+  returnAnchor,
 }: {
   course: ReferableCourse;
   index: number;
   /** Fixed width for carousel use; omit to fill the grid cell. */
   width?: Record<string, number> | number;
+  /**
+   * Id of the section this card sits in. Given one, coming back to this page
+   * returns to that section instead of its top. Pages that restore a scroll
+   * offset instead leave it unset.
+   */
+  returnAnchor?: string;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -138,6 +146,7 @@ export function CourseCard({
       course: course.title,
       from: location.pathname,
     });
+    if (returnAnchor) rememberSection(location.pathname, returnAnchor);
     navigate(`/recommend/course/${course.slug}`, { state: { from: location.pathname } });
   };
 

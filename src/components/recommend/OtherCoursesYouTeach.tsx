@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useLocation } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
@@ -19,19 +19,46 @@ import { UNIVERSITY_FLAT_USD } from "@/data/demo-ambassador";
 import { guruMentoredCourses } from "@/data/demo-referable-courses";
 import { CourseCard, CAROUSEL_CARD_W } from "./CourseCard";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { rememberSection, takeSection } from "@/lib/scrollRestore";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+/** Anchor for returning here from a course or catalogue page. */
+export const TEACH_SECTION_ID = "other-courses-you-teach";
+/** Expanded-or-not, kept for the tab session so a return looks the same. */
+const OPEN_KEY = "guru-teach-section-open";
+
+const readOpen = () => {
+  try {
+    return sessionStorage.getItem(OPEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
 /* ── Section ──────────────────────────────────────────────────────────────── */
 export function OtherCoursesYouTeach() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const [open, setOpen] = useState(false);
+  const location = useLocation();
+  // Restored, not defaulted: the guru who left from an open section comes back
+  // to an open one. `in` is already true at mount, so Collapse doesn't animate.
+  const [open, setOpen] = useState(readOpen);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   // Only programs the guru is listed as a mentor on.
   const courses = useMemo(() => guruMentoredCourses, []);
+
+  useEffect(() => {
+    if (takeSection(location.pathname) !== TEACH_SECTION_ID) return;
+    /*
+     * Instant, not smooth: this runs as the page finishes loading, and gliding
+     * down from the top there reads as the page moving under the guru. Scrolls
+     * to the section's top, so the carousel opening below it doesn't shift it.
+     */
+    rootRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+  }, [location.pathname]);
 
   const syncArrows = useCallback(() => {
     const el = scrollerRef.current;
@@ -87,13 +114,22 @@ export function OtherCoursesYouTeach() {
   const toggle = () => {
     const next = !open;
     setOpen(next);
+    try {
+      sessionStorage.setItem(OPEN_KEY, next ? "1" : "0");
+    } catch {
+      // Private mode. The section still toggles; it just won't be remembered.
+    }
     if (next) track(ANALYTICS_EVENTS.TEACH_SECTION_EXPANDED, { courses: courses.length });
   };
 
   return (
     <Box
+      id={TEACH_SECTION_ID}
+      ref={rootRef}
       sx={{
         mt: 2.5,
+        // Breathing room above the header when scrolled back into view.
+        scrollMarginTop: 12,
         borderRadius: "16px",
         border: "1px solid",
         borderColor: "divider",
@@ -212,7 +248,12 @@ export function OtherCoursesYouTeach() {
                 >
                   {courses.map((p, i) => (
                     <Box key={p.slug} data-course-card sx={{ display: "flex", flex: "0 0 auto" }}>
-                      <CourseCard course={p} index={i} width={CAROUSEL_CARD_W} />
+                      <CourseCard
+                        course={p}
+                        index={i}
+                        width={CAROUSEL_CARD_W}
+                        returnAnchor={TEACH_SECTION_ID}
+                      />
                     </Box>
                   ))}
                 </Box>
@@ -250,6 +291,7 @@ export function OtherCoursesYouTeach() {
                 <Button
                   component={RouterLink}
                   to="/recommend/courses"
+                  onClick={() => rememberSection(location.pathname, TEACH_SECTION_ID)}
                   variant="outlined"
                   endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 18 }} />}
                   sx={{
