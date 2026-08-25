@@ -74,27 +74,31 @@ export default function CourseCatalogPage() {
   const domains = useMemo(() => groupByDomain(referableCourses).map((g) => g.domain), []);
 
   return (
-    <Box sx={{ mx: "auto", maxWidth: 1280 }}>
-      {/* ── Page nav: logo left, search right ────────────────────────────── */}
+    /* Full-bleed page: it renders outside AppLayout, so there's no app rail and
+       no content width cap — this page owns its whole viewport. */
+    <Box sx={{ minHeight: "100dvh", bgcolor: "background.default" }}>
+      {/* ── Top nav, spanning the page: logo left, search right ──────────── */}
       <Stack
         component="nav"
         direction="row"
         alignItems="center"
-        spacing={2}
+        spacing={{ xs: 1, sm: 2 }}
         sx={{
           position: "sticky",
           top: 0,
-          zIndex: 3,
+          zIndex: 10,
+          px: { xs: 2, sm: 3 },
           py: 1.5,
-          mb: 3,
-          bgcolor: "background.default",
+          bgcolor: "background.paper",
           borderBottom: "1px solid",
           borderColor: "divider",
         }}
       >
         <IconButton
-          onClick={() => navigate(-1)}
-          aria-label="Go back"
+          // Always back to Recommend — this page can be deep-linked, so history
+          // isn't a reliable way home.
+          onClick={() => navigate("/recommend")}
+          aria-label="Back to Recommend"
           sx={{ flexShrink: 0, "&.Mui-focusVisible": { outline: `2px solid ${theme.palette.primary.main}` } }}
         >
           <ArrowBackRoundedIcon />
@@ -127,10 +131,10 @@ export default function CourseCatalogPage() {
         />
       </Stack>
 
-      <Grid container spacing={{ xs: 2, md: 4 }}>
+      <Grid container spacing={{ xs: 2, md: 4 }} sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2.5, md: 3.5 } }}>
         {/* ── Sidebar: heading + domain nav ──────────────────────────────── */}
         <Grid size={{ xs: 12, md: 3 }}>
-          <Box sx={{ position: { md: "sticky" }, top: { md: 84 } }}>
+          <Box sx={{ position: { md: "sticky" }, top: { md: 88 } }}>
             <Typography
               sx={{
                 fontSize: "0.72rem",

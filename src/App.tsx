@@ -39,6 +39,8 @@ export default function App() {
       <Route path="/old-dashboard" element={<Suspense><OldDashboardPage /></Suspense>} />
       <Route path="/marketing-dashboard" element={<Suspense><MarketingDashboardPage /></Suspense>} />
       <Route path="/ninja-availability" element={<Suspense><NinjaAvailabilityPage /></Suspense>} />
+      {/* Full-bleed: brings its own top nav, so it sits outside AppLayout. */}
+      <Route path="/recommend/courses" element={<Suspense><CourseCatalogPage /></Suspense>} />
       <Route element={<AppLayout />}>
         <Route path="/new-dashboard" element={<Suspense><DashboardPage /></Suspense>} />
         <Route path="/courses" element={<Suspense><CoursesPage /></Suspense>} />
@@ -49,7 +51,6 @@ export default function App() {
         <Route element={<RecommendScope />}>
           <Route path="/recommend" element={<Suspense><RecommendPage /></Suspense>} />
           <Route path="/recommend/program/:programId" element={<Suspense><ProgramDetailPage /></Suspense>} />
-          <Route path="/recommend/courses" element={<Suspense><CourseCatalogPage /></Suspense>} />
         </Route>
         <Route path="/support" element={<Suspense><SupportPage /></Suspense>} />
         <Route path="/profile" element={<Suspense><ProfilePage /></Suspense>} />
