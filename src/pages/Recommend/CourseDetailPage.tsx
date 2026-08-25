@@ -49,6 +49,13 @@ import { pushToast } from "@/store/slices/toastsSlice";
 import { saveCollateralEdit, collateralEditKey } from "@/store/slices/collateralEditsSlice";
 import { MessageEditDialog } from "@/components/recommend/MessageEditDialog";
 import { CollateralMessagePanel } from "@/components/recommend/CollateralMessagePanel";
+import {
+  EmailPreview,
+  InstagramPreview,
+  LinkedInPostPreview,
+  PreviewPane,
+  WhatsAppPreview,
+} from "@/components/recommend/CollateralPreviews";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { scrollToTop } from "@/lib/scrollRestore";
@@ -220,6 +227,24 @@ export default function CourseDetailPage() {
     editFor(assetId)?.body ?? fill(caption);
   const subjectFor = (assetId: string) => editFor(assetId)?.subject ?? COURSE_EMAIL_SUBJECT;
 
+  /* Bold the program and the institution inside a filled message — the AINP
+     page does the same, so the guru's eye lands on what the post is about. */
+  const highlightCourse = (text: string): ReactNode => {
+    const values = [course.title, course.providerShort ?? course.provider].filter(Boolean) as string[];
+    if (values.length === 0) return text;
+    const escaped = values.map((v) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const bold = new Set(values);
+    return text.split(new RegExp(`(${escaped.join("|")})`, "g")).map((part, i) =>
+      bold.has(part) ? (
+        <Box key={i} component="span" sx={{ fontWeight: 700 }}>
+          {part}
+        </Box>
+      ) : (
+        part
+      ),
+    );
+  };
+
   const copyCollateral = (key: string, value: string, description: string) => {
     navigator.clipboard?.writeText(value);
     dispatch(pushToast({ title: "Copied", description }));
@@ -235,6 +260,46 @@ export default function CourseDetailPage() {
     "[first name]",
     "[Your name]",
   ].filter(Boolean) as string[];
+
+  /** The channel's mock-up, filled with this course's message and share image. */
+  const previewFor = (assetId: string, caption: string): ReactNode => {
+    const message = displayFor(assetId, caption);
+    const ogLabel = (course.providerShort ?? course.provider ?? "Great Learning").toUpperCase();
+    switch (assetId) {
+      case "asset-01":
+        return (
+          <LinkedInPostPreview
+            message={message}
+            title={course.title}
+            ogImage={course.image}
+            ogLabel={ogLabel}
+            highlight={highlightCourse}
+          />
+        );
+      case "asset-02":
+        return (
+          <WhatsAppPreview
+            message={message}
+            title={course.title}
+            ogImage={course.image}
+            ogLabel={course.providerShort ?? "GL"}
+            highlight={highlightCourse}
+          />
+        );
+      case "asset-03":
+        return (
+          <EmailPreview
+            message={message}
+            subject={subjectFor(assetId)}
+            link={link}
+            showLink={!editFor(assetId)}
+            highlight={highlightCourse}
+          />
+        );
+      default:
+        return <InstagramPreview message={message} highlight={highlightCourse} />;
+    }
+  };
 
   const faqGroups = courseFaqFor(course.slug);
 
@@ -608,26 +673,38 @@ export default function CourseDetailPage() {
                       {asset.label}
                     </Typography>
                   </Stack>
-                  {/* Same panel as the AINP kit. No platform mock-up alongside it:
-                      those previews are built around the AINP creative, and a
-                      stand-in would show the guru something that doesn't exist. */}
-                  <CollateralMessagePanel
-                    message={displayFor(asset.id, asset.caption)}
-                    subject={SUBJECT_ASSET_IDS.has(asset.id) ? subjectFor(asset.id) : undefined}
-                    link={link}
-                    edited={Boolean(editFor(asset.id))}
-                    info={INFO_TEXT[asset.id]}
-                    variant={asset.id === "asset-01" ? "linkedin" : "default"}
-                    copied={copiedKey === key}
-                    onEdit={() => setEditingAssetId(asset.id)}
-                    onCopy={() =>
-                      copyCollateral(
-                        key,
-                        payloadFor(asset.id, asset.caption),
-                        `${asset.label} copied to clipboard.`,
-                      )
-                    }
-                  />
+                  {/* Preview beside the message, same components and layout as
+                      the AINP kit — the mock-up shows this course's own share
+                      image and title, so what the guru sees is their post. */}
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 1fr) minmax(0, 1fr)" },
+                      gap: 2,
+                      alignItems: "stretch",
+                    }}
+                  >
+                    <PreviewPane label={asset.label.split(" ")[0]}>
+                      {previewFor(asset.id, asset.caption)}
+                    </PreviewPane>
+                    <CollateralMessagePanel
+                      message={displayFor(asset.id, asset.caption)}
+                      subject={SUBJECT_ASSET_IDS.has(asset.id) ? subjectFor(asset.id) : undefined}
+                      link={link}
+                      edited={Boolean(editFor(asset.id))}
+                      info={INFO_TEXT[asset.id]}
+                      variant={asset.id === "asset-01" ? "linkedin" : "default"}
+                      copied={copiedKey === key}
+                      onEdit={() => setEditingAssetId(asset.id)}
+                      onCopy={() =>
+                        copyCollateral(
+                          key,
+                          payloadFor(asset.id, asset.caption),
+                          `${asset.label} copied to clipboard.`,
+                        )
+                      }
+                    />
+                  </Box>
                 </Box>
               );
             })}
