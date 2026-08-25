@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -34,6 +34,7 @@ import { useAppDispatch } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { scrollToTop } from "@/lib/scrollRestore";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
@@ -79,8 +80,16 @@ export default function CourseDetailPage() {
   const location = useLocation();
   const dispatch = useAppDispatch();
   const [copied, setCopied] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const course = findReferableCourse(slug);
+
+  // Opened from a card partway down a long page, this would otherwise inherit
+  // that page's scroll offset and start mid-page. A referral page always opens
+  // at the top; coming *back* is what restores a position, not going in.
+  useEffect(() => {
+    scrollToTop(rootRef.current);
+  }, [slug]);
 
   useEffect(() => {
     if (!copied) return;
@@ -99,7 +108,7 @@ export default function CourseDetailPage() {
 
   if (!course) {
     return (
-      <Box sx={{ maxWidth: 840, mx: "auto" }}>
+      <Box ref={rootRef} sx={{ maxWidth: 840, mx: "auto" }}>
         <EmptyState
           icon={<SchoolOutlinedIcon />}
           title="Course not found"
@@ -152,7 +161,7 @@ export default function CourseDetailPage() {
   ].filter(Boolean) as { k: string; v: string; icon: typeof ScheduleOutlinedIcon }[];
 
   return (
-    <Box sx={{ maxWidth: 840, mx: "auto" }}>
+    <Box ref={rootRef} sx={{ maxWidth: 840, mx: "auto" }}>
       <Button
         variant="text"
         startIcon={<ArrowBackRoundedIcon sx={{ fontSize: 18 }} />}

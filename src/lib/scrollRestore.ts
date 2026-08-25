@@ -48,6 +48,25 @@ export function takeSection(path: string): string | null {
   }
 }
 
+/* ── Top of page ──────────────────────────────────────────────────────────── */
+
+/**
+ * Put `el` back at the top of whatever scrolls it.
+ *
+ * Client-side navigation doesn't reset scroll: the app's scroller is a
+ * long-lived element around the router outlet, so a page opened from halfway
+ * down another one inherits that offset. Walks up from the element rather than
+ * reaching for a known selector, so it holds wherever the page is mounted, and
+ * resets the window too for the mobile layout, where the document scrolls.
+ */
+export function scrollToTop(el: HTMLElement | null): void {
+  for (let node = el?.parentElement; node; node = node.parentElement) {
+    const overflow = getComputedStyle(node).overflowY;
+    if ((overflow === "auto" || overflow === "scroll") && node.scrollTop > 0) node.scrollTop = 0;
+  }
+  if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: "auto" });
+}
+
 /* ── Pixel offset ─────────────────────────────────────────────────────────── */
 
 function read(key: string): number {

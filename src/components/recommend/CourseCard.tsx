@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
+import CardActionArea from "@mui/material/CardActionArea";
 import CardContent from "@mui/material/CardContent";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -169,55 +169,74 @@ export function CourseCard({
         "&:focus-within": { borderColor: (t) => alpha(t.palette.primary.main, 0.55) },
       }}
     >
-      <InstitutionBanner course={course} index={index} />
-      <CardContent
-        sx={{ p: 1.75, display: "flex", flexDirection: "column", flex: 1, "&:last-child": { pb: 1.75 } }}
+      {/*
+        * The whole card is one control. A button inside a CardActionArea would
+        * nest interactive elements, so the CTA below is presentational — the
+        * action area carries the name and the keyboard handling, matching the
+        * AINP program cards.
+        */}
+      <CardActionArea
+        onClick={openCourse}
+        disableRipple
+        aria-label={`Get referral link for ${course.title}`}
+        sx={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          borderRadius: "16px",
+          /* The card's own border highlights instead of the default dark fill.
+             The focus-visible rule needs the same specificity MUI uses, or the
+             ring arrives with a grey wash over the whole card. */
+          "& .MuiCardActionArea-focusHighlight": { opacity: 0 },
+          "&.Mui-focusVisible .MuiCardActionArea-focusHighlight": { opacity: 0 },
+          "&.Mui-focusVisible": {
+            outline: (t) => `2px solid ${alpha(t.palette.primary.main, 0.5)}`,
+            outlineOffset: "-2px",
+          },
+          transition: `transform 130ms ${EASE_OUT}`,
+          "&:active": { transform: "scale(0.99)" },
+          "@media (prefers-reduced-motion: reduce)": { "&:active": { transform: "none" } },
+        }}
       >
-        <Typography
-          sx={{
-            fontSize: "0.68rem",
-            fontWeight: 700,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "text.secondary",
-            ...clamp(1),
-          }}
+        <InstitutionBanner course={course} index={index} />
+        <CardContent
+          sx={{ p: 1.75, display: "flex", flexDirection: "column", flex: 1, width: "100%", "&:last-child": { pb: 1.75 } }}
         >
-          {course.providerShort ?? course.provider}
-        </Typography>
-        <Typography
-          variant="subtitle2"
-          sx={{ mt: 0.5, fontWeight: 700, lineHeight: 1.35, minHeight: "2.7em", ...clamp(2) }}
-        >
-          {course.title}
-        </Typography>
-        <Typography sx={{ mt: 0.75, fontSize: 12.5, color: "text.secondary" }}>
-          {[course.durationLabel, course.mode].filter(Boolean).join(" · ")}
-        </Typography>
-
-        <Box sx={{ mt: "auto", pt: 1.25 }}>
-          <Button
-            fullWidth
-            onClick={openCourse}
-            endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />}
-            // Names the course, so a screen reader hears which card this is.
-            aria-label={`Get referral link for ${course.title}`}
+          <Typography
             sx={{
-              textTransform: "none",
+              fontSize: "0.68rem",
               fontWeight: 700,
-              fontSize: 13,
-              color: "primary.main",
-              "&:hover": { bgcolor: "action.hover" },
-              "&.Mui-focusVisible": {
-                outline: (t) => `2px solid ${t.palette.primary.main}`,
-                outlineOffset: 2,
-              },
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "text.secondary",
+              ...clamp(1),
             }}
           >
-            Get referral link
-          </Button>
-        </Box>
-      </CardContent>
+            {course.providerShort ?? course.provider}
+          </Typography>
+          <Typography
+            variant="subtitle2"
+            sx={{ mt: 0.5, fontWeight: 700, lineHeight: 1.35, minHeight: "2.7em", ...clamp(2) }}
+          >
+            {course.title}
+          </Typography>
+          <Typography sx={{ mt: 0.75, fontSize: 12.5, color: "text.secondary" }}>
+            {[course.durationLabel, course.mode].filter(Boolean).join(" · ")}
+          </Typography>
+
+          <Stack
+            direction="row"
+            spacing={0.75}
+            alignItems="center"
+            justifyContent="center"
+            sx={{ mt: "auto", pt: 1.75, color: "primary.main" }}
+          >
+            <Typography sx={{ fontWeight: 700, fontSize: 13 }}>Get referral link</Typography>
+            <ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />
+          </Stack>
+        </CardContent>
+      </CardActionArea>
     </Card>
   );
 }
