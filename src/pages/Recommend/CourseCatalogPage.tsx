@@ -25,6 +25,15 @@ const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
  * Shared by the nav and the grid so their edges line up.
  */
 const GUTTER = { xs: 2, sm: 3, md: "80px" };
+/**
+ * Eyebrow gradient, sampled from the marketing header on mygreatlearning.com
+ * (purple into the brand navy). Not in the theme palette — it exists only here,
+ * so it stays local rather than adding a one-off token.
+ */
+const EYEBROW_GRADIENT = {
+  light: "linear-gradient(90deg, #a21caf 0%, #6d28d9 42%, #1e213f 100%)",
+  dark: "linear-gradient(90deg, #e879f9 0%, #a78bfa 42%, #cbd5f5 100%)",
+};
 /** Rule-flanked section heading, matching the reference's section dividers. */
 function SectionHeading({ label }: { label: string }) {
   return (
@@ -161,29 +170,50 @@ export default function CourseCatalogPage() {
           overscrollBehavior: "contain",
         }}
       >
+        {/* ── Page header, centred above the grid ────────────────────────── */}
+        <Box sx={{ px: GUTTER, pt: "40px", textAlign: "center" }}>
+          <Typography
+            sx={{
+              fontSize: { xs: "0.72rem", md: "0.8rem" },
+              fontWeight: 800,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              // Gradient text: paint the gradient, then clip it to the glyphs.
+              backgroundImage: (t) => EYEBROW_GRADIENT[t.palette.mode],
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              color: "transparent",
+            }}
+          >
+            Find your future with
+          </Typography>
+          <Typography
+            component="h1"
+            sx={{
+              mt: 1.25,
+              mx: "auto",
+              // Narrow enough that the line breaks mid-phrase like the
+              // reference, rather than running the full 80px-gutter width.
+              maxWidth: 640,
+              fontWeight: 800,
+              fontSize: { xs: "1.85rem", sm: "2.4rem", md: "3rem" },
+              lineHeight: 1.15,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Programs from the world's best universities
+          </Typography>
+        </Box>
+
         <Grid
           container
           spacing={{ xs: 2, md: 4 }}
-          sx={{ px: GUTTER, pt: { xs: 2.5, md: 3.5 }, pb: { xs: 6, md: 10 } }}
+          sx={{ px: GUTTER, pt: { xs: 3, md: 4.5 }, pb: { xs: 6, md: 10 } }}
         >
         {/* ── Sidebar: heading + domain nav ──────────────────────────────── */}
         <Grid size={{ xs: 12, md: 3 }}>
           <Box sx={{ position: { md: "sticky" }, top: { md: 8 } }}>
-            <Typography
-              sx={{
-                fontSize: "0.72rem",
-                fontWeight: 800,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "primary.main",
-              }}
-            >
-              Find your future with
-            </Typography>
-            <Typography variant="h5" sx={{ mt: 0.5, mb: 2, fontWeight: 800, lineHeight: 1.2 }}>
-              Programs from the world's best universities
-            </Typography>
-
             <Stack component="ul" sx={{ listStyle: "none", p: 0, m: 0 }}>
               {[null, ...domains].map((d) => {
                 const label = d ?? "All courses";
