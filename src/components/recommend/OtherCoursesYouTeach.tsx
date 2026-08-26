@@ -12,6 +12,7 @@ import Divider from "@mui/material/Divider";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { alpha, useTheme } from "@mui/material/styles";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
@@ -178,6 +179,30 @@ export function OtherCoursesYouTeach() {
           },
         }}
       >
+        {/*
+          * Icon tile, same treatment as the KPI cards on Recommend.
+          *
+          * 44px is the heading and subtext stacked (subtitle2 at 1.57 plus body2
+          * at 1.55, both 0.875rem), so the tile is exactly as tall as the text
+          * beside it. Fixed rather than stretched: a stretched flex item with an
+          * aspect ratio takes its width from its content, which left a 22px-wide
+          * sliver — and on a narrow screen, where the subtext wraps to three
+          * lines, stretching would give an 87px tile.
+          */}
+        <Box
+          sx={{
+            flexShrink: 0,
+            width: 44,
+            height: 44,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: "12px",
+            color: "primary.main",
+            bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+          }}
+        >
+          <SchoolOutlinedIcon sx={{ fontSize: 22 }} />
+        </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
             Every course you teach, one place to refer
