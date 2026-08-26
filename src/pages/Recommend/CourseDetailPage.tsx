@@ -335,24 +335,14 @@ export default function CourseDetailPage() {
         All courses
       </Button>
 
-      {/* header */}
-      <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5 }}>
-        <Chip
-          label={course.providerShort ?? course.provider ?? "University"}
-          size="small"
-          sx={{
-            height: 22,
-            fontSize: "0.68rem",
-            fontWeight: 700,
-            borderRadius: "999px",
-            color: "var(--gl-program-default-text)",
-            bgcolor: "var(--gl-program-default-bg)",
-          }}
-        />
-        {/* Only shown when true — the carousel's roster is the source. */}
-        {mentored && (
+      {/* header — the awarding institution is in the facts row below, so the
+          only chip here is the guru's own relationship to the program. Rendered
+          conditionally rather than always, so a program they don't teach doesn't
+          leave a gap above the title. */}
+      {mentored && (
+        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5 }}>
           <Chip
-            label="You mentor on this"
+            label="Programs you've taught"
             size="small"
             sx={{
               height: 22,
@@ -364,8 +354,8 @@ export default function CourseDetailPage() {
               border: (t) => `1px solid ${alpha(t.palette.primary.main, 0.28)}`,
             }}
           />
-        )}
-      </Stack>
+        </Stack>
+      )}
       <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}>
         {course.title}
       </Typography>
