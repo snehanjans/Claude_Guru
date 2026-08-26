@@ -396,13 +396,14 @@ export default function CourseDetailPage() {
         </Typography>
       )}
 
-      {/* facts — only what the catalogue actually publishes */}
+      {/* facts — only what the catalogue actually publishes. Equal columns across
+          the full width, matching the sections below, so a long institution name
+          gets the room it needs instead of wrapping inside a 200px track. */}
       <Box
         sx={{
           mt: 3,
           display: "grid",
-          gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, minmax(0, 200px))" },
-          justifyContent: "start",
+          gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, minmax(0, 1fr))" },
           columnGap: { xs: 3, sm: 4 },
           rowGap: 2.5,
         }}
