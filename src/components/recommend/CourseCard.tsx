@@ -178,7 +178,7 @@ export function CourseCard({
       <CardActionArea
         onClick={openCourse}
         disableRipple
-        aria-label={`Get referral link for ${course.title}`}
+        aria-label={`Refer now: ${course.title}`}
         sx={{
           height: "100%",
           display: "flex",
@@ -232,7 +232,7 @@ export function CourseCard({
             justifyContent="center"
             sx={{ mt: "auto", pt: 1.75, color: "primary.main" }}
           >
-            <Typography sx={{ fontWeight: 700, fontSize: 13 }}>Get referral link</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: 13 }}>Refer now</Typography>
             <ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />
           </Stack>
         </CardContent>
