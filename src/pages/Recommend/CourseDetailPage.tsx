@@ -579,12 +579,12 @@ export default function CourseDetailPage() {
         </Box>
       </Box>
 
-      {/* what this course teaches — the program page's highlights */}
+      {/* program highlights — the section of that name on the program page */}
       {detail?.highlights.length ? (
         <>
           <Divider sx={{ my: 3 }} />
           <SectionLabel icon={<SchoolOutlinedIcon sx={{ fontSize: 18, color: "primary.main" }} />}>
-            What this course teaches
+            Program highlights
           </SectionLabel>
           <Grid container columnSpacing={3} rowSpacing={2} sx={{ maxWidth: 720 }}>
             {detail.highlights.map((h) => (
