@@ -14,7 +14,6 @@ import { fmtTime12, applyTzOffset, fmtDateNice } from "@/lib/helpers";
 import { useAppSelector } from "@/store";
 import { getActivityVisual } from "@/lib/activity-visuals";
 
-const HAIRLINE_SOFT = "rgba(15, 23, 42, 0.06)";
 const TABULAR = { fontFeatureSettings: '"tnum", "ss01"', fontVariantNumeric: "tabular-nums" } as const;
 
 export type SessionCardStatus = {

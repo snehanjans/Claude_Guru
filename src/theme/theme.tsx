@@ -269,10 +269,14 @@ function buildTheme(mode: "light" | "dark") {
 
     /* ── Component Overrides ───────────────────────────────────── */
     components: {
-      /* Emit the whole GL palette as `:root` custom properties, so index.css
-         and any `var(--…)` call site resolves from the same source as the MUI
-         palette above. Living inside the theme means these re-emit on every
-         light/dark switch — no `.dark` class block needed. */
+      /* Emit the whole GL palette as `:root` custom properties, alongside an
+         HSL companion per opaque token, so CSS can read the same values the
+         MUI palette above uses. Living inside the theme means they re-emit on
+         every light/dark switch.
+
+         NOTE: index.css does NOT yet read any of these — it still defines its
+         own parallel `--gl-*` / `--md-*` palette and resolves entirely within
+         itself. Pointing it at these tokens is a later step. */
       MuiCssBaseline: {
         styleOverrides: {
           ":root": getCssVars(mode),
