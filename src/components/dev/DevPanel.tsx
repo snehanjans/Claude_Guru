@@ -87,7 +87,9 @@ export function DevPanel() {
           onClick={() => dispatch(setDevPanelOpen(true))}
           sx={{
             position: "fixed",
-            bottom: { xs: "calc(5rem + env(safe-area-inset-bottom) + 16px)", md: 24 },
+            // Top right. On mobile that means below the app bar (56px plus the
+            // notch inset), which is fixed at the top of the viewport.
+            top: { xs: "calc(56px + env(safe-area-inset-top) + 12px)", md: 24 },
             right: { xs: 16, md: 24 },
             zIndex: 1200,
             bgcolor: "background.paper",
