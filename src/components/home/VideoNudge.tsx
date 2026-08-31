@@ -18,7 +18,7 @@ import {
   nudgeDismissRemainingMs,
 } from "@/lib/videoNudge";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
-import { VideoNudgeDialog } from "./VideoNudgeDialog";
+import { GuruVideoDialog } from "@/components/video/GuruVideoDialog";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const CARD_W = { xs: 208, sm: 236 };
@@ -347,8 +347,9 @@ export function VideoNudge() {
         </Box>
       </Box>
 
-      <VideoNudgeDialog
+      <GuruVideoDialog
         open={dialogOpen}
+        placement="home_floating_card"
         onClose={handleClose}
         onWatched={handleWatched}
       />

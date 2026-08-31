@@ -17,8 +17,14 @@ import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
-export interface VideoNudgeDialogProps {
+export interface GuruVideoDialogProps {
   open: boolean;
+  /**
+   * Where the guru opened it from. Rides on every per-video event, so watch and
+   * completion rates can be compared between the Home card and the Recommend
+   * hero rather than pooled.
+   */
+  placement: "home_floating_card" | "recommend_hero";
   /** Clip to open on — the card previews the first one, so it starts there. */
   initialIndex?: number;
   onClose: () => void;
@@ -29,15 +35,25 @@ export interface VideoNudgeDialogProps {
 /**
  * The video set, full size.
  *
+ * Shared by every surface that offers the videos — the Home page's floating card
+ * and the Recommend hero panel — so there is one player, one set and one place
+ * where "watched" is recorded, whichever entry point the guru used.
+ *
  * MUI's Dialog supplies the modal semantics the spec asks for — role="dialog",
  * aria-modal, a focus trap while open, Escape to close, and focus returned to
- * whatever opened it, which is the floating card.
+ * whatever opened it.
  *
  * Only the selected clip is in the DOM: the video element is keyed by clip id,
  * so switching tears the old one down and fetches exactly one file. Nothing is
  * preloaded.
  */
-export function VideoNudgeDialog({ open, initialIndex = 0, onClose, onWatched }: VideoNudgeDialogProps) {
+export function GuruVideoDialog({
+  open,
+  placement,
+  initialIndex = 0,
+  onClose,
+  onWatched,
+}: GuruVideoDialogProps) {
   const navigate = useNavigate();
   const [index, setIndex] = useState(initialIndex);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -60,6 +76,7 @@ export function VideoNudgeDialog({ open, initialIndex = 0, onClose, onWatched }:
       const clamped = Math.max(0, Math.min(total - 1, next));
       if (clamped === index) return;
       track(ANALYTICS_EVENTS.VIDEO_NAVIGATED, {
+        placement,
         control: how,
         from: guruVideos[index].id,
         to: guruVideos[clamped].id,
@@ -67,23 +84,23 @@ export function VideoNudgeDialog({ open, initialIndex = 0, onClose, onWatched }:
       });
       setIndex(clamped);
     },
-    [index, total],
+    [index, total, placement],
   );
 
   const handlePlay = () => {
     if (startedRef.current.has(video.id)) return;
     startedRef.current.add(video.id);
-    track(ANALYTICS_EVENTS.VIDEO_STARTED, { videoId: video.id, position: index + 1, of: total });
+    track(ANALYTICS_EVENTS.VIDEO_STARTED, { placement, videoId: video.id, position: index + 1, of: total });
   };
 
   const handleEnded = () => {
-    track(ANALYTICS_EVENTS.VIDEO_COMPLETED, { videoId: video.id, position: index + 1, of: total });
+    track(ANALYTICS_EVENTS.VIDEO_COMPLETED, { placement, videoId: video.id, position: index + 1, of: total });
     markVideoWatched(video.id);
     onWatched(video.id);
   };
 
   const handleRecommend = () => {
-    track(ANALYTICS_EVENTS.VIDEO_NUDGE_RECOMMEND_CLICKED, { videoId: video.id, position: index + 1 });
+    track(ANALYTICS_EVENTS.VIDEO_NUDGE_RECOMMEND_CLICKED, { placement, videoId: video.id, position: index + 1 });
     onClose();
     navigate("/recommend");
   };

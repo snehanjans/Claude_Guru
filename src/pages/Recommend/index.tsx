@@ -1,4 +1,4 @@
-import { useMemo, type ComponentType } from "react";
+import { useEffect, useMemo, type ComponentType } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
@@ -17,6 +17,8 @@ import { useRecommend, type RecommendTab } from "./RecommendContext";
 import { ProgramsSection } from "./sections/Programs";
 import { MyReferralsSection } from "./sections/MyReferrals";
 import { FaqSection } from "./sections/Faq";
+import { HeroVideoPanel } from "@/components/recommend/HeroVideoPanel";
+import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 
@@ -62,6 +64,26 @@ export default function RecommendPage() {
   // First-run: nothing sent and nothing in the pipeline → show a getting-started
   // card instead of a dead "₹0 / 0 / 0" hero. The first referral flips this off.
   const noActivity = enrollments === 0 && pendingCount === 0;
+
+  /*
+   * Whether the hero carries the video panel.
+   *
+   * Every referral counts, whatever became of it — pipeline, enrolled, or
+   * rejected — so this is the referral count and not `noActivity`, which
+   * ignores the rejected ones. Derived on every render rather than stored as a
+   * "new guru" flag: a guru whose only referral disappears sees the video
+   * again, and one who makes their first stops seeing it from then on.
+   */
+  const hasAnyReferral = referrals.length > 0;
+
+  /* Which hero this guru saw, with the count that decided it — the only way to
+     check the targeting against the data afterwards. */
+  useEffect(() => {
+    track(ANALYTICS_EVENTS.HERO_VARIANT_SHOWN, {
+      variant: hasAnyReferral ? "text_only" : "video",
+      referrals: referrals.length,
+    });
+  }, [hasAnyReferral, referrals.length]);
 
   const tabs: { label: string; value: RecommendTab }[] = [
     { label: "Programs", value: "programs" },
@@ -116,6 +138,25 @@ export default function RecommendPage() {
               pointerEvents: "none",
             }}
           />
+          {/*
+            * Zero referrals: video panel left, the copy below unchanged on the
+            * right. One or more: no grid and no panel, so the card renders
+            * exactly as it always has.
+            */}
+          <Box
+            sx={
+              hasAnyReferral
+                ? undefined
+                : {
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", md: "280px minmax(0, 1fr)" },
+                    gap: { xs: 2, md: 3 },
+                    alignItems: "start",
+                  }
+            }
+          >
+            {!hasAnyReferral && <HeroVideoPanel />}
+            <Box sx={{ minWidth: 0 }}>
           <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 800, letterSpacing: "-0.02em" }}>
             Recommend, and earn on every enrollment
           </Typography>
@@ -149,6 +190,8 @@ export default function RecommendPage() {
                 <Typography sx={{ fontSize: 12.5, color: "text.secondary", lineHeight: 1.4 }}>{s.sub}</Typography>
               </Box>
             ))}
+          </Box>
+            </Box>
           </Box>
         </Box>
 
