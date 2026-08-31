@@ -22,9 +22,10 @@ const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const CARD_W = { xs: 208, sm: 236 };
 
 /*
- * Above the dev panel's floating button (1200) so it can't be covered by it or
- * by a chat widget dropped in later, and below MUI's Dialog (1300) and the toast
- * viewport (1400), which should both cover the card.
+ * Above anything else that floats over the page — the dev panel's button sits at
+ * 1200, and a chat widget dropped in later would land around there too — and
+ * below MUI's Dialog (1300) and the toast viewport (1400), which should both
+ * cover the card.
  */
 const CARD_Z = 1250;
 
@@ -156,9 +157,8 @@ export function VideoNudge() {
           position: "fixed",
           zIndex: CARD_Z,
           right: { xs: 16, md: 24 },
-          /* Stacked above the dev panel's button rather than over it. On mobile
-             that button already clears the bottom nav, so this clears both. */
-          bottom: { xs: "calc(5rem + env(safe-area-inset-bottom) + 68px)", md: 84 },
+          // Clears the mobile bottom nav; nothing else sits in this corner.
+          bottom: { xs: "calc(5rem + env(safe-area-inset-bottom) + 16px)", md: 24 },
           width: CARD_W,
           borderRadius: "14px",
           overflow: "hidden",
