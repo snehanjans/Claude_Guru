@@ -44,6 +44,7 @@ import IconButton from "@mui/material/IconButton";
 import { keyframes } from "@mui/system";
 import { alpha } from "@mui/material/styles";
 import { useAppSelector, useAppDispatch } from "@/store";
+import { VideoNudge } from "@/components/home/VideoNudge";
 import {
   setSessionFocus,
   clearRecentlyConfirmed,
@@ -1947,6 +1948,9 @@ export default function DashboardPage() {
         </Grid>
       </Grid>}
 
+      {/* Floating referral-video nudge. Fixed-position and self-contained: it
+          adds nothing to the page flow above. */}
+      <VideoNudge />
     </Stack>
   );
 }

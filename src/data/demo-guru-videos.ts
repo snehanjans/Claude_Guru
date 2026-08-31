@@ -1,0 +1,79 @@
+/**
+ * The referral video set shown by the Home page's floating nudge card.
+ *
+ * The files under public/videos are placeholders: five silent branded clips
+ * generated for this prototype, each with a caption track, so autoplay, muting,
+ * per-video loading and captions are all exercised for real. Replacing them is a
+ * file swap — keep the ids, and keep a poster and a .vtt beside every clip.
+ *
+ * Order is the order the modal steps through, so it reads as a course: what the
+ * scheme is, then the link, then how to talk about it, then the money, then the
+ * questions a learner will ask back.
+ */
+
+export interface GuruVideo {
+  id: string;
+  title: string;
+  /** One line under the player saying what the clip covers. */
+  blurb: string;
+  src: string;
+  /** Shown before the clip loads, and instead of it once the set is watched. */
+  poster: string;
+  /** WebVTT captions. Required — every clip ships with them. */
+  captions: string;
+  /** Published length, for the "5 clips · 25s" style summary. */
+  durationSec: number;
+}
+
+const base = "/videos";
+
+export const guruVideos: GuruVideo[] = [
+  {
+    id: "how-it-works",
+    title: "How referrals work",
+    blurb: "Where your link sits, and what counts as a referral.",
+    src: `${base}/gl-referrals-how-it-works.webm`,
+    poster: `${base}/gl-referrals-how-it-works.jpg`,
+    captions: `${base}/gl-referrals-how-it-works.vtt`,
+    durationSec: 5,
+  },
+  {
+    id: "your-link",
+    title: "Your personalised link",
+    blurb: "Why the ?ref= tag matters and where to find it.",
+    src: `${base}/gl-referrals-your-link.webm`,
+    poster: `${base}/gl-referrals-your-link.jpg`,
+    captions: `${base}/gl-referrals-your-link.vtt`,
+    durationSec: 5,
+  },
+  {
+    id: "write-a-post",
+    title: "Writing a post that lands",
+    blurb: "What to say when you post it yourself.",
+    src: `${base}/gl-referrals-write-a-post.webm`,
+    poster: `${base}/gl-referrals-write-a-post.jpg`,
+    captions: `${base}/gl-referrals-write-a-post.vtt`,
+    durationSec: 5,
+  },
+  {
+    id: "what-you-earn",
+    title: "What you earn, and when",
+    blurb: "The bonus per enrolment and the payout timing.",
+    src: `${base}/gl-referrals-what-you-earn.webm`,
+    poster: `${base}/gl-referrals-what-you-earn.jpg`,
+    captions: `${base}/gl-referrals-what-you-earn.vtt`,
+    durationSec: 5,
+  },
+  {
+    id: "learner-questions",
+    title: "Answering learner questions",
+    blurb: "The three things learners always ask back.",
+    src: `${base}/gl-referrals-learner-questions.webm`,
+    poster: `${base}/gl-referrals-learner-questions.jpg`,
+    captions: `${base}/gl-referrals-learner-questions.vtt`,
+    durationSec: 5,
+  },
+];
+
+/** The clip the floating card previews. */
+export const nudgePreviewVideo = guruVideos[0];
