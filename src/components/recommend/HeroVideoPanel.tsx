@@ -58,7 +58,15 @@ export function HeroVideoPanel() {
           borderColor: (t) => alpha(t.palette.primary.main, 0.18),
           bgcolor: "#000",
           cursor: "pointer",
-          aspectRatio: "16 / 10",
+          /*
+           * Stacked on mobile it sets its own height from the 16:10 ratio; in
+           * the two-column layout it fills the row instead, so its bottom edge
+           * lines up with the copy beside it. The floor keeps it from looking
+           * squashed if that copy is ever shortened.
+           */
+          aspectRatio: { xs: "16 / 10", md: "auto" },
+          height: { md: "100%" },
+          minHeight: { md: 232 },
           transition: `transform 160ms ${EASE_OUT}, box-shadow 160ms ${EASE_OUT}`,
           "@media (hover: hover)": {
             "&:hover": { boxShadow: 6, transform: "translateY(-1px)" },
