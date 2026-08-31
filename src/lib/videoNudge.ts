@@ -5,9 +5,12 @@
  * Two different lifetimes, on purpose:
  *
  * - **Dismissal is per session** (sessionStorage). Closing the card is a "not
- *   now", not a permanent no, so it can return on the guru's next visit — but
- *   never again in the session it was closed in, however many times they come
- *   back to Home.
+ *   now", not a permanent no, so it can return on the guru's next visit.
+ *
+ *   TESTING OVERRIDE: it currently expires after DISMISS_TTL_MS (one minute) and
+ *   the card comes back, which is quicker to exercise than reloading in a fresh
+ *   session. This deliberately breaks the product rule that a closed card never
+ *   reappears mid-session — set DISMISS_TTL_MS to Infinity to restore it.
  *
  * - **Watched clips persist** (localStorage). Once the whole set has been
  *   watched, the card stops autoplaying on every future visit and shows a still
@@ -23,19 +26,38 @@ import { guruVideos } from "@/data/demo-guru-videos";
 const DISMISSED_KEY = "guru-video-nudge-dismissed";
 const WATCHED_KEY = "guru-video-nudge-watched";
 
-/* ── Dismissal (session) ──────────────────────────────────────────────────── */
+/**
+ * How long a dismissal holds.
+ *
+ * TESTING VALUE — one minute, so closing the card and seeing it return doesn't
+ * need a new session. `Infinity` is the shipping value: dismissed means gone for
+ * the rest of the session.
+ */
+export const DISMISS_TTL_MS = 60_000;
+
+/* ── Dismissal (session, with the testing TTL above) ──────────────────────── */
+
+/** Milliseconds until a dismissal expires; 0 when the card should show. */
+export function nudgeDismissRemainingMs(): number {
+  try {
+    const at = Number(sessionStorage.getItem(DISMISSED_KEY));
+    if (!Number.isFinite(at) || at <= 0) return 0;
+    if (DISMISS_TTL_MS === Infinity) return Infinity;
+    return Math.max(0, at + DISMISS_TTL_MS - Date.now());
+  } catch {
+    return 0;
+  }
+}
 
 export function isNudgeDismissed(): boolean {
-  try {
-    return sessionStorage.getItem(DISMISSED_KEY) === "1";
-  } catch {
-    return false;
-  }
+  return nudgeDismissRemainingMs() > 0;
 }
 
 export function dismissNudge(): void {
   try {
-    sessionStorage.setItem(DISMISSED_KEY, "1");
+    // The timestamp, not a flag: the TTL is measured from the moment of the
+    // dismissal, so it survives a reload part-way through.
+    sessionStorage.setItem(DISMISSED_KEY, String(Date.now()));
   } catch {
     // Private mode: the card stays closed for this mount either way, since the
     // component holds its own state. Only the reload survives it.

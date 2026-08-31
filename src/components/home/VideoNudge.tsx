@@ -10,10 +10,12 @@ import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
 import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
 import { guruVideos, nudgePreviewVideo } from "@/data/demo-guru-videos";
 import {
+  DISMISS_TTL_MS,
   dismissNudge,
   getWatchedIds,
   hasWatchedEverything,
   isNudgeDismissed,
+  nudgeDismissRemainingMs,
 } from "@/lib/videoNudge";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { VideoNudgeDialog } from "./VideoNudgeDialog";
@@ -65,8 +67,25 @@ export function VideoNudge() {
   /** Motion only for a guru who hasn't seen the whole set. */
   const wantsMotion = !allWatched && !videoFailed;
 
-  /* One "shown" event per mount, and only when the card is actually rendered —
-     a dismissed session must not report an impression. */
+  /*
+   * TESTING: bring the card back when the dismissal expires, without a reload.
+   * Scheduled from the remaining time rather than the full window, so a reload
+   * part-way through the minute doesn't restart the clock. With the shipping
+   * DISMISS_TTL_MS (Infinity) there is nothing to schedule and this is inert.
+   */
+  useEffect(() => {
+    if (visible || !Number.isFinite(DISMISS_TTL_MS)) return;
+    const remaining = nudgeDismissRemainingMs();
+    if (remaining === 0 || remaining === Infinity) return;
+    const t = window.setTimeout(() => {
+      shownRef.current = false; // the reappearance is a new impression
+      setVisible(true);
+    }, remaining);
+    return () => window.clearTimeout(t);
+  }, [visible]);
+
+  /* One "shown" event per appearance, and only when the card is actually
+     rendered — a dismissed session must not report an impression. */
   useEffect(() => {
     if (!visible || shownRef.current) return;
     shownRef.current = true;
