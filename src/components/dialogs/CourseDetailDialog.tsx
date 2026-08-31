@@ -50,7 +50,7 @@ function SectionPanel({
         borderRadius: "8px",
         overflow: "hidden",
         bgcolor: section.isNew ? "action.hover" : "background.paper",
-        ...(section.isNew && { boxShadow: "0 0 0 1px var(--mui-palette-primary-main, hsl(var(--md-primary)))" }),
+        ...(section.isNew && { boxShadow: "0 0 0 1px var(--primary-main)" }),
       }}
     >
       {/* Section header */}
@@ -212,7 +212,7 @@ export function CourseDetailDialog() {
         /* Desktop: thumbnail + title + close */
         <Box sx={{ px: 3, pt: 3, pb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-            <CoursePatternThumb color={course.color ?? "#6366f1"} pattern={course.pattern ?? 0} size={80} borderRadius={10} />
+            <CoursePatternThumb color={course.color ?? "primary.main"} pattern={course.pattern ?? 0} size={80} borderRadius={10} />
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                 <Chip label={course.role} size="small" variant="outlined" />
@@ -233,7 +233,7 @@ export function CourseDetailDialog() {
   /* Mobile: course info card below top bar */
   const mobileInfoCard = isMobile && (
     <Box sx={{ px: 2, pt: 2, pb: 1.5, display: "flex", alignItems: "flex-start", gap: 1.5 }}>
-      <CoursePatternThumb color={course.color ?? "#6366f1"} pattern={course.pattern ?? 0} size={56} borderRadius={8} />
+      <CoursePatternThumb color={course.color ?? "primary.main"} pattern={course.pattern ?? 0} size={56} borderRadius={8} />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.25 }}>
           <Chip label={course.role} size="small" variant="outlined" />

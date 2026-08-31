@@ -2977,7 +2977,7 @@ function AuditPanel() {
                     <Typography variant="caption" fontWeight={600} sx={{ fontSize: "0.65rem", mb: 0.5, display: "block", color: "warning.main" }}>Potential Gaps</Typography>
                     <Stack direction="row" spacing={0.5} sx={{ flexWrap: "wrap", gap: 0.5 }}>
                       {gaps.map((s) => (
-                        <Chip key={s} icon={<WarningAmberOutlinedIcon sx={{ fontSize: "12px !important" }} />} label={s} size="small" sx={{ height: 22, fontSize: "0.65rem", bgcolor: "hsl(var(--md-warning) / 0.08)", "& .MuiChip-icon": { color: "warning.main" } }} />
+                        <Chip key={s} icon={<WarningAmberOutlinedIcon sx={{ fontSize: "12px !important" }} />} label={s} size="small" sx={{ height: 22, fontSize: "0.65rem", bgcolor: "hsl(var(--warning-main-hsl) / 0.08)", "& .MuiChip-icon": { color: "warning.main" } }} />
                       ))}
                     </Stack>
                   </>

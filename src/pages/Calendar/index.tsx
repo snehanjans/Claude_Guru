@@ -264,8 +264,8 @@ function requestColors(response: RequestSlot["response"]) {
 
 /* ── Pulse animation for recently-confirmed sessions ─────────────────── */
 const confirmPulse = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 var(--gl-cal-session-confirmed-pulse, rgba(25,106,229,0.4)); }
-  50% { box-shadow: 0 0 0 6px var(--gl-cal-session-confirmed-pulse-end, rgba(25,106,229,0)); }
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary-main-hsl) / 0.4); }
+  50% { box-shadow: 0 0 0 6px hsl(var(--primary-main-hsl) / 0); }
 `;
 
 /* ═══════════════════════════════════════════════════════════════════════════ */

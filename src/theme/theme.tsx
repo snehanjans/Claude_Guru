@@ -25,17 +25,33 @@ type GlPaletteExtras = Pick<
   | "extGrey"
   | "greyA"
   | "indigo"
+  | "indigoA"
   | "deepPurple"
+  | "deepPurpleA"
+  | "amber"
+  | "amberA"
   | "orange"
+  | "orangeA"
   | "pink"
+  | "pinkA"
+  | "deepOrange"
+  | "deepOrangeA"
+  | "green"
+  | "greenA"
   | "red"
+  | "redA"
+  | "lightGreen"
+  | "lightGreenA"
   | "purple"
   | "purpleA"
+  | "lime"
+  | "limeA"
   | "lightBlue"
   | "lightBlueA"
   | "yellow"
   | "yellowA"
   | "cyan"
+  | "cyanA"
   | "teal"
   | "tealA"
   | "blue"
@@ -124,17 +140,33 @@ function buildTheme(mode: "light" | "dark") {
       extGrey: t.extGrey,
       greyA: t.greyA,
       indigo: t.indigo,
+      indigoA: t.indigoA,
       deepPurple: t.deepPurple,
+      deepPurpleA: t.deepPurpleA,
+      amber: t.amber,
+      amberA: t.amberA,
       orange: t.orange,
+      orangeA: t.orangeA,
       pink: t.pink,
+      pinkA: t.pinkA,
+      deepOrange: t.deepOrange,
+      deepOrangeA: t.deepOrangeA,
+      green: t.green,
+      greenA: t.greenA,
       red: t.red,
+      redA: t.redA,
+      lightGreen: t.lightGreen,
+      lightGreenA: t.lightGreenA,
       purple: t.purple,
       purpleA: t.purpleA,
+      lime: t.lime,
+      limeA: t.limeA,
       lightBlue: t.lightBlue,
       lightBlueA: t.lightBlueA,
       yellow: t.yellow,
       yellowA: t.yellowA,
       cyan: t.cyan,
+      cyanA: t.cyanA,
       teal: t.teal,
       tealA: t.tealA,
       blue: t.blue,
@@ -237,10 +269,14 @@ function buildTheme(mode: "light" | "dark") {
 
     /* ── Component Overrides ───────────────────────────────────── */
     components: {
-      /* Emit the whole GL palette as `:root` custom properties, so index.css
-         and any `var(--…)` call site resolves from the same source as the MUI
-         palette above. Living inside the theme means these re-emit on every
-         light/dark switch — no `.dark` class block needed. */
+      /* Emit the whole GL palette as `:root` custom properties, alongside an
+         HSL companion per opaque token, so CSS can read the same values the
+         MUI palette above uses. Living inside the theme means they re-emit on
+         every light/dark switch.
+
+         NOTE: index.css does NOT yet read any of these — it still defines its
+         own parallel `--gl-*` / `--md-*` palette and resolves entirely within
+         itself. Pointing it at these tokens is a later step. */
       MuiCssBaseline: {
         styleOverrides: {
           ":root": getCssVars(mode),

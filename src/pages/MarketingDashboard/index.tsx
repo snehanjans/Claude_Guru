@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -370,7 +371,7 @@ function HeroStat({
         p: 1.75,
         boxShadow: TILE_SHADOW,
         overflow: "hidden",
-        backgroundImage: `radial-gradient(120% 80% at 100% 0%, ${color}10, transparent 55%)`,
+        backgroundImage: `radial-gradient(120% 80% at 100% 0%, ${alpha(color, 0.063)}, transparent 55%)`,
       }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.75}>
@@ -381,7 +382,7 @@ function HeroStat({
               height: 8,
               borderRadius: "50%",
               bgcolor: color,
-              boxShadow: `0 0 0 3px ${color}1f`,
+              boxShadow: `0 0 0 3px ${alpha(color, 0.122)}`,
             }}
           />
           <Typography
@@ -411,7 +412,7 @@ function HeroStat({
             fontFamily: NUM_DISPLAY,
             fontFeatureSettings: FEATURE_TNUM,
             letterSpacing: "-0.01em",
-            boxShadow: `inset 0 0 0 1px ${trendColor}1f`,
+            boxShadow: `inset 0 0 0 1px ${alpha(trendColor, 0.122)}`,
           }}
         >
           {isUp ? "▲" : "▼"} {delta}

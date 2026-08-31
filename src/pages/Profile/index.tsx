@@ -411,69 +411,17 @@ export default function ProfilePage() {
     return () => ro.disconnect();
   }, []);
 
-  // Seasonal theme config per month
+  /* Seasonal theme config per month. Only the four keys the share card
+     actually renders — bg, circle, headingColor, nameColor. */
   const MONTH_THEMES: Record<string, {
-    bg: string; circles: [string, string, string];
-    chipBg: string; chipColor: string;
-    stats: { bg: string; color: string }[];
-    headingColor: string; taglineColor: string;
-    spotlightColor: string; nameColor: string; subtitleColor: string;
-    pattern?: string;
+    bg: string; circle: string; headingColor: string; nameColor: string;
   }> = {
-    "2025-09": {
-      bg: "#e0f2f1", circles: ["#4db6ac", "#b2dfdb", "#80cbc4"],
-      chipBg: "#b2dfdb", chipColor: "#00695c",
-      stats: [{ bg: "#b2dfdb", color: "#004d40" }, { bg: "#4db6ac", color: "common.white" }, { bg: "#e0f2f1", color: "#00695c" }, { bg: "#80cbc4", color: "#004d40" }, { bg: "#e0f2f1", color: "#00695c" }],
-      headingColor: "#00695c", taglineColor: "#00897b", spotlightColor: "#00897b", nameColor: "#004d40", subtitleColor: "#4db6ac",
-      pattern: "repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(0,105,92,0.03) 8px, rgba(0,105,92,0.03) 9px)",
-    },
-    "2025-10": {
-      bg: "#fff3e0", circles: ["#ffd54f", "#ff8a65", "#ffcc80"],
-      chipBg: "#ffd54f", chipColor: "#bf360c",
-      stats: [{ bg: "#ffd54f", color: "#4e342e" }, { bg: "#ff8a65", color: "common.white" }, { bg: "#ffe0b2", color: "#bf360c" }, { bg: "#ffcc80", color: "#4e342e" }, { bg: "#fff3e0", color: "#bf360c" }],
-      headingColor: "#bf360c", taglineColor: "#e65100", spotlightColor: "#e65100", nameColor: "#3e2723", subtitleColor: "#ff8a65",
-      pattern: "repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(191,54,12,0.025) 12px, rgba(191,54,12,0.025) 24px, transparent 24px, transparent 36px)",
-    },
-    "2025-11": {
-      bg: "#fce4ec", circles: ["#f48fb1", "#ce93d8", "#f8bbd0"],
-      chipBg: "#f48fb1", chipColor: "#880e4f",
-      stats: [{ bg: "#f48fb1", color: "common.white" }, { bg: "#ce93d8", color: "common.white" }, { bg: "#fce4ec", color: "#880e4f" }, { bg: "#e1bee7", color: "#4a148c" }, { bg: "#fce4ec", color: "#880e4f" }],
-      headingColor: "#880e4f", taglineColor: "#ad1457", spotlightColor: "#ad1457", nameColor: "#4a148c", subtitleColor: "#ce93d8",
-      pattern: "radial-gradient(circle 40px at 20% 30%, rgba(136,14,79,0.03) 0%, transparent 60%), radial-gradient(circle 30px at 70% 60%, rgba(74,20,140,0.03) 0%, transparent 60%)",
-    },
-    "2025-12": {
-      bg: "#e8eaf6", circles: ["#81d4fa", "#b0bec5", "#c5cae9"],
-      chipBg: "#81d4fa", chipColor: "#0d47a1",
-      stats: [{ bg: "#81d4fa", color: "#0d47a1" }, { bg: "#42a5f5", color: "common.white" }, { bg: "#e3f2fd", color: "#0d47a1" }, { bg: "#bbdefb", color: "#0d47a1" }, { bg: "#e3f2fd", color: "#0d47a1" }],
-      headingColor: "#1a237e", taglineColor: "#283593", spotlightColor: "#1565c0", nameColor: "#0d47a1", subtitleColor: "#7986cb",
-      pattern: "radial-gradient(circle 2px at 15% 20%, rgba(13,71,161,0.06) 0%, transparent 50%), radial-gradient(circle 2px at 45% 70%, rgba(13,71,161,0.06) 0%, transparent 50%), radial-gradient(circle 2px at 75% 35%, rgba(13,71,161,0.06) 0%, transparent 50%), radial-gradient(circle 2px at 90% 80%, rgba(13,71,161,0.06) 0%, transparent 50%)",
-    },
-    "2026-01": {
-      bg: "#eceff1", circles: ["#90a4ae", "#b0bec5", "#cfd8dc"],
-      chipBg: "#b0bec5", chipColor: "#263238",
-      stats: [{ bg: "#cfd8dc", color: "#263238" }, { bg: "#90a4ae", color: "common.white" }, { bg: "#eceff1", color: "#263238" }, { bg: "#b0bec5", color: "#1a237e" }, { bg: "#eceff1", color: "#263238" }],
-      headingColor: "#263238", taglineColor: "#37474f", spotlightColor: "#455a64", nameColor: "#263238", subtitleColor: "#78909c",
-      pattern: "radial-gradient(circle 1.5px at 10% 15%, rgba(38,50,56,0.05) 0%, transparent 50%), radial-gradient(circle 1.5px at 35% 55%, rgba(38,50,56,0.05) 0%, transparent 50%), radial-gradient(circle 1.5px at 60% 25%, rgba(38,50,56,0.05) 0%, transparent 50%), radial-gradient(circle 1.5px at 85% 75%, rgba(38,50,56,0.05) 0%, transparent 50%)",
-    },
-    "2026-02": {
-      bg: "#dbeafe", circles: ["#fde68a", "#bfdbfe", "#93c5fd"],
-      chipBg: "#fde68a", chipColor: "#1e3a5f",
-      stats: [{ bg: "#fde68a", color: "#1e3a5f" }, { bg: "#60a5fa", color: "common.white" }, { bg: "#bfdbfe", color: "#1e3a5f" }, { bg: "#93c5fd", color: "#1e3a5f" }, { bg: "#e0f2fe", color: "#1e3a5f" }],
-      headingColor: "#2563eb", taglineColor: "#2563eb", spotlightColor: "#2563eb", nameColor: "#0f172a", subtitleColor: "#64748b",
-    },
-    "2026-03": {
-      bg: "#ecfdf5", circles: ["#6ee7b7", "#a7f3d0", "#d1fae5"],
-      chipBg: "#6ee7b7", chipColor: "#064e3b",
-      stats: [{ bg: "#6ee7b7", color: "#064e3b" }, { bg: "#34d399", color: "common.white" }, { bg: "#a7f3d0", color: "#064e3b" }, { bg: "#d1fae5", color: "#065f46" }, { bg: "#ecfdf5", color: "#065f46" }],
-      headingColor: "#059669", taglineColor: "#059669", spotlightColor: "#059669", nameColor: "#064e3b", subtitleColor: "#6ee7b7",
-    },
-    "till-date": {
-      bg: "#1e293b", circles: ["#334155", "#475569", "#64748b"],
-      chipBg: "#fbbf24", chipColor: "#1e293b",
-      stats: [{ bg: "#334155", color: "#f8fafc" }, { bg: "#475569", color: "#f8fafc" }, { bg: "#334155", color: "#f8fafc" }, { bg: "#475569", color: "#f8fafc" }, { bg: "#334155", color: "#f8fafc" }],
-      headingColor: "#94a3b8", taglineColor: "#94a3b8", spotlightColor: "#fbbf24", nameColor: "#f8fafc", subtitleColor: "#94a3b8",
-      pattern: "radial-gradient(circle 2px at 15% 20%, rgba(251,191,36,0.06) 0%, transparent 50%), radial-gradient(circle 2px at 75% 60%, rgba(251,191,36,0.06) 0%, transparent 50%)",
-    },
+    "2025-11": { bg: "#fce4ec", circle: "#f48fb1", headingColor: "#880e4f", nameColor: "#4a148c" },
+    "2025-12": { bg: "#e8eaf6", circle: "#81d4fa", headingColor: "#1a237e", nameColor: "#0d47a1" },
+    "2026-01": { bg: "#eceff1", circle: "#90a4ae", headingColor: "#263238", nameColor: "#263238" },
+    "2026-02": { bg: "#dbeafe", circle: "#fde68a", headingColor: "#2563eb", nameColor: "#0f172a" },
+    "2026-03": { bg: "#ecfdf5", circle: "#6ee7b7", headingColor: "#059669", nameColor: "#064e3b" },
+    "till-date": { bg: "#1e293b", circle: "#334155", headingColor: "#94a3b8", nameColor: "#f8fafc" },
   };
 
   // Role-aware monthly data for the share card
@@ -1180,7 +1128,7 @@ export default function ProfilePage() {
             elevation={0}
             sx={{ borderRadius: "12px", bgcolor: shareTheme.bg, position: "relative", overflow: "hidden", transition: "background-color 0.4s ease" }}
           >
-            <Box sx={{ position: "absolute", top: -30, right: -30, width: 120, height: 120, borderRadius: "50%", bgcolor: shareTheme.circles[0], opacity: 0.3 }} />
+            <Box sx={{ position: "absolute", top: -30, right: -30, width: 120, height: 120, borderRadius: "50%", bgcolor: shareTheme.circle, opacity: 0.3 }} />
             <Box sx={{ p: 3, position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
                 <Box component="img" src={isTillDate ? "/gl-logo-white.svg" : "/gl-logo-navy.svg"} alt="Great Learning" sx={{ height: 20 }} />
@@ -1532,9 +1480,11 @@ export default function ProfilePage() {
               sx={{
                 display: "flex", alignItems: "center", width: "100%",
                 px: 2, py: 1.5, border: "none",
-                bgcolor: shareAllTime ? "primary.50" : "transparent",
+                bgcolor: shareAllTime ? "primary.shades-select" : "transparent",
                 cursor: "pointer", fontFamily: "inherit",
-                "&:hover": { bgcolor: shareAllTime ? "primary.100" : "action.hover" },
+                "&:hover": {
+                  bgcolor: shareAllTime ? "primary.shades-12-p" : "action.hover",
+                },
                 "&:active": { bgcolor: "action.selected" },
               }}
             >
@@ -1551,9 +1501,17 @@ export default function ProfilePage() {
                 sx={{
                   display: "flex", alignItems: "center", width: "100%",
                   px: 2, py: 1.5, border: "none",
-                  bgcolor: !shareAllTime && m.value === shareMonth ? "primary.50" : "transparent",
+                  bgcolor:
+                    !shareAllTime && m.value === shareMonth
+                      ? "primary.shades-select"
+                      : "transparent",
                   cursor: "pointer", fontFamily: "inherit",
-                  "&:hover": { bgcolor: !shareAllTime && m.value === shareMonth ? "primary.100" : "action.hover" },
+                  "&:hover": {
+                    bgcolor:
+                      !shareAllTime && m.value === shareMonth
+                        ? "primary.shades-12-p"
+                        : "action.hover",
+                  },
                   "&:active": { bgcolor: "action.selected" },
                 }}
               >

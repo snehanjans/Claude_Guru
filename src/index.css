@@ -4,7 +4,6 @@
 :root {
   /* ── Material Design 3 surface tokens ── */
   --md-surface: 0 0% 100%;
-  --md-surface-dim: 0 0% 93%;
   --md-surface-bright: 0 0% 98%;
   /* #fafafa */
   --md-surface-container: 0 0% 96%;
@@ -13,20 +12,10 @@
   /* rgba(33,33,33,0.92) */
   --md-on-surface-variant: 0 0% 29%;
   /* rgba(33,33,33,0.72) */
-  --md-outline: 0 0% 46%;
-  /* #757575 */
   --md-outline-variant: 0 0% 88%;
   /* #e0e0e0 */
   --md-primary: 215 82% 50%;
   /* #196ae5 */
-  --md-on-primary: 0 0% 100%;
-  --md-error: 0 100% 60%;
-  /* #ff3333 */
-  --md-on-error: 0 0% 100%;
-  --md-secondary-container: 36 100% 80%;
-  /* #ffcc80 */
-  --md-on-secondary-container: 24 100% 47%;
-  /* #ef6c00 */
   --md-primary-container: 213 90% 94%;
   /* #dbeafe - light primary tint for active nav items */
   --md-on-primary-container: 215 82% 35%;
@@ -153,10 +142,7 @@
   --gl-mapped-session-hover: rgba(37, 99, 235, 0.15);
 
   /* ── Stat tile icon bg tints ── */
-  --gl-stat-rating: #ff9800;
-  --gl-stat-hours: #196ae5;
   --gl-stat-sessions: #22bb34;
-  --gl-stat-learners: #9c27b0;
 
   /* Chart bar color — saturated blue tuned for light bg. Paired with a
      brighter saturated value in dark mode for consistent visual weight. */
@@ -167,24 +153,16 @@
   /* ── Material Design 3 surface tokens ── */
   --md-surface: 0 0% 7%;
   /* #121212 */
-  --md-surface-dim: 0 0% 5%;
   --md-surface-bright: 0 0% 7%;
   --md-surface-container: 0 0% 11%;
   /* #1B1B1B */
   --md-on-surface: 0 0% 100%;
   --md-on-surface-variant: 0 0% 70%;
   /* rgba(255,255,255,0.7) */
-  --md-outline: 0 0% 46%;
   --md-outline-variant: 0 0% 23%;
   /* rgba(255,255,255,0.23) */
   --md-primary: 207 100% 70%;
   /* #66bbff */
-  --md-on-primary: 0 0% 0%;
-  --md-error: 4 90% 58%;
-  /* #f44336 */
-  --md-on-error: 0 0% 100%;
-  --md-secondary-container: 36 100% 40%;
-  --md-on-secondary-container: 36 100% 75%;
   --md-primary-container: 215 50% 20%;
   /* dark primary tint for active nav items */
   --md-on-primary-container: 207 100% 75%;
@@ -308,10 +286,7 @@
   --gl-mapped-session-hover: rgba(96, 165, 250, 0.2);
 
   /* ── Stat tile icon bg tints (dark) ── */
-  --gl-stat-rating: #ffb74d;
-  --gl-stat-hours: #66bbff;
   --gl-stat-sessions: #66bb6a;
-  --gl-stat-learners: #ce93d8;
 
   /* Chart bar color (dark) — brighter saturated blue with enough luminance
      to pop against the dark canvas without losing saturation. */

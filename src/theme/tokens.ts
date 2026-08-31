@@ -5,7 +5,8 @@ import getColors from "./colors";
  * Sanitizing adapter over `colors.ts` — the ONLY module that reads it directly.
  *
  * Two quirks in the upstream Great Learning palette are absorbed here rather than
- * edited out of `colors.ts`, so that file stays byte-identical to its source:
+ * edited out of `colors.ts`, which is otherwise kept as authored (the only edit
+ * made to it is uncommenting ramps that shipped commented out):
  *
  *  1. Every extended-ramp value carries a trailing `;` inside the string
  *     (`'#fafafa;'`). Emitted as a CSS value that yields `--grey-50: #fafafa;;`
@@ -17,7 +18,8 @@ import getColors from "./colors";
  *
  * Group names are camelCased here for the MUI palette (`greyA`, `blueGray`).
  * `getCssVars()` deliberately keeps the hyphenated names `getColors` emits
- * (`--grey-a-100`), since 599 existing call sites depend on that spelling.
+ * (`--grey-a-100`), since the existing `var(--…)` call sites depend on that
+ * spelling.
  */
 
 /* ── Value shapes ───────────────────────────────────────────────── */
@@ -27,6 +29,11 @@ type Ramp10 = Record<
   string
 >;
 type RampAccent = Record<"100" | "200" | "400" | "700", string>;
+/** amber is the one ramp missing its 100 and 200 stops upstream. */
+type RampAmber = Record<
+  "50" | "300" | "400" | "500" | "600" | "700" | "800" | "900",
+  string
+>;
 
 type Semantic = Record<
   | "main"
@@ -122,18 +129,34 @@ export interface GlTokens {
   grey: Ramp10;
   greyA: RampAccent;
   indigo: Ramp10;
-  deepPurple: Record<"50" | "300" | "600", string>;
-  orange: Record<"50" | "500", string>;
+  indigoA: RampAccent;
+  deepPurple: Ramp10;
+  deepPurpleA: RampAccent;
+  amber: RampAmber;
+  amberA: RampAccent;
+  orange: Ramp10;
+  orangeA: RampAccent;
   pink: Ramp10;
-  red: Record<"50" | "400" | "500", string>;
+  pinkA: RampAccent;
+  deepOrange: Ramp10;
+  deepOrangeA: RampAccent;
+  green: Ramp10;
+  greenA: RampAccent;
+  red: Ramp10;
+  redA: RampAccent;
+  lightGreen: Ramp10;
+  lightGreenA: RampAccent;
   purple: Ramp10;
   purpleA: RampAccent;
+  lime: Ramp10;
+  limeA: RampAccent;
   lightBlue: Ramp10;
   lightBlueA: RampAccent;
   yellow: Ramp10;
   yellowA: RampAccent;
   cyan: Ramp10;
-  teal: Record<"50" | "300" | "600", string>;
+  cyanA: RampAccent;
+  teal: Ramp10;
   tealA: RampAccent;
   blue: Ramp10 & Record<"70", string>;
   blueA: RampAccent;
@@ -218,11 +241,24 @@ export function toHslTriplet(value: string): string | null {
 /** Hyphenated group name in `colors.ts` → camelCase name on the MUI palette. */
 const GROUP_ALIASES: Record<string, string> = {
   "grey-a": "greyA",
+  "indigo-a": "indigoA",
   "deep-purple": "deepPurple",
+  "deep-purple-a": "deepPurpleA",
+  "amber-a": "amberA",
+  "orange-a": "orangeA",
+  "pink-a": "pinkA",
+  "deep-orange": "deepOrange",
+  "deep-orange-a": "deepOrangeA",
+  "green-a": "greenA",
+  "red-a": "redA",
+  "light-green": "lightGreen",
+  "light-green-a": "lightGreenA",
   "purple-a": "purpleA",
+  "lime-a": "limeA",
   "light-blue": "lightBlue",
   "light-blue-a": "lightBlueA",
   "yellow-a": "yellowA",
+  "cyan-a": "cyanA",
   "teal-a": "tealA",
   "blue-a": "blueA",
   "blue-gray": "blueGray",
