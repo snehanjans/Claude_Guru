@@ -149,9 +149,12 @@ export default function RecommendPage() {
                 ? undefined
                 : {
                     display: "grid",
-                    gridTemplateColumns: { xs: "1fr", md: "280px minmax(0, 1fr)" },
+                    /* Just under half the banner, so the video reads as a panel
+                       rather than a thumbnail beside the copy. */
+                    gridTemplateColumns: { xs: "1fr", md: "minmax(0, 44%) minmax(0, 1fr)" },
                     gap: { xs: 2, md: 3 },
-                    alignItems: "start",
+                    // Stretch, so the panel's height is the copy's height.
+                    alignItems: "stretch",
                   }
             }
           >
