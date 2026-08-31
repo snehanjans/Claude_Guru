@@ -416,8 +416,6 @@ export default function ProfilePage() {
   const MONTH_THEMES: Record<string, {
     bg: string; circle: string; headingColor: string; nameColor: string;
   }> = {
-    "2025-09": { bg: "#e0f2f1", circle: "#4db6ac", headingColor: "#00695c", nameColor: "#004d40" },
-    "2025-10": { bg: "#fff3e0", circle: "#ffd54f", headingColor: "#bf360c", nameColor: "#3e2723" },
     "2025-11": { bg: "#fce4ec", circle: "#f48fb1", headingColor: "#880e4f", nameColor: "#4a148c" },
     "2025-12": { bg: "#e8eaf6", circle: "#81d4fa", headingColor: "#1a237e", nameColor: "#0d47a1" },
     "2026-01": { bg: "#eceff1", circle: "#90a4ae", headingColor: "#263238", nameColor: "#263238" },
@@ -1484,7 +1482,9 @@ export default function ProfilePage() {
                 px: 2, py: 1.5, border: "none",
                 bgcolor: shareAllTime ? "primary.shades-select" : "transparent",
                 cursor: "pointer", fontFamily: "inherit",
-                "&:hover": { bgcolor: shareAllTime ? "primary.100" : "action.hover" },
+                "&:hover": {
+                  bgcolor: shareAllTime ? "primary.shades-12-p" : "action.hover",
+                },
                 "&:active": { bgcolor: "action.selected" },
               }}
             >
@@ -1506,7 +1506,12 @@ export default function ProfilePage() {
                       ? "primary.shades-select"
                       : "transparent",
                   cursor: "pointer", fontFamily: "inherit",
-                  "&:hover": { bgcolor: !shareAllTime && m.value === shareMonth ? "primary.100" : "action.hover" },
+                  "&:hover": {
+                    bgcolor:
+                      !shareAllTime && m.value === shareMonth
+                        ? "primary.shades-12-p"
+                        : "action.hover",
+                  },
                   "&:active": { bgcolor: "action.selected" },
                 }}
               >

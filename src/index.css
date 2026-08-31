@@ -142,10 +142,7 @@
   --gl-mapped-session-hover: rgba(37, 99, 235, 0.15);
 
   /* ── Stat tile icon bg tints ── */
-  --gl-stat-rating: #ff9800;
-  --gl-stat-hours: #196ae5;
   --gl-stat-sessions: #22bb34;
-  --gl-stat-learners: #9c27b0;
 
   /* Chart bar color — saturated blue tuned for light bg. Paired with a
      brighter saturated value in dark mode for consistent visual weight. */
@@ -289,10 +286,7 @@
   --gl-mapped-session-hover: rgba(96, 165, 250, 0.2);
 
   /* ── Stat tile icon bg tints (dark) ── */
-  --gl-stat-rating: #ffb74d;
-  --gl-stat-hours: #66bbff;
   --gl-stat-sessions: #66bb6a;
-  --gl-stat-learners: #ce93d8;
 
   /* Chart bar color (dark) — brighter saturated blue with enough luminance
      to pop against the dark canvas without losing saturation. */
