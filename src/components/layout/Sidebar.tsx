@@ -21,6 +21,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Tooltip from "@mui/material/Tooltip";
 import Chip from "@mui/material/Chip";
 import Box from "@mui/material/Box";
+import { GL_LOGO } from "@/theme/brandColors";
 import ButtonBase from "@mui/material/ButtonBase";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
@@ -34,8 +35,8 @@ import { SwitchToOldDashboardDialog, type SwitchFeedback } from "@/components/di
 
 function GLLogo({ size = 32 }: { size?: number }) {
   const isDark = useAppSelector((s) => s.ui.isDarkMode);
-  const primary = isDark ? "#FFFFFF" : "#0E39A9";
-  const accent = isDark ? "#FFFFFF" : "#1974D2";
+  const primary = isDark ? "#FFFFFF" : GL_LOGO.navy;
+  const accent = isDark ? "#FFFFFF" : GL_LOGO.blue;
 
   return (
     <svg

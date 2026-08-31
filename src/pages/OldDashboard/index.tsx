@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BOOTSTRAP } from "@/theme/brandColors";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "@/store";
 
@@ -229,17 +230,17 @@ body.od-body { overflow: visible !important; height: auto !important; }
 .od-topbar-title { position: absolute; left: 0; right: 0; top: 0; bottom: 0; margin: 0; display: flex; align-items: center; justify-content: center; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 500; font-size: 24px; line-height: 26.4px; color: #333; pointer-events: none; }
 .od-topbar-nav { list-style: none; margin: 0 15px 0 auto; padding: 27px 0 2.35px; display: flex; gap: 20px; align-items: flex-end; }
 .od-topbar-nav > li { position: relative; height: 23px; line-height: 22.86px; font-size: 16px; }
-.od-topbar-nav a { color: #337ab7; }
-.od-topbar-nav a:hover { color: #23527c; text-decoration: underline; }
+.od-topbar-nav a { color: ${BOOTSTRAP.primary}; }
+.od-topbar-nav a:hover { color: ${BOOTSTRAP.linkHover}; text-decoration: underline; }
 .od-badge-blue { display: inline-flex; align-items: center; justify-content: center; min-width: 10px; padding: 3px 7px; background: #196ae5; color: #fff; border-radius: 10px; font-size: 12px; font-weight: 700; line-height: 12px; vertical-align: middle; }
 .od-user { position: relative; }
-.od-caret { display: inline-block; margin-left: 4px; width: 0; height: 0; border-top: 4px dashed #337ab7; border-left: 4px solid transparent; border-right: 4px solid transparent; vertical-align: middle; }
+.od-caret { display: inline-block; margin-left: 4px; width: 0; height: 0; border-top: 4px dashed ${BOOTSTRAP.primary}; border-left: 4px solid transparent; border-right: 4px solid transparent; vertical-align: middle; }
 .od-user-menu { display: none; position: absolute; right: 0; top: 100%; margin: 6px 0 0; padding: 5px 0; background: #fff; border: 1px solid rgba(0,0,0,0.15); border-radius: 4px; box-shadow: 0 6px 12px rgba(0,0,0,0.175); min-width: 220px; list-style: none; z-index: 100; }
 .od-user:hover .od-user-menu, .od-user:focus-within .od-user-menu { display: block; }
 .od-user-menu li { padding: 0; }
 .od-user-menu li + li { border-top: 1px solid #f1f1f1; }
 .od-user-menu button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 10px 20px; font-size: 14px; line-height: 1.4; color: #333; cursor: pointer; font-family: inherit; font-weight: 400; }
-.od-user-menu button:hover { background: #f5f5f5; color: #262626; }
+.od-user-menu button:hover { background: #f5f5f5; color: ${BOOTSTRAP.dropdownItemHoverInk}; }
 
 /* ── Body wrap ─────────────────────────────────────── */
 .od-body-wrap { background: #f3f7fa; padding: 20px 0 400px; min-height: calc(100vh - 50px); }
@@ -297,8 +298,8 @@ body.od-body { overflow: visible !important; height: auto !important; }
 .od-event-join { display: inline-flex; align-items: center; gap: 4px; width: 100%; justify-content: center; padding-top: 17px; padding-bottom: 4.34px; color: #00bfff; font-size: 18px; line-height: 25.71px; }
 .od-event-cam { width: 26px; height: 17.333px; }
 .od-event-polls-wrap { padding-top: 16px; display: flex; justify-content: center; }
-.od-btn-polls { display: inline-flex; align-items: center; justify-content: center; padding: 7px 13px; background: #337ab7; border: 1px solid #2e6da4; border-radius: 4px; color: #fff; font-size: 14px; line-height: 20px; }
-.od-btn-polls:hover { background: #286090; border-color: #204d74; color: #fff; }
+.od-btn-polls { display: inline-flex; align-items: center; justify-content: center; padding: 7px 13px; background: ${BOOTSTRAP.primary}; border: 1px solid ${BOOTSTRAP.primaryBorder}; border-radius: 4px; color: #fff; font-size: 14px; line-height: 20px; }
+.od-btn-polls:hover { background: ${BOOTSTRAP.primaryHover}; border-color: ${BOOTSTRAP.primaryHoverBorder}; color: #fff; }
 
 /* ── Empty state ─────────────────────────────────── */
 .od-empty { padding: 20px; border: 1px solid #e3e3e3; border-radius: 4px; background: #fff; box-shadow: inset 0 1px 1px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; min-height: 20px; font-style: italic; font-size: 18px; line-height: 25.71px; color: #333; }
@@ -311,8 +312,8 @@ body.od-body { overflow: visible !important; height: auto !important; }
 /* ── Bootstrap btn / alert primitives (scoped) ─────── */
 .od-body .btn { display: inline-block; font-weight: 400; line-height: 1.42857143; text-align: center; white-space: nowrap; vertical-align: middle; cursor: pointer; user-select: none; padding: 6px 12px; font-size: 14px; border-radius: 4px; border: 1px solid transparent; font-family: inherit; }
 .od-body .btn-sm { padding: 5px 10px; font-size: 12px; line-height: 1.5; border-radius: 3px; }
-.od-body .btn-primary { color: #fff; background-color: #337ab7; border-color: #2e6da4; }
-.od-body .btn-primary:hover, .od-body .btn-primary:focus { color: #fff; background-color: #286090; border-color: #204d74; text-decoration: none; }
+.od-body .btn-primary { color: #fff; background-color: ${BOOTSTRAP.primary}; border-color: ${BOOTSTRAP.primaryBorder}; }
+.od-body .btn-primary:hover, .od-body .btn-primary:focus { color: #fff; background-color: ${BOOTSTRAP.primaryHover}; border-color: ${BOOTSTRAP.primaryHoverBorder}; text-decoration: none; }
 .od-body .btn-default { color: #333; background-color: #fff; border-color: #ccc; }
 .od-body .btn-default:hover, .od-body .btn-default:focus { background-color: #e6e6e6; border-color: #adadad; }
 
@@ -337,12 +338,12 @@ body.od-body { overflow: visible !important; height: auto !important; }
   border-bottom: 1px solid #f6e58d;
   color: #6b5300;
 }
-.od-promo-icon { flex: 0 0 auto; width: 20px; height: 20px; fill: #8a6d3b; }
+.od-promo-icon { flex: 0 0 auto; width: 20px; height: 20px; fill: ${BOOTSTRAP.promoIcon}; }
 .od-promo-text { flex: 1; min-width: 0; font-size: 14px; line-height: 20px; color: #6b5300; }
 .od-promo-text strong { font-weight: 700; margin-right: 4px; color: #4a3800; }
 .od-promo-cta { flex: 0 0 auto; }
-.od-body .od-promo-cta.btn { background-color: #337ab7; border-color: #2e6da4; color: #fff; font-weight: 600; padding: 6px 14px; }
-.od-body .od-promo-cta.btn:hover, .od-body .od-promo-cta.btn:focus { background-color: #286090; border-color: #204d74; color: #fff; }
+.od-body .od-promo-cta.btn { background-color: ${BOOTSTRAP.primary}; border-color: ${BOOTSTRAP.primaryBorder}; color: #fff; font-weight: 600; padding: 6px 14px; }
+.od-body .od-promo-cta.btn:hover, .od-body .od-promo-cta.btn:focus { background-color: ${BOOTSTRAP.primaryHover}; border-color: ${BOOTSTRAP.primaryHoverBorder}; color: #fff; }
 
 @media (max-width: 600px) {
   .od-promo-bar { flex-wrap: wrap; padding: 12px 14px; gap: 10px; }
