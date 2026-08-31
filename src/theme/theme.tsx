@@ -25,17 +25,33 @@ type GlPaletteExtras = Pick<
   | "extGrey"
   | "greyA"
   | "indigo"
+  | "indigoA"
   | "deepPurple"
+  | "deepPurpleA"
+  | "amber"
+  | "amberA"
   | "orange"
+  | "orangeA"
   | "pink"
+  | "pinkA"
+  | "deepOrange"
+  | "deepOrangeA"
+  | "green"
+  | "greenA"
   | "red"
+  | "redA"
+  | "lightGreen"
+  | "lightGreenA"
   | "purple"
   | "purpleA"
+  | "lime"
+  | "limeA"
   | "lightBlue"
   | "lightBlueA"
   | "yellow"
   | "yellowA"
   | "cyan"
+  | "cyanA"
   | "teal"
   | "tealA"
   | "blue"
@@ -124,17 +140,33 @@ function buildTheme(mode: "light" | "dark") {
       extGrey: t.extGrey,
       greyA: t.greyA,
       indigo: t.indigo,
+      indigoA: t.indigoA,
       deepPurple: t.deepPurple,
+      deepPurpleA: t.deepPurpleA,
+      amber: t.amber,
+      amberA: t.amberA,
       orange: t.orange,
+      orangeA: t.orangeA,
       pink: t.pink,
+      pinkA: t.pinkA,
+      deepOrange: t.deepOrange,
+      deepOrangeA: t.deepOrangeA,
+      green: t.green,
+      greenA: t.greenA,
       red: t.red,
+      redA: t.redA,
+      lightGreen: t.lightGreen,
+      lightGreenA: t.lightGreenA,
       purple: t.purple,
       purpleA: t.purpleA,
+      lime: t.lime,
+      limeA: t.limeA,
       lightBlue: t.lightBlue,
       lightBlueA: t.lightBlueA,
       yellow: t.yellow,
       yellowA: t.yellowA,
       cyan: t.cyan,
+      cyanA: t.cyanA,
       teal: t.teal,
       tealA: t.tealA,
       blue: t.blue,
