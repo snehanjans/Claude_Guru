@@ -18,8 +18,6 @@ export type ActivityVisual = {
   label: string;
   /** Type accent color — used for eyebrow icon + label and the spine DOW */
   color: string;
-  /** Soft tint (kept for legacy uses; not used by the A1 card layout) */
-  tint: string;
   /** Renders the activity icon at the given pixel size in the type color */
   renderIcon: (size?: number) => ReactNode;
 };
@@ -27,11 +25,9 @@ export type ActivityVisual = {
 const make = (
   Icon: typeof VideocamOutlinedIcon,
   color: string,
-  tint: string,
   label: string,
 ): ActivityVisual => ({
   color,
-  tint,
   label,
   renderIcon: (size = 16) =>
     createElement(Icon, { sx: { fontSize: size, color } }),
@@ -39,20 +35,20 @@ const make = (
 
 export const ACTIVITY_VISUALS: Record<SessionType | "Webinar", ActivityVisual> = {
   /* Guru-run marketing webinars (Recommend / GL Guru Collective) */
-  "Webinar": make(VideocamOutlinedIcon, "#0369a1", "#e0f2fe", "Webinar"),
-  "Online session": make(VideocamOutlinedIcon, "#2563eb", "#dbeafe", "Online session"),
-  "Online class": make(VideocamOutlinedIcon, "#2563eb", "#dbeafe", "Online class"),
-  "Mentored Learning session": make(ForumOutlinedIcon, "#7c3aed", "#ede9fe", "Mentored Learning"),
-  "Career mentoring session": make(WorkOutlineIcon, "#0d9488", "#ccfbf1", "Career mentoring"),
-  "Capstone project mentoring session": make(AssignmentTurnedInOutlinedIcon, "#4f46e5", "#e0e7ff", "Capstone"),
-  "Industry session": make(BusinessOutlinedIcon, "#b45309", "#fef3c7", "Industry session"),
-  "Residency": make(SchoolOutlinedIcon, "#15803d", "#dcfce7", "Residency"),
+  "Webinar": make(VideocamOutlinedIcon, "#0369a1", "Webinar"),
+  "Online session": make(VideocamOutlinedIcon, "#2563eb", "Online session"),
+  "Online class": make(VideocamOutlinedIcon, "#2563eb", "Online class"),
+  "Mentored Learning session": make(ForumOutlinedIcon, "#7c3aed", "Mentored Learning"),
+  "Career mentoring session": make(WorkOutlineIcon, "#0d9488", "Career mentoring"),
+  "Capstone project mentoring session": make(AssignmentTurnedInOutlinedIcon, "#4f46e5", "Capstone"),
+  "Industry session": make(BusinessOutlinedIcon, "#b45309", "Industry session"),
+  "Residency": make(SchoolOutlinedIcon, "#15803d", "Residency"),
   /* User-facing relabelling: Evaluation → "Assignment", Moderation → "Discussion Question" */
-  "Evaluation": make(AssignmentOutlinedIcon, "#ea580c", "#ffedd5", "Assignment"),
-  "Moderation": make(GroupsOutlinedIcon, "#0d9488", "#ccfbf1", "Discussion Question"),
-  "CV Review": make(DescriptionOutlinedIcon, "#be185d", "#fce7f3", "CV Review"),
-  "Schedule a call": make(PhoneInTalkOutlinedIcon, "#475569", "#f1f5f9", "Call"),
-  "Others": make(EventOutlinedIcon, "#475569", "#f1f5f9", "Activity"),
+  "Evaluation": make(AssignmentOutlinedIcon, "#ea580c", "Assignment"),
+  "Moderation": make(GroupsOutlinedIcon, "#0d9488", "Discussion Question"),
+  "CV Review": make(DescriptionOutlinedIcon, "#be185d", "CV Review"),
+  "Schedule a call": make(PhoneInTalkOutlinedIcon, "#475569", "Call"),
+  "Others": make(EventOutlinedIcon, "#475569", "Activity"),
 };
 
 export function getActivityVisual(type: SessionType | string | undefined): ActivityVisual {

@@ -316,9 +316,6 @@ body.od-body { overflow: visible !important; height: auto !important; }
 .od-body .btn-default { color: #333; background-color: #fff; border-color: #ccc; }
 .od-body .btn-default:hover, .od-body .btn-default:focus { background-color: #e6e6e6; border-color: #adadad; }
 
-.od-body .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
-.od-body .alert-info { color: #31708f; background-color: #d9edf7; border-color: #bce8f1; }
-.od-body .alert-warning { color: #8a6d3b; background-color: #fcf8e3; border-color: #faebcc; }
 
 /* ── Sticky stack (topbar + promo alert pin together on scroll) ── */
 .od-sticky-stack {
