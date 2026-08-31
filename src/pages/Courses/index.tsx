@@ -197,7 +197,7 @@ function CourseCard({
 
           {/* Thumbnail row: pattern left, chips right */}
           <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1, mb: { xs: 1, sm: 1.5 } }}>
-            <CoursePatternThumb color={c.color ?? "#1976d2"} pattern={c.pattern ?? 0} size={52} />
+            <CoursePatternThumb color={c.color ?? "primary.main"} pattern={c.pattern ?? 0} size={52} />
             {c.isNew && !isPast && !isLearn && (
               <Chip
                 label="New"

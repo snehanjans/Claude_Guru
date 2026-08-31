@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -201,7 +202,7 @@ export default function AvailabilityCalendar({
                           lineHeight: 1.3,
                           bgcolor: "#e7f0ff",
                           color: BLUE,
-                          border: `1px solid ${BLUE}33`,
+                          border: `1px solid ${alpha(BLUE, 0.2)}`,
                           borderRadius: "4px",
                           px: 0.6,
                           py: 0.25,

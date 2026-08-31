@@ -960,7 +960,8 @@ export default function DashboardPage() {
                               transition: "box-shadow 0.3s ease, border-color 0.3s ease",
                               ...(highlightUnconfirmed && !isConfirmed && {
                                 borderColor: "primary.main",
-                                boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}40`,
+                                boxShadow: (theme) =>
+                                  `0 0 0 2px ${alpha(theme.palette.primary.main, 0.25)}`,
                               }),
                               ...(isExiting && {
                                 animation: `${slideOutDown} 0.38s ease forwards`,

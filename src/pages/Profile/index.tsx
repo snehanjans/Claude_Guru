@@ -1482,7 +1482,7 @@ export default function ProfilePage() {
               sx={{
                 display: "flex", alignItems: "center", width: "100%",
                 px: 2, py: 1.5, border: "none",
-                bgcolor: shareAllTime ? "primary.50" : "transparent",
+                bgcolor: shareAllTime ? "primary.shades-select" : "transparent",
                 cursor: "pointer", fontFamily: "inherit",
                 "&:hover": { bgcolor: shareAllTime ? "primary.100" : "action.hover" },
                 "&:active": { bgcolor: "action.selected" },
@@ -1501,7 +1501,10 @@ export default function ProfilePage() {
                 sx={{
                   display: "flex", alignItems: "center", width: "100%",
                   px: 2, py: 1.5, border: "none",
-                  bgcolor: !shareAllTime && m.value === shareMonth ? "primary.50" : "transparent",
+                  bgcolor:
+                    !shareAllTime && m.value === shareMonth
+                      ? "primary.shades-select"
+                      : "transparent",
                   cursor: "pointer", fontFamily: "inherit",
                   "&:hover": { bgcolor: !shareAllTime && m.value === shareMonth ? "primary.100" : "action.hover" },
                   "&:active": { bgcolor: "action.selected" },
