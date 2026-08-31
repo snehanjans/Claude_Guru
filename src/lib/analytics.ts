@@ -47,4 +47,12 @@ export const ANALYTICS_EVENTS = {
   VIDEO_COMPLETED: "home.video_nudge.video_completed",
   VIDEO_NAVIGATED: "home.video_nudge.video_navigated",
   VIDEO_NUDGE_RECOMMEND_CLICKED: "home.video_nudge.recommend_clicked",
+
+  /* ── Recommend hero video ────────────────────────────────────────────────
+     Its own click event, not the floating card's, so the two placements can be
+     compared rather than pooled. HERO_VARIANT_SHOWN records which hero each
+     guru got and their referral count with it, which is how the
+     zero-referral targeting gets checked against the data.                  */
+  HERO_VARIANT_SHOWN: "recommend.hero.variant_shown",
+  HERO_VIDEO_CLICKED: "recommend.hero_video.clicked",
 } as const;
