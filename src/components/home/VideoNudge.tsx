@@ -185,8 +185,19 @@ export function VideoNudge() {
           border: "1px solid",
           borderColor: "divider",
           boxShadow: 8,
-          animation: `${riseIn} 260ms ${EASE_OUT} both`,
-          "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+          /*
+           * Out of the way while the modal is open — one video on screen at a
+           * time. Faded rather than unmounted or `visibility: hidden`: the modal
+           * returns focus to whatever opened it, and neither of those leaves a
+           * focusable element to return to.
+           */
+          opacity: dialogOpen ? 0 : 1,
+          pointerEvents: dialogOpen ? "none" : "auto",
+          transition: `opacity 160ms ${EASE_OUT}`,
+          /* No fill mode on the entrance animation: a filled animation would
+             keep winning over the opacity above for the rest of the session. */
+          animation: `${riseIn} 260ms ${EASE_OUT}`,
+          "@media (prefers-reduced-motion: reduce)": { animation: "none", transition: "none" },
         }}
       >
         {/* media + overlays */}
