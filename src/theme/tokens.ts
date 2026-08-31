@@ -147,6 +147,74 @@ export function sanitize(value: string): string {
   return value.trim().replace(/;+$/, "");
 }
 
+/* ── HSL companion values ───────────────────────────────────────── */
+
+/**
+ * Parses an opaque color to `[r, g, b]` (0-255), or null if it is translucent
+ * or in a form we do not emit companions for. Only the shapes `colors.ts`
+ * actually uses are handled: 3- and 6-digit hex, `rgb()`, and `rgba()` at
+ * full alpha.
+ */
+function parseOpaqueRgb(value: string): [number, number, number] | null {
+  const v = value.trim().toLowerCase();
+
+  const short = v.match(/^#([0-9a-f]{3})$/);
+  if (short) {
+    const [r, g, b] = [...short[1]].map((c) => parseInt(c + c, 16));
+    return [r, g, b];
+  }
+
+  const long = v.match(/^#([0-9a-f]{6})$/);
+  if (long) {
+    const [r, g, b] = [0, 2, 4].map((i) =>
+      parseInt(long[1].slice(i, i + 2), 16),
+    );
+    return [r, g, b];
+  }
+
+  const fn = v.match(/^rgba?\(([^)]+)\)$/);
+  if (fn) {
+    const parts = fn[1].split(/[,\s/]+/).filter(Boolean).map(Number);
+    if (parts.length < 3 || parts.some(Number.isNaN)) return null;
+    /* A translucent color has no meaningful opaque triplet — the alpha would
+       be lost, and every call site supplies its own. */
+    if (parts.length > 3 && parts[3] < 1) return null;
+    return [parts[0], parts[1], parts[2]];
+  }
+
+  return null;
+}
+
+const trim = (n: number) => String(Math.round(n * 10) / 10);
+
+/**
+ * Space-separated HSL triplet for use inside `hsl()` — the syntax that lets a
+ * call site apply its own alpha: `hsl(var(--primary-main-hsl) / 0.4)`.
+ * Returns null for translucent or unrecognized values.
+ */
+export function toHslTriplet(value: string): string | null {
+  const rgb = parseOpaqueRgb(value);
+  if (!rgb) return null;
+
+  const [r, g, b] = rgb.map((c) => c / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+
+  let h = 0;
+  let s = 0;
+  if (d !== 0) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+
+  return `${trim(h)} ${trim(s * 100)}% ${trim(l * 100)}%`;
+}
+
 /** Hyphenated group name in `colors.ts` → camelCase name on the MUI palette. */
 const GROUP_ALIASES: Record<string, string> = {
   "grey-a": "greyA",
@@ -186,13 +254,22 @@ export function getTokens(mode: PaletteMode): GlTokens {
  * Sanitized flat CSS custom properties for `:root`, keeping the hyphenated
  * names `getColors` emits so existing `var(--…)` call sites keep resolving.
  * `getCssVars('light')['--grey-a-100']` → `'#d5d5d5'`
+ *
+ * Every opaque token also gets a `-hsl` companion holding a bare HSL triplet,
+ * so a call site can apply its own alpha the way the old `--md-*` layer did:
+ * `hsl(var(--primary-main-hsl) / 0.4)`. Translucent tokens get no companion —
+ * they already carry an alpha, and overriding it would silently discard theirs.
  */
 export function getCssVars(mode: PaletteMode): Record<string, string> {
   const raw = getColors(mode, true) as Record<string, string>;
   const out: Record<string, string> = {};
 
   for (const key of Object.keys(raw)) {
-    out[key] = sanitize(raw[key]);
+    const value = sanitize(raw[key]);
+    out[key] = value;
+
+    const triplet = toHslTriplet(value);
+    if (triplet) out[`${key}-hsl`] = triplet;
   }
 
   return out;
