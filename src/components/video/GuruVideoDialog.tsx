@@ -350,27 +350,12 @@ export function GuruVideoDialog({
         </Stack>
         )}
 
-        {/* the nudge — modal only, never on the floating card */}
+        {/* the nudge — modal only, never on the floating card.
+            Just the action: the tinted panel and its line of copy existed to
+            frame a sentence, and with the sentence gone they were chrome
+            around a single button. */}
         {showNudge && (
-        <Box
-          sx={{
-            mt: 2,
-            p: { xs: 1.75, sm: 2 },
-            borderRadius: "12px",
-            bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
-            border: "1px solid",
-            borderColor: (t) => alpha(t.palette.primary.main, 0.2),
-          }}
-        >
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={{ xs: 1.5, sm: 2 }}
-            alignItems={{ xs: "stretch", sm: "center" }}
-            justifyContent="space-between"
-          >
-            <Typography variant="body2" sx={{ lineHeight: 1.55 }}>
-              Become an GL ambassador
-            </Typography>
+          <Box sx={{ mt: 2, display: "flex", justifyContent: { xs: "stretch", sm: "flex-end" } }}>
             <Button
               variant="contained"
               disableElevation
@@ -378,6 +363,7 @@ export function GuruVideoDialog({
               endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 18 }} />}
               sx={{
                 flexShrink: 0,
+                width: { xs: "100%", sm: "auto" },
                 textTransform: "none",
                 fontWeight: 700,
                 borderRadius: "10px",
@@ -388,8 +374,7 @@ export function GuruVideoDialog({
             >
               Recommend now
             </Button>
-          </Stack>
-        </Box>
+          </Box>
         )}
       </Box>
     </Dialog>
