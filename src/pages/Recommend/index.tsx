@@ -167,12 +167,16 @@ export default function RecommendPage() {
   return (
     <>
       {/* ── Hero — membership KPI cards ─────────────────────────────── */}
-      <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.75 }}>
-        <WorkspacePremiumOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />
-        <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: "primary.main" }}>
-          GREAT LEARNING AMBASSADORS
-        </Typography>
-      </Stack>
+      {/* The zero-referral hero carries this inside itself, above the heading,
+          so it isn't said twice. */}
+      {hasAnyReferral && (
+        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.75 }}>
+          <WorkspacePremiumOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />
+          <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: "primary.main" }}>
+            GREAT LEARNING AMBASSADORS
+          </Typography>
+        </Stack>
+      )}
 
       {/* Getting-started card is always shown; when there's activity it narrows
           into the left column and the KPI stats sit beside it on the right. */}
@@ -233,6 +237,14 @@ export default function RecommendPage() {
           >
             {!hasAnyReferral && <HeroVideoPanel />}
             <Box sx={{ minWidth: 0 }}>
+          {!hasAnyReferral && (
+            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }}>
+              <WorkspacePremiumOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />
+              <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: "primary.main" }}>
+                GREAT LEARNING AMBASSADORS
+              </Typography>
+            </Stack>
+          )}
           <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 800, letterSpacing: "-0.02em" }}>
             Recommend, and earn on every enrollment
           </Typography>
