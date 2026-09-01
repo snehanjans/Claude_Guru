@@ -51,8 +51,8 @@ export const guruVideos: GuruVideo[] = [
   },
   {
     id: "your-link",
-    title: "Your personalised link",
-    blurb: "Why the ?ref= tag matters and where to find it.",
+    title: "AI native professionals for business roles",
+    blurb: "Who are these programs meant for, and how they benefit.",
     vimeoId: 1223057201,
     poster: `${base}/gl-referrals-your-link-vimeo.jpg`,
     durationSec: 72,
