@@ -86,21 +86,6 @@ import {
 import { saveCollateralEdit, collateralEditKey } from "@/store/slices/collateralEditsSlice";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
-
-/**
- * The banner's two lines, from one title.
- *
- * The AINP titles are "<name>: <what it does>" — "AI-Native HR Professional:
- * Workflows and Agents for HR Productivity" — which sets as three cramped lines
- * in a heading. Split at the colon and the name leads with the rest as subtext.
- * Titles without a colon (the university programs) come back whole, with no
- * subtext, rather than being cut at some other punctuation.
- */
-function splitProgramTitle(title: string): { head: string; sub?: string } {
-  const at = title.indexOf(":");
-  if (at === -1) return { head: title };
-  return { head: title.slice(0, at).trim(), sub: title.slice(at + 1).trim() };
-}
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 
 /* Per-program share/meta image (og:image) shown in link previews. Drop the files
@@ -606,7 +591,6 @@ export default function ProgramDetailPage() {
   /* This program's own clips, and the event that says which program's videos
      were opened — that's what makes engagement comparable per program. The
      thumbnail shows the first and the player carries the rest. */
-  const titleParts = splitProgramTitle(program.title);
   const programClips = programVideosFor(program.id);
   const leadClip = programClips[0];
   const clipsTotalSec = programClips.reduce((sum, v) => sum + v.durationSec, 0);
@@ -916,13 +900,8 @@ export default function ProgramDetailPage() {
             variant="h4"
             sx={{ fontSize: 28, fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}
           >
-            {titleParts.head}
+            {program.title}
           </Typography>
-          {titleParts.sub && (
-            <Typography sx={{ mt: 1, fontSize: 15, color: "text.secondary", lineHeight: 1.5 }}>
-              {titleParts.sub}
-            </Typography>
-          )}
         </Box>
       </Stack>
         </Box>
