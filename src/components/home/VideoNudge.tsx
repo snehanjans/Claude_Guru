@@ -330,20 +330,30 @@ export function VideoNudge() {
                   pointerEvents: "none",
                 }}
               >
+                {/* A labelled pill, matching the hero thumbnail's affordance:
+                    the icon says there is a video, the word says what pressing
+                    it does. */}
                 <Box
                   sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    display: "grid",
-                    placeItems: "center",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    height: 34,
+                    pl: 1,
+                    pr: 1.5,
+                    borderRadius: 999,
                     color: (t) => t.palette.black.main,
                     bgcolor: (t) => alpha(t.palette.white.main, 0.92),
                     boxShadow: 2,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
                   }}
                 >
-                <PlayArrowRoundedIcon sx={{ fontSize: 24 }} />
-              </Box>
+                  <PlayArrowRoundedIcon sx={{ fontSize: 20 }} />
+                  Watch
+                </Box>
             </Box>
           </Box>
 
