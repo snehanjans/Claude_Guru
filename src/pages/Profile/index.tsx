@@ -1139,14 +1139,20 @@ export default function ProfilePage() {
               <Typography sx={{ color: shareTheme.headingColor, fontSize: "0.65rem", mb: 1.5 }}>Machine Learning · Data Science</Typography>
               <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, flex: 1, minHeight: 0, mb: 1.5 }}>
                 <Stack spacing={1}>
-                  <Box sx={{ flex: 1, bgcolor: isTillDate ? "rgba(255,255,255,0.08)" : "var(--gl-accent-primary-bg)", borderRadius: "8px", p: 1.5, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <Box sx={{ flex: 1, bgcolor: (t) =>
+                      isTillDate
+                        ? t.palette.white["shades-8-p"]
+                        : alpha(t.palette.primary.main, 0.06), borderRadius: "8px", p: 1.5, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <Box>
                       <Typography sx={{ color: shareTheme.nameColor, fontWeight: 600, fontSize: "1.6rem", lineHeight: 1.17, letterSpacing: "-0.025em" }}>{activeShareData.sessions}</Typography>
                       <Typography sx={{ color: shareTheme.headingColor, fontSize: "0.7rem", fontWeight: 400, mt: 0.5, lineHeight: 1.43 }}>{isTillDate ? "Total activities delivered" : "Activities delivered this month"}</Typography>
                     </Box>
                     <Chip icon={<TrendingUpOutlinedIcon sx={{ fontSize: 16 }} />} label={shareLabels.percentile} size="small" variant="outlined" sx={{ alignSelf: "flex-start", mt: 1, height: 24, fontSize: "0.6rem", fontWeight: 500, borderColor: isTillDate ? "rgba(255,255,255,0.5)" : "rgba(33,33,33,0.3)", color: isTillDate ? "#fff" : "inherit", "& .MuiChip-icon": { ml: 0.5, color: isTillDate ? "#fff" : "inherit" } }} />
                   </Box>
-                  <Box sx={{ flex: 1, bgcolor: isTillDate ? "rgba(255,255,255,0.08)" : "var(--gl-accent-primary-bg)", borderRadius: "8px", p: 1.5, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <Box sx={{ flex: 1, bgcolor: (t) =>
+                      isTillDate
+                        ? t.palette.white["shades-8-p"]
+                        : alpha(t.palette.primary.main, 0.06), borderRadius: "8px", p: 1.5, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <Box>
                       <Typography sx={{ color: shareTheme.nameColor, fontWeight: 600, fontSize: "1.6rem", lineHeight: 1.17, letterSpacing: "-0.025em" }}>{activeShareData.hours} Hrs</Typography>
                       <Typography sx={{ color: shareTheme.headingColor, fontSize: "0.8rem", fontWeight: 400, mt: 0.5, lineHeight: 1.5 }}>{isTillDate ? shareLabels.hoursTillDate : shareLabels.hoursMonthly}</Typography>
@@ -1155,15 +1161,24 @@ export default function ProfilePage() {
                   </Box>
                 </Stack>
                 <Stack spacing={1}>
-                  <Box sx={{ flex: 1, bgcolor: isTillDate ? "rgba(255,255,255,0.08)" : "var(--gl-accent-primary-bg)", borderRadius: "8px", p: 1.5 }}>
+                  <Box sx={{ flex: 1, bgcolor: (t) =>
+                      isTillDate
+                        ? t.palette.white["shades-8-p"]
+                        : alpha(t.palette.primary.main, 0.06), borderRadius: "8px", p: 1.5 }}>
                     <Typography sx={{ color: shareTheme.nameColor, fontWeight: 600, fontSize: "1.6rem", lineHeight: 1.17, letterSpacing: "-0.025em" }}>{activeShareData.learners}</Typography>
                     <Typography sx={{ color: shareTheme.headingColor, fontSize: "0.8rem", fontWeight: 400, mt: 0.5, lineHeight: 1.5 }}>{isTillDate ? shareLabels.learnersTillDate : shareLabels.learnersMonthly}</Typography>
                   </Box>
-                  <Box sx={{ flex: 1, bgcolor: isTillDate ? "rgba(255,255,255,0.08)" : "var(--gl-accent-primary-bg)", borderRadius: "8px", p: 1.5 }}>
+                  <Box sx={{ flex: 1, bgcolor: (t) =>
+                      isTillDate
+                        ? t.palette.white["shades-8-p"]
+                        : alpha(t.palette.primary.main, 0.06), borderRadius: "8px", p: 1.5 }}>
                     <Typography sx={{ color: shareTheme.nameColor, fontWeight: 600, fontSize: "1.6rem", lineHeight: 1.17, letterSpacing: "-0.025em" }}>{activeShareData.rating}/5</Typography>
                     <Typography sx={{ color: shareTheme.headingColor, fontSize: "0.8rem", fontWeight: 400, mt: 0.5, lineHeight: 1.5 }}>{isTillDate ? "Overall avg rating" : "Avg ratings this month"}</Typography>
                   </Box>
-                  <Box sx={{ flex: 1, bgcolor: isTillDate ? "rgba(255,255,255,0.08)" : "var(--gl-accent-primary-bg)", borderRadius: "8px", p: 1.5 }}>
+                  <Box sx={{ flex: 1, bgcolor: (t) =>
+                      isTillDate
+                        ? t.palette.white["shades-8-p"]
+                        : alpha(t.palette.primary.main, 0.06), borderRadius: "8px", p: 1.5 }}>
                     <Typography sx={{ color: shareTheme.nameColor, fontWeight: 600, fontSize: "1.6rem", lineHeight: 1.17, letterSpacing: "-0.025em" }}>{activeShareData.rated4Plus === activeShareData.sessions ? "100%" : `${Math.round((+activeShareData.rated4Plus / +activeShareData.sessions) * 100)}%`}</Typography>
                     <Typography sx={{ color: shareTheme.headingColor, fontSize: "0.8rem", fontWeight: 400, mt: 0.5, lineHeight: 1.5 }}>Activities rated 4+</Typography>
                   </Box>
