@@ -48,6 +48,7 @@ export interface GuruVideoDialogProps {
 type YTPlayerCtor = new (
   el: HTMLElement,
   opts: {
+    host?: string;
     videoId: string;
     playerVars?: Record<string, number>;
     events?: { onStateChange?: (e: { data: number }) => void };
@@ -122,6 +123,11 @@ function YouTubeClip({
     void loadYouTubeApi().then((YT) => {
       if (cancelled || !hostRef.current) return;
       player = new YT.Player(hostRef.current, {
+        /* youtube-nocookie serves the same video without the tracking cookies
+           that privacy settings and extensions commonly block — a blocked
+           request there surfaces as YouTube's generic "An error occurred
+           (Playback ID …)" screen, which says nothing about the real cause. */
+        host: "https://www.youtube-nocookie.com",
         videoId,
         playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
         events: {
@@ -140,12 +146,31 @@ function YouTubeClip({
   }, [videoId]);
 
   return (
-    <Box sx={{ position: "relative", width: "100%", aspectRatio: "16 / 9" }}>
-      {/* The API replaces this node with its iframe. */}
-      <Box
-        ref={hostRef}
-        sx={{ position: "absolute", inset: 0, "& iframe": { width: "100%", height: "100%", border: 0 } }}
-      />
+    /*
+     * The sizing lives here, on the wrapper, deliberately. YT.Player REPLACES
+     * the node it is handed, so anything styled on the inner div disappears
+     * with it — and the iframe arrives carrying YouTube's own width="640"
+     * height="360" attributes, which overflow the dialog. Styling `& iframe`
+     * from the surviving parent is what actually constrains it.
+     */
+    <Box
+      sx={{
+        position: "relative",
+        width: "100%",
+        aspectRatio: "16 / 9",
+        overflow: "hidden",
+        "& iframe": {
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          border: 0,
+          display: "block",
+        },
+      }}
+    >
+      {/* Replaced by the API's iframe on mount. */}
+      <div ref={hostRef} />
     </Box>
   );
 }
