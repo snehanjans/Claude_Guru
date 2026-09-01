@@ -248,7 +248,19 @@ export default function RecommendPage() {
           <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 800, letterSpacing: "-0.02em" }}>
             Recommend, and earn on every enrollment
           </Typography>
-          <Typography sx={{ mt: 0.75, mb: 2.5, fontSize: 14, color: "text.secondary", maxWidth: 600, lineHeight: 1.55 }}>
+          {/* 32px above the connected steps, which need more room than the old
+              numbered row did; the hero for a guru with referrals keeps its
+              original 20px. */}
+          <Typography
+            sx={{
+              mt: 0.75,
+              mb: hasAnyReferral ? 2.5 : 4,
+              fontSize: 14,
+              color: "text.secondary",
+              maxWidth: 600,
+              lineHeight: 1.55,
+            }}
+          >
             Earn 20% when your referral enrols through your link, or 10% if they book a call and a GL learning
             consultant helps them decide. That's up to $160 or ₹8,000 per enrolment.
           </Typography>
