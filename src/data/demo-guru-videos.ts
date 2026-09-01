@@ -43,8 +43,8 @@ export const guruVideos: GuruVideo[] = [
     /* Hosted on Vimeo rather than shipped as a file, so it can be re-cut
        without a deploy. The id is unchanged, so watched-state carries over. */
     id: "how-it-works",
-    title: "What GL Ambassadors is",
-    blurb: "How your recommendations reach the people who need them.",
+    title: "What GL Ambassadors is?",
+    blurb: "How your recommendations reach the people who need them",
     vimeoId: 1223053859,
     poster: `${base}/gl-referrals-how-it-works-vimeo.jpg`,
     durationSec: 92,
