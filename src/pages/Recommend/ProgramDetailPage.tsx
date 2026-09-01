@@ -1159,21 +1159,8 @@ export default function ProgramDetailPage() {
         * earn" banner. Everything below it (tabs and their content) sits
         * outside this container and is untouched.
         */}
-      <Box
-        sx={{
-          mb: 2.5,
-          p: { xs: 2.5, sm: 3 },
-          borderRadius: "20px",
-          border: "1px solid",
-          borderColor: (t) => alpha(t.palette.primary.main, 0.16),
-          bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) 220px" },
-          gap: { xs: 2.5, md: 3 },
-          alignItems: "center",
-        }}
-      >
-        <Box sx={{ minWidth: 0 }}>
+      {/* Back sits above the banner, not inside it: it belongs to the page, not
+          to the program being described. */}
       <Button
         variant="text"
         startIcon={<ArrowBackRoundedIcon sx={{ fontSize: 18 }} />}
@@ -1194,6 +1181,23 @@ export default function ProgramDetailPage() {
         All programs
       </Button>
 
+      <Box
+        sx={{
+          mb: 2.5,
+          p: { xs: 2.5, sm: 3 },
+          borderRadius: "20px",
+          border: "1px solid",
+          borderColor: (t) => alpha(t.palette.primary.main, 0.16),
+          bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) 260px" },
+          gap: { xs: 2.5, md: 3 },
+          // Stretch, so the thumbnail's edges line up with the banner's content
+          // rather than floating in the middle of it.
+          alignItems: "stretch",
+        }}
+      >
+        <Box sx={{ minWidth: 0, alignSelf: "center" }}>
       {/* header */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
@@ -1245,7 +1249,14 @@ export default function ProgramDetailPage() {
             durationSec={introVideo.durationSec}
             onClick={openIntroVideo}
             ariaLabel={`Play video: ${introVideo.title}. ${clock(introVideo.durationSec)}. Opens a player.`}
-            sx={{ aspectRatio: "16 / 10", justifySelf: { md: "end" }, width: "100%" }}
+            sx={{
+              /* Its own 16:10 when stacked; in the two-column layout the
+                 banner's height wins, so top and bottom align with the text. */
+              aspectRatio: { xs: "16 / 10", md: "auto" },
+              height: { md: "100%" },
+              minHeight: { md: 150 },
+              width: "100%",
+            }}
           />
         )}
       </Box>
