@@ -340,11 +340,15 @@ export default function RecommendPage() {
               to the whole banner rather than a fourth step. */}
           <Stack
             direction={{ xs: "column", sm: "row" }}
-            spacing={{ xs: 1.5, sm: 2 }}
+            /* Stack spacing becomes a margin-top on the second child, and it
+               still applies when the first is display:none — which is the case
+               on xs, so the button was carrying 12px of spacing off a hidden
+               sibling. */
+            spacing={{ xs: 0, sm: 2 }}
             alignItems={{ xs: "stretch", sm: "center" }}
             justifyContent="space-between"
             sx={{
-              mt: { xs: 0.5, md: 3 },
+              mt: { xs: 0, md: 3 },
               pt: { xs: 0, md: 2.5 },
               /* The rule separates the footer from the three tiles above it.
                  With those hidden on phones it has nothing to divide, and it
