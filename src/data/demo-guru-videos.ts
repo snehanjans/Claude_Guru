@@ -64,7 +64,7 @@ export const guruVideos: GuruVideo[] = [
     src: `${base}/gl-referrals-write-a-post.webm`,
     poster: `${base}/gl-referrals-write-a-post.jpg`,
     captions: `${base}/gl-referrals-write-a-post.vtt`,
-    durationSec: 5,
+    durationSec: 48,
   },
   {
     id: "what-you-earn",
@@ -73,7 +73,7 @@ export const guruVideos: GuruVideo[] = [
     src: `${base}/gl-referrals-what-you-earn.webm`,
     poster: `${base}/gl-referrals-what-you-earn.jpg`,
     captions: `${base}/gl-referrals-what-you-earn.vtt`,
-    durationSec: 5,
+    durationSec: 46,
   },
   {
     id: "learner-questions",
@@ -82,7 +82,7 @@ export const guruVideos: GuruVideo[] = [
     src: `${base}/gl-referrals-learner-questions.webm`,
     poster: `${base}/gl-referrals-learner-questions.jpg`,
     captions: `${base}/gl-referrals-learner-questions.vtt`,
-    durationSec: 5,
+    durationSec: 42,
   },
 ];
 
