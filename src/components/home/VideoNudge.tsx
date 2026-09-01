@@ -66,7 +66,11 @@ export function VideoNudge() {
 
   const allWatched = hasWatchedEverything(watched);
   /** Motion only for a guru who hasn't seen the whole set. */
-  const wantsMotion = !allWatched && !videoFailed;
+  /* No local file means nothing can play inline — a YouTube clip only plays in
+     the modal. Folding that in here is enough: it swaps the <video> for the
+     poster, adds the play badge to the still, and drops the mute control, since
+     all three already hang off wantsMotion. */
+  const wantsMotion = !allWatched && !videoFailed && Boolean(nudgePreviewVideo.src);
 
   /*
    * TESTING: bring the card back when the dismissal expires, without a reload.

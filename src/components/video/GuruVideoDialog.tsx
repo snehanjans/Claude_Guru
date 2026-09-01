@@ -43,6 +43,113 @@ export interface GuruVideoDialogProps {
   onWatched: (id: string) => void;
 }
 
+/* ── YouTube IFrame Player API ───────────────────────────────────── */
+
+type YTPlayerCtor = new (
+  el: HTMLElement,
+  opts: {
+    videoId: string;
+    playerVars?: Record<string, number>;
+    events?: { onStateChange?: (e: { data: number }) => void };
+  },
+) => { destroy: () => void };
+
+interface YTNamespace {
+  Player: YTPlayerCtor;
+  PlayerState: { PLAYING: number; ENDED: number };
+}
+
+declare global {
+  interface Window {
+    YT?: YTNamespace;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+/**
+ * Loads the IFrame API once and resolves when it is ready.
+ *
+ * The script calls a single global callback when it finishes, so concurrent
+ * callers have to share one promise — two clips mounting at once would
+ * otherwise overwrite each other's `onYouTubeIframeAPIReady`.
+ */
+let apiPromise: Promise<YTNamespace> | null = null;
+
+function loadYouTubeApi(): Promise<YTNamespace> {
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (apiPromise) return apiPromise;
+
+  apiPromise = new Promise<YTNamespace>((resolve) => {
+    window.onYouTubeIframeAPIReady = () => resolve(window.YT as YTNamespace);
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  });
+  return apiPromise;
+}
+
+/**
+ * YouTube clip inside the video set.
+ *
+ * A bare <iframe> would lose the two events the set depends on: `play` feeds
+ * VIDEO_STARTED, and `ended` marks the clip watched and rolls on to the next
+ * one. Neither is a DOM media event on an iframe, so the embed is driven
+ * through YouTube's IFrame Player API and those callbacks are re-raised from
+ * onStateChange — the modal behaves the same whichever source a clip uses.
+ */
+function YouTubeClip({
+  videoId,
+  onPlay,
+  onEnded,
+}: {
+  videoId: string;
+  onPlay: () => void;
+  onEnded: () => void;
+}) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  /* Read through refs inside the API callbacks: the player is created once per
+     clip, and re-creating it whenever a parent handler changes identity would
+     restart playback. */
+  const onPlayRef = useRef(onPlay);
+  const onEndedRef = useRef(onEnded);
+  onPlayRef.current = onPlay;
+  onEndedRef.current = onEnded;
+
+  useEffect(() => {
+    let player: { destroy: () => void } | null = null;
+    let cancelled = false;
+
+    void loadYouTubeApi().then((YT) => {
+      if (cancelled || !hostRef.current) return;
+      player = new YT.Player(hostRef.current, {
+        videoId,
+        playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
+        events: {
+          onStateChange: (e: { data: number }) => {
+            if (e.data === YT.PlayerState.PLAYING) onPlayRef.current();
+            if (e.data === YT.PlayerState.ENDED) onEndedRef.current();
+          },
+        },
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      player?.destroy();
+    };
+  }, [videoId]);
+
+  return (
+    <Box sx={{ position: "relative", width: "100%", aspectRatio: "16 / 9" }}>
+      {/* The API replaces this node with its iframe. */}
+      <Box
+        ref={hostRef}
+        sx={{ position: "absolute", inset: 0, "& iframe": { width: "100%", height: "100%", border: 0 } }}
+      />
+    </Box>
+  );
+}
+
 /**
  * The video set, full size.
  *
@@ -171,6 +278,14 @@ export function GuruVideoDialog({
             "&:hover": { bgcolor: (t) => alpha(t.palette.black.main, 0.65) },
           }}
         />
+        {video.youTubeId ? (
+          <YouTubeClip
+            key={video.id}
+            videoId={video.youTubeId}
+            onPlay={handlePlay}
+            onEnded={handleEnded}
+          />
+        ) : (
         <Box
           key={video.id}
           component="video"
@@ -185,9 +300,10 @@ export function GuruVideoDialog({
           onEnded={handleEnded}
           sx={{ display: "block", width: "100%", aspectRatio: "16 / 9", bgcolor: (t) => t.palette.black.main }}
         >
-          {/* Captions on every clip, on by default. */}
+          {/* Captions on every local clip, on by default. */}
           <track kind="captions" srcLang="en" label="English" src={video.captions} default />
         </Box>
+        )}
       </Box>
 
       <Box sx={{ p: { xs: 2, sm: 2.5 } }}>

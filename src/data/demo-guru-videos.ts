@@ -16,11 +16,22 @@ export interface GuruVideo {
   title: string;
   /** One line under the player saying what the clip covers. */
   blurb: string;
-  src: string;
+  /**
+   * Local file. Absent on a YouTube-hosted clip — see `youTubeId`. Surfaces that
+   * play a clip inline (the Home nudge card's muted preview) fall back to the
+   * poster when there is no local file to play.
+   */
+  src?: string;
+  /**
+   * YouTube video id. When set the modal embeds YouTube instead of a <video>,
+   * and start/complete still fire — the embed is driven through the IFrame
+   * Player API so the set keeps auto-advancing.
+   */
+  youTubeId?: string;
   /** Shown before the clip loads, and instead of it once the set is watched. */
   poster: string;
-  /** WebVTT captions. Required — every clip ships with them. */
-  captions: string;
+  /** WebVTT captions. Absent on a YouTube clip, which carries its own. */
+  captions?: string;
   /** Published length, for the "5 clips · 25s" style summary. */
   durationSec: number;
 }
@@ -29,13 +40,14 @@ const base = "/videos";
 
 export const guruVideos: GuruVideo[] = [
   {
+    /* Hosted on YouTube rather than shipped as a file, so it can be re-cut
+       without a deploy. The id is unchanged, so watched-state carries over. */
     id: "how-it-works",
     title: "How referrals work",
     blurb: "Where your link sits, and what counts as a referral.",
-    src: `${base}/gl-referrals-how-it-works.webm`,
-    poster: `${base}/gl-referrals-how-it-works.jpg`,
-    captions: `${base}/gl-referrals-how-it-works.vtt`,
-    durationSec: 5,
+    youTubeId: "zUzFz_heea4",
+    poster: `${base}/gl-referrals-how-it-works-yt.jpg`,
+    durationSec: 92,
   },
   {
     id: "your-link",
