@@ -154,7 +154,7 @@ export function GuruVideoDialog({
       slotProps={{ paper: { sx: { borderRadius: "16px", overflow: "hidden" } } }}
     >
       {/* player — keyed by clip, so only the selected file is ever fetched */}
-      <Box sx={{ bgcolor: "#000", position: "relative" }}>
+      <Box sx={{ bgcolor: (t) => t.palette.black.main, position: "relative" }}>
         {/* Over the video rather than above it: the player is flush to the top
             of the paper, so a close button in the flow would push it down. */}
         <DialogCloseButton
@@ -164,11 +164,11 @@ export function GuruVideoDialog({
             top: 8,
             right: 8,
             zIndex: 1,
-            color: "#fff",
-            borderColor: "rgba(255,255,255,0.45)",
-            bgcolor: "rgba(0,0,0,0.45)",
+            color: (t) => t.palette.white.main,
+            borderColor: (t) => alpha(t.palette.white.main, 0.45),
+            bgcolor: (t) => alpha(t.palette.black.main, 0.45),
             backdropFilter: "blur(4px)",
-            "&:hover": { bgcolor: "rgba(0,0,0,0.65)" },
+            "&:hover": { bgcolor: (t) => alpha(t.palette.black.main, 0.65) },
           }}
         />
         <Box
@@ -183,7 +183,7 @@ export function GuruVideoDialog({
           preload="metadata"
           onPlay={handlePlay}
           onEnded={handleEnded}
-          sx={{ display: "block", width: "100%", aspectRatio: "16 / 9", bgcolor: "#000" }}
+          sx={{ display: "block", width: "100%", aspectRatio: "16 / 9", bgcolor: (t) => t.palette.black.main }}
         >
           {/* Captions on every clip, on by default. */}
           <track kind="captions" srcLang="en" label="English" src={video.captions} default />

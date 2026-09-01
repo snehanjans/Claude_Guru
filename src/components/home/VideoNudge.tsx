@@ -4,6 +4,7 @@ import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { alpha, keyframes } from "@mui/material/styles";
+import type { Theme } from "@mui/material/styles";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
@@ -201,7 +202,7 @@ export function VideoNudge() {
         }}
       >
         {/* media + overlays */}
-        <Box sx={{ position: "relative", bgcolor: "#000" }}>
+        <Box sx={{ position: "relative", bgcolor: (t) => t.palette.black.main }}>
           <Box
             component="button"
             type="button"
@@ -272,8 +273,8 @@ export function VideoNudge() {
                     borderRadius: "50%",
                     display: "grid",
                     placeItems: "center",
-                    color: "#111",
-                    bgcolor: "rgba(255,255,255,0.92)",
+                    color: (t) => t.palette.black.main,
+                    bgcolor: (t) => alpha(t.palette.white.main, 0.92),
                     boxShadow: 2,
                   }}
                 >
@@ -362,9 +363,12 @@ const overlayButtonSx = (position: Record<string, number>) => ({
   position: "absolute" as const,
   ...position,
   p: 0.5,
-  color: "#fff",
-  bgcolor: "rgba(0,0,0,0.5)",
+  color: (t: Theme) => t.palette.white.main,
+  bgcolor: (t: Theme) => alpha(t.palette.black.main, 0.5),
   backdropFilter: "blur(4px)",
-  "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
-  "&.Mui-focusVisible": { outline: "2px solid #fff", outlineOffset: 1 },
+  "&:hover": { bgcolor: (t: Theme) => alpha(t.palette.black.main, 0.7) },
+  "&.Mui-focusVisible": {
+    outline: (t: Theme) => `2px solid ${t.palette.white.main}`,
+    outlineOffset: 1,
+  },
 });

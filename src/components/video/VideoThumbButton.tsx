@@ -57,7 +57,7 @@ export function VideoThumbButton({
         overflow: "hidden",
         border: "1px solid",
         borderColor: (t) => alpha(t.palette.primary.main, 0.18),
-        bgcolor: "#000",
+        bgcolor: (t) => t.palette.black.main,
         cursor: "pointer",
         transition: `transform 160ms ${EASE_OUT}, box-shadow 160ms ${EASE_OUT}`,
         "@media (hover: hover)": {
@@ -91,7 +91,11 @@ export function VideoThumbButton({
           inset: 0,
           display: "grid",
           placeItems: "center",
-          background: "linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.35) 100%)",
+          background: (t) =>
+            `linear-gradient(180deg, ${alpha(t.palette.black.main, 0)} 40%, ${alpha(
+              t.palette.black.main,
+              0.35,
+            )} 100%)`,
         }}
       >
         <Box
@@ -101,8 +105,8 @@ export function VideoThumbButton({
             borderRadius: "50%",
             display: "grid",
             placeItems: "center",
-            color: "#111",
-            bgcolor: "rgba(255,255,255,0.94)",
+            color: (t) => t.palette.black.main,
+            bgcolor: (t) => alpha(t.palette.white.main, 0.94),
             boxShadow: 3,
           }}
         >
@@ -121,8 +125,8 @@ export function VideoThumbButton({
           borderRadius: "6px",
           fontSize: 11,
           fontWeight: 700,
-          color: "#fff",
-          bgcolor: "rgba(0,0,0,0.62)",
+          color: (t) => t.palette.white.main,
+          bgcolor: (t) => alpha(t.palette.black.main, 0.62),
           fontVariantNumeric: "tabular-nums",
         }}
       >
