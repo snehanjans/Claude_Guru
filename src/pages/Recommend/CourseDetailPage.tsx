@@ -59,6 +59,7 @@ import {
 import { EmptyState } from "@/components/shared/EmptyState";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { scrollToTop } from "@/lib/scrollRestore";
+import { BRAND } from "@/theme/brandColors";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
@@ -68,10 +69,10 @@ const COPIED_MS = 1600;
 /* Same asset ids as the AINP kit, so logos, the subject rule and the saved-edit
    keys line up across both pages. */
 const PLATFORM_LOGO: Record<string, { icon: SvgIconComponent; color: string }> = {
-  "asset-01": { icon: LinkedInIcon, color: "#0a66c2" },
-  "asset-02": { icon: WhatsAppIcon, color: "#25d366" },
-  "asset-03": { icon: EmailOutlinedIcon, color: "#ea4335" },
-  "asset-04": { icon: InstagramIcon, color: "#e1306c" },
+  "asset-01": { icon: LinkedInIcon, color: BRAND.linkedin },
+  "asset-02": { icon: WhatsAppIcon, color: BRAND.whatsapp },
+  "asset-03": { icon: EmailOutlinedIcon, color: BRAND.gmail },
+  "asset-04": { icon: InstagramIcon, color: BRAND.instagram },
 };
 
 /** Channels whose collateral carries an editable subject line. */
