@@ -13,6 +13,7 @@ import { DevPanel } from "@/components/dev/DevPanel";
 import { RoleSwitchOverlay } from "@/components/shared/RoleSwitchOverlay";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { setIsDarkMode } from "@/store/slices/uiSlice";
+import { getTokens } from "@/theme/tokens";
 
 const OnboardingPage = lazy(() => import("@/pages/Onboarding"));
 
@@ -59,8 +60,12 @@ export function AppLayout() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.classList.toggle("dark", isDarkMode);
-    // Update PWA status bar / theme-color meta tags
-    const color = isDarkMode ? "#121212" : "#ffffff";
+    /* Update the PWA status bar / theme-color meta tags. Both tags are set to
+       the resolved colour rather than left to their media= gating: the user can
+       pick light while the OS is dark, and the app's choice has to win. */
+    const color = getTokens(isDarkMode ? "dark" : "light").background[
+      "paper-elevation-0"
+    ];
     document.querySelectorAll('meta[name="theme-color"]').forEach((el) => {
       el.setAttribute("content", color);
     });
