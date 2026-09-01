@@ -890,7 +890,10 @@ export default function ProgramDetailPage() {
               }}
             />
           </Stack>
-          <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}>
+          <Typography
+            variant="h4"
+            sx={{ fontSize: 28, fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}
+          >
             {program.title}
           </Typography>
         </Box>
