@@ -74,18 +74,27 @@ export function GuruVideoDialog({
      unpause, and a guru fiddling with the scrubber shouldn't look like ten
      starts. */
   const startedRef = useRef<Set<string>>(new Set());
+  /** Pending auto-advance, so closing mid-gap doesn't jump the set on reopen. */
+  const advanceRef = useRef<number | null>(null);
 
   const video = videos[index];
   const total = videos.length;
 
   useEffect(() => {
+    if (advanceRef.current) window.clearTimeout(advanceRef.current);
+    advanceRef.current = null;
     if (!open) return;
     setIndex(initialIndex);
     startedRef.current = new Set();
   }, [open, initialIndex]);
 
+  // Nothing should fire after the dialog goes away.
+  useEffect(() => () => {
+    if (advanceRef.current) window.clearTimeout(advanceRef.current);
+  }, []);
+
   const go = useCallback(
-    (next: number, how: "previous" | "next" | "dot") => {
+    (next: number, how: "previous" | "next" | "dot" | "auto") => {
       const clamped = Math.max(0, Math.min(total - 1, next));
       if (clamped === index) return;
       track(ANALYTICS_EVENTS.VIDEO_NAVIGATED, {
@@ -110,6 +119,23 @@ export function GuruVideoDialog({
     track(ANALYTICS_EVENTS.VIDEO_COMPLETED, { placement, videoId: video.id, position: index + 1, of: total });
     markVideoWatched(video.id);
     onWatched(video.id);
+
+    /*
+     * Roll on to the next clip. The set is meant to be watched through, and
+     * making the guru press next between five-second clips is friction for no
+     * reason — the counter and dots move with it, so it stays obvious where
+     * they are. It stops at the last clip rather than looping back: the set has
+     * an end, and restarting it uninvited would be worse than stopping.
+     *
+     * The short gap lets the last frame land before the next one starts, and it
+     * reads as a step rather than a cut.
+     */
+    if (index >= total - 1) return;
+    if (advanceRef.current) window.clearTimeout(advanceRef.current);
+    advanceRef.current = window.setTimeout(() => {
+      advanceRef.current = null;
+      go(index + 1, "auto");
+    }, 700);
   };
 
   const handleRecommend = () => {
