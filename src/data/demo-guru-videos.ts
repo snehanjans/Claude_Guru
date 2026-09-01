@@ -23,11 +23,11 @@ export interface GuruVideo {
    */
   src?: string;
   /**
-   * YouTube video id. When set the modal embeds YouTube instead of a <video>,
-   * and start/complete still fire — the embed is driven through the IFrame
-   * Player API so the set keeps auto-advancing.
+   * Vimeo video id. When set the modal embeds Vimeo instead of a <video>, and
+   * start/complete still fire — the embed is driven through the Player SDK so
+   * the set keeps auto-advancing.
    */
-  youTubeId?: string;
+  vimeoId?: number;
   /** Shown before the clip loads, and instead of it once the set is watched. */
   poster: string;
   /** WebVTT captions. Absent on a YouTube clip, which carries its own. */
@@ -40,23 +40,22 @@ const base = "/videos";
 
 export const guruVideos: GuruVideo[] = [
   {
-    /* Hosted on YouTube rather than shipped as a file, so it can be re-cut
+    /* Hosted on Vimeo rather than shipped as a file, so it can be re-cut
        without a deploy. The id is unchanged, so watched-state carries over. */
     id: "how-it-works",
     title: "How referrals work",
     blurb: "Where your link sits, and what counts as a referral.",
-    youTubeId: "zUzFz_heea4",
-    poster: `${base}/gl-referrals-how-it-works-yt.jpg`,
+    vimeoId: 1223053859,
+    poster: `${base}/gl-referrals-how-it-works-vimeo.jpg`,
     durationSec: 92,
   },
   {
     id: "your-link",
     title: "Your personalised link",
     blurb: "Why the ?ref= tag matters and where to find it.",
-    src: `${base}/gl-referrals-your-link.webm`,
-    poster: `${base}/gl-referrals-your-link.jpg`,
-    captions: `${base}/gl-referrals-your-link.vtt`,
-    durationSec: 5,
+    vimeoId: 1223057201,
+    poster: `${base}/gl-referrals-your-link-vimeo.jpg`,
+    durationSec: 72,
   },
   {
     id: "write-a-post",

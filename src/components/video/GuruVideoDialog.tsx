@@ -43,73 +43,76 @@ export interface GuruVideoDialogProps {
   onWatched: (id: string) => void;
 }
 
-/* ── YouTube IFrame Player API ───────────────────────────────────── */
+/* ── Vimeo Player SDK ────────────────────────────────────────────── */
 
-type YTPlayerCtor = new (
+interface VimeoPlayer {
+  on: (event: string, cb: () => void) => void;
+  destroy: () => Promise<void>;
+}
+
+type VimeoPlayerCtor = new (
   el: HTMLElement,
   opts: {
-    host?: string;
-    videoId: string;
-    playerVars?: Record<string, number>;
-    events?: { onStateChange?: (e: { data: number }) => void };
+    id: number;
+    autoplay?: boolean;
+    responsive?: boolean;
+    dnt?: boolean;
+    title?: boolean;
+    byline?: boolean;
+    portrait?: boolean;
+    pip?: boolean;
+    transparent?: boolean;
   },
-) => { destroy: () => void };
-
-interface YTNamespace {
-  Player: YTPlayerCtor;
-  PlayerState: { PLAYING: number; ENDED: number };
-}
+) => VimeoPlayer;
 
 declare global {
   interface Window {
-    YT?: YTNamespace;
-    onYouTubeIframeAPIReady?: () => void;
+    Vimeo?: { Player: VimeoPlayerCtor };
   }
 }
 
 /**
- * Loads the IFrame API once and resolves when it is ready.
+ * Loads the Vimeo Player SDK once and resolves when it is ready.
  *
- * The script calls a single global callback when it finishes, so concurrent
- * callers have to share one promise — two clips mounting at once would
- * otherwise overwrite each other's `onYouTubeIframeAPIReady`.
+ * Shared promise rather than a script tag per clip: two clips mounting at the
+ * same time would otherwise each append the script and race.
  */
-let apiPromise: Promise<YTNamespace> | null = null;
+let sdkPromise: Promise<VimeoPlayerCtor> | null = null;
 
-function loadYouTubeApi(): Promise<YTNamespace> {
-  if (window.YT?.Player) return Promise.resolve(window.YT);
-  if (apiPromise) return apiPromise;
+function loadVimeoSdk(): Promise<VimeoPlayerCtor> {
+  if (window.Vimeo?.Player) return Promise.resolve(window.Vimeo.Player);
+  if (sdkPromise) return sdkPromise;
 
-  apiPromise = new Promise<YTNamespace>((resolve) => {
-    window.onYouTubeIframeAPIReady = () => resolve(window.YT as YTNamespace);
+  sdkPromise = new Promise<VimeoPlayerCtor>((resolve, reject) => {
     const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
+    tag.src = "https://player.vimeo.com/api/player.js";
+    tag.onload = () => resolve((window.Vimeo as { Player: VimeoPlayerCtor }).Player);
+    tag.onerror = () => reject(new Error("Vimeo SDK failed to load"));
     document.head.appendChild(tag);
   });
-  return apiPromise;
+  return sdkPromise;
 }
 
 /**
- * YouTube clip inside the video set.
+ * Vimeo clip inside the video set.
  *
- * A bare <iframe> would lose the two events the set depends on: `play` feeds
- * VIDEO_STARTED, and `ended` marks the clip watched and rolls on to the next
- * one. Neither is a DOM media event on an iframe, so the embed is driven
- * through YouTube's IFrame Player API and those callbacks are re-raised from
- * onStateChange — the modal behaves the same whichever source a clip uses.
+ * An iframe emits neither `play` nor `ended`, and the set needs both: `play`
+ * feeds VIDEO_STARTED, and `ended` marks the clip watched and rolls on to the
+ * next one. The SDK exposes them directly, so they are simply forwarded and
+ * the modal behaves the same whichever source a clip uses.
  */
-function YouTubeClip({
+function VimeoClip({
   videoId,
   onPlay,
   onEnded,
 }: {
-  videoId: string;
+  videoId: number;
   onPlay: () => void;
   onEnded: () => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
-  /* Read through refs inside the API callbacks: the player is created once per
-     clip, and re-creating it whenever a parent handler changes identity would
+  /* Read through refs inside the SDK callbacks: the player is built once per
+     clip, and rebuilding it when a parent handler changes identity would
      restart playback. */
   const onPlayRef = useRef(onPlay);
   const onEndedRef = useRef(onEnded);
@@ -117,41 +120,51 @@ function YouTubeClip({
   onEndedRef.current = onEnded;
 
   useEffect(() => {
-    let player: { destroy: () => void } | null = null;
+    let player: VimeoPlayer | null = null;
     let cancelled = false;
 
-    void loadYouTubeApi().then((YT) => {
-      if (cancelled || !hostRef.current) return;
-      player = new YT.Player(hostRef.current, {
-        /* youtube-nocookie serves the same video without the tracking cookies
-           that privacy settings and extensions commonly block — a blocked
-           request there surfaces as YouTube's generic "An error occurred
-           (Playback ID …)" screen, which says nothing about the real cause. */
-        host: "https://www.youtube-nocookie.com",
-        videoId,
-        playerVars: { autoplay: 1, rel: 0, modestbranding: 1, playsinline: 1 },
-        events: {
-          onStateChange: (e: { data: number }) => {
-            if (e.data === YT.PlayerState.PLAYING) onPlayRef.current();
-            if (e.data === YT.PlayerState.ENDED) onEndedRef.current();
-          },
-        },
+    void loadVimeoSdk()
+      .then((Player) => {
+        if (cancelled || !hostRef.current) return;
+        player = new Player(hostRef.current, {
+          id: videoId,
+          autoplay: true,
+          responsive: true,
+          /* Do Not Track: no analytics cookies, which is both the polite
+             default and what keeps privacy blockers from killing playback. */
+          dnt: true,
+          /* Strip Vimeo's own chrome. The clip's title and description are
+             already rendered under the player by this dialog, so the overlay
+             title, author byline and avatar are duplication with someone
+             else's branding on it. Playback controls stay: this is a 92s
+             video someone is meant to watch, and taking away pause and seek
+             to tidy the frame would be a bad trade. */
+          title: false,
+          byline: false,
+          portrait: false,
+          pip: false,
+          transparent: false,
+        });
+        player.on("play", () => onPlayRef.current());
+        player.on("ended", () => onEndedRef.current());
+      })
+      .catch(() => {
+        /* Nothing to do — the poster stays and the clip simply will not play.
+           Swallowed rather than thrown so one dead clip cannot blank the set. */
       });
-    });
 
     return () => {
       cancelled = true;
-      player?.destroy();
+      void player?.destroy();
     };
   }, [videoId]);
 
   return (
     /*
-     * The sizing lives here, on the wrapper, deliberately. YT.Player REPLACES
-     * the node it is handed, so anything styled on the inner div disappears
-     * with it — and the iframe arrives carrying YouTube's own width="640"
-     * height="360" attributes, which overflow the dialog. Styling `& iframe`
-     * from the surviving parent is what actually constrains it.
+     * Sizing lives on this wrapper, not on the div below: the SDK owns that
+     * node and the iframe it injects carries its own width/height attributes,
+     * which overflow the dialog. Styling `& iframe` from the parent is what
+     * actually constrains it.
      */
     <Box
       sx={{
@@ -167,9 +180,12 @@ function YouTubeClip({
           border: 0,
           display: "block",
         },
+        /* `responsive: true` wraps the iframe in a padding-top div of its own;
+           the absolute iframe above does the work, so flatten it. */
+        "& > div": { position: "static", paddingTop: "0 !important" },
       }}
     >
-      {/* Replaced by the API's iframe on mount. */}
+      {/* The SDK injects its iframe into this node. */}
       <div ref={hostRef} />
     </Box>
   );
@@ -303,10 +319,10 @@ export function GuruVideoDialog({
             "&:hover": { bgcolor: (t) => alpha(t.palette.black.main, 0.65) },
           }}
         />
-        {video.youTubeId ? (
-          <YouTubeClip
+        {video.vimeoId ? (
+          <VimeoClip
             key={video.id}
-            videoId={video.youTubeId}
+            videoId={video.vimeoId}
             onPlay={handlePlay}
             onEnded={handleEnded}
           />
