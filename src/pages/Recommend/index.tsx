@@ -1,5 +1,6 @@
 import { useEffect, useMemo, type ComponentType } from "react";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
@@ -14,6 +15,8 @@ import HighlightOffOutlinedIcon from "@mui/icons-material/HighlightOffOutlined";
 import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined";
 import HowToRegOutlinedIcon from "@mui/icons-material/HowToRegOutlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import { fmtMoney } from "@/lib/helpers";
 import { GURU_CURRENCY, toGuruCurrency } from "@/data/demo-ambassador";
 import { useRecommend, type RecommendTab } from "./RecommendContext";
@@ -26,6 +29,9 @@ import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 
 /* How a referral works — the same three steps in both heroes. */
+/** Booking page for a walkthrough of the Ambassadors scheme. */
+const SCHEDULE_CALL_URL = "https://calendar.app.google/Cs6eGAekkn4688G38";
+
 const HOW_IT_WORKS = [
   { step: "1", title: "Share a program", sub: "Share your personalised link", icon: IosShareOutlinedIcon },
   { step: "2", title: "They enroll", sub: "Your learner joins a cohort", icon: HowToRegOutlinedIcon },
@@ -291,6 +297,70 @@ export default function RecommendPage() {
           )}
             </Box>
           </Box>
+
+          {/* Closing the hero: the copy above explains the scheme, this offers
+              a person to ask. Sits below both columns so it reads as a footer
+              to the whole banner rather than a fourth step. */}
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={{ xs: 1.5, sm: 2 }}
+            alignItems={{ xs: "stretch", sm: "center" }}
+            justifyContent="space-between"
+            sx={{
+              mt: { xs: 2.5, md: 3 },
+              pt: { xs: 2, md: 2.5 },
+              borderTop: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
+              {/* Same 36px chip as the three steps above, so the footer reads as
+                  part of the same banner rather than a bolted-on strip. */}
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  width: 36,
+                  height: 36,
+                  borderRadius: "10px",
+                  display: "grid",
+                  placeItems: "center",
+                  color: "text.primary",
+                  bgcolor: "background.paper",
+                  border: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <PhoneOutlinedIcon sx={{ fontSize: 18 }} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.4 }}>
+                Talk to us
+              </Typography>
+              <Typography
+                sx={{ mt: 0.25, fontSize: 13.5, color: "text.secondary", lineHeight: 1.5 }}
+              >
+                Want to know more about GL Ambassadors? Book a call and we&rsquo;ll walk you
+                through it.
+              </Typography>
+              </Box>
+            </Stack>
+            <Button
+              component="a"
+              href={SCHEDULE_CALL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="outlined"
+              startIcon={<CalendarMonthOutlinedIcon sx={{ fontSize: 18 }} />}
+              sx={{
+                flexShrink: 0,
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: "10px",
+              }}
+            >
+              Schedule a call
+            </Button>
+          </Stack>
         </Box>
 
         {/* ── KPI stats — appear once there's activity ─────────────────── */}
