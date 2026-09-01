@@ -369,7 +369,7 @@ export function GuruVideoDialog({
             justifyContent="space-between"
           >
             <Typography variant="body2" sx={{ lineHeight: 1.55 }}>
-              Referrals go furthest when you guide them personally
+              Become an GL ambassador
             </Typography>
             <Button
               variant="contained"
