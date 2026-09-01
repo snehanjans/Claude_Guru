@@ -285,7 +285,7 @@ export function GuruVideoDialog({
             justifyContent="space-between"
           >
             <Typography variant="body2" sx={{ lineHeight: 1.55 }}>
-              Your link takes about a minute to share. Pick a program and send it to one person today.
+              Referrals go furthest when you guide them personally
             </Typography>
             <Button
               variant="contained"
