@@ -20,6 +20,11 @@ import ThumbUpOffAltIcon from "@mui/icons-material/ThumbUpOffAlt";
 import ThumbUpRoundedIcon from "@mui/icons-material/ThumbUpRounded";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import type { SvgIconComponent } from "@mui/icons-material";
+import {
+  WHATSAPP_SKIN,
+  INSTAGRAM_SKIN,
+  LINKEDIN_REACTIONS,
+} from "@/theme/brandColors";
 
 /**
  * How each channel's post will look, shared by the AINP program pages and the
@@ -217,7 +222,7 @@ export function LinkedInPostPreview({
                 width: 18,
                 height: 18,
                 borderRadius: "50%",
-                bgcolor: "#2f6bff",
+                bgcolor: LINKEDIN_REACTIONS.like,
                 display: "grid",
                 placeItems: "center",
                 border: "1.5px solid",
@@ -232,7 +237,7 @@ export function LinkedInPostPreview({
                 height: 18,
                 ml: "-5px",
                 borderRadius: "50%",
-                bgcolor: "#f5455f",
+                bgcolor: LINKEDIN_REACTIONS.love,
                 display: "grid",
                 placeItems: "center",
                 border: "1.5px solid",
@@ -287,7 +292,7 @@ export function WhatsAppPreview({
 }: PreviewBase & { title: string; ogImage?: string; ogLabel?: string }) {
   return (
     <Box sx={{ borderRadius: "10px", overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 1.25, py: 1, bgcolor: "#075e54", color: "#fff" }}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 1.25, py: 1, bgcolor: WHATSAPP_SKIN.headerBg, color: "#fff" }}>
         <Avatar sx={{ width: 32, height: 32, bgcolor: "rgba(255,255,255,0.2)", color: "#fff" }}>
           <PersonRoundedIcon sx={{ fontSize: 18 }} />
         </Avatar>
@@ -303,7 +308,9 @@ export function WhatsAppPreview({
           display: "flex",
           flexDirection: "column",
           justifyContent: "flex-end",
-          bgcolor: (t) => (t.palette.mode === "dark" ? "#0b141a" : "#efeae2"),
+          bgcolor: (t) => (t.palette.mode === "dark"
+              ? WHATSAPP_SKIN.canvasDark
+              : WHATSAPP_SKIN.canvasLight),
         }}
       >
         <Box
@@ -314,8 +321,12 @@ export function WhatsAppPreview({
             borderRadius: "8px",
             borderTopRightRadius: 0,
             boxShadow: 1,
-            bgcolor: (t) => (t.palette.mode === "dark" ? "#005c4b" : "#d9fdd3"),
-            color: (t) => (t.palette.mode === "dark" ? "#e9edef" : "#111b21"),
+            bgcolor: (t) => (t.palette.mode === "dark"
+                ? WHATSAPP_SKIN.outgoingBubbleDark
+                : WHATSAPP_SKIN.outgoingBubbleLight),
+            color: (t) => (t.palette.mode === "dark"
+                ? WHATSAPP_SKIN.bubbleInkDark
+                : WHATSAPP_SKIN.bubbleInkLight),
           }}
         >
           <Stack
@@ -346,7 +357,7 @@ export function WhatsAppPreview({
           </Typography>
           <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5} sx={{ mt: 0.25 }}>
             <Typography sx={{ fontSize: 10, opacity: 0.6 }}>12:24 PM</Typography>
-            <DoneAllRoundedIcon sx={{ fontSize: 15, color: "#53bdeb" }} />
+            <DoneAllRoundedIcon sx={{ fontSize: 15, color: WHATSAPP_SKIN.readTick }} />
           </Stack>
         </Box>
       </Box>
@@ -426,7 +437,7 @@ export function InstagramPreview({ message, highlight }: PreviewBase) {
         flexDirection: "column",
         p: 1.5,
         color: "#fff",
-        background: (t) => `linear-gradient(160deg, ${t.palette.primary.main}, #7c3aed 65%, #db2777)`,
+        background: (t) => `linear-gradient(160deg, ${t.palette.primary.main}, ${INSTAGRAM_SKIN.gradientMid} 65%, ${INSTAGRAM_SKIN.gradientEnd})`,
       }}
     >
       <Stack direction="row" spacing={0.5} sx={{ mb: 1 }}>

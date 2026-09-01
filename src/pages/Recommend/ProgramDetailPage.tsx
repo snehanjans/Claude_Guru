@@ -1,10 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import {
-  BRAND,
-  WHATSAPP_SKIN,
-  INSTAGRAM_SKIN,
-  LINKEDIN_REACTIONS,
-} from "@/theme/brandColors";
+import { BRAND } from "@/theme/brandColors";
 import { useNavigate, useParams } from "react-router-dom";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
