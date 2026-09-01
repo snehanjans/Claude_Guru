@@ -191,25 +191,9 @@ export function GuruVideoDialog({
       </Box>
 
       <Box sx={{ p: { xs: 2, sm: 2.5 } }}>
-        {/*
-          * Title between the chevrons, then the dots, then the count. One
-          * centred column, so the eye runs down the middle instead of hopping
-          * between a left-aligned title and a right-aligned counter.
-          */}
-        <Stack direction="row" alignItems="center" spacing={2}>
-          {total > 1 && (
-            <IconButton
-              onClick={() => go(index - 1, "previous")}
-              disabled={index === 0}
-              aria-label="Previous video"
-              size="small"
-              sx={{ flexShrink: 0, border: "1px solid", borderColor: "divider" }}
-            >
-              <ChevronLeftRoundedIcon />
-            </IconButton>
-          )}
-
-          <Box sx={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+        {/* title + position */}
+        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
+          <Box sx={{ minWidth: 0 }}>
             <Typography id="video-nudge-title" variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.3 }}>
               {video.title}
             </Typography>
@@ -217,48 +201,11 @@ export function GuruVideoDialog({
               {video.blurb}
             </Typography>
           </Box>
-
           {total > 1 && (
-            <IconButton
-              onClick={() => go(index + 1, "next")}
-              disabled={index === total - 1}
-              aria-label="Next video"
-              size="small"
-              sx={{ flexShrink: 0, border: "1px solid", borderColor: "divider" }}
-            >
-              <ChevronRightRoundedIcon />
-            </IconButton>
-          )}
-        </Stack>
-
-        {/* Where the guru is in the set: the dots, and the same thing in words
-            under them. A set of one has nothing to step through. */}
-        {total > 1 && (
-          <Stack alignItems="center" spacing={0.75} sx={{ mt: 1.75 }}>
-            <Stack direction="row" spacing={0.75} alignItems="center" aria-hidden="true">
-              {videos.map((v, i) => (
-                <Box
-                  key={v.id}
-                  component="button"
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => go(i, "dot")}
-                  sx={{
-                    width: i === index ? 22 : 8,
-                    height: 8,
-                    p: 0,
-                    border: 0,
-                    borderRadius: "999px",
-                    cursor: "pointer",
-                    bgcolor: (t) => (i === index ? t.palette.primary.main : alpha(t.palette.text.primary, 0.18)),
-                    transition: `width 180ms ${EASE_OUT}, background-color 180ms ${EASE_OUT}`,
-                    "@media (prefers-reduced-motion: reduce)": { transition: "none" },
-                  }}
-                />
-              ))}
-            </Stack>
             <Typography
               sx={{
+                flexShrink: 0,
+                mt: 0.25,
                 fontSize: 12.5,
                 fontWeight: 700,
                 color: "text.secondary",
@@ -267,7 +214,56 @@ export function GuruVideoDialog({
             >
               {index + 1} of {total}
             </Typography>
+          )}
+        </Stack>
+
+        {/* navigation — arrows, and dots that say how much is left. A set of
+            one (a program's own intro) has nothing to step through. */}
+        {total > 1 && (
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1.5 }}>
+          <IconButton
+            onClick={() => go(index - 1, "previous")}
+            disabled={index === 0}
+            aria-label="Previous video"
+            size="small"
+            sx={{ border: "1px solid", borderColor: "divider" }}
+          >
+            <ChevronLeftRoundedIcon />
+          </IconButton>
+
+          <Stack direction="row" spacing={0.75} alignItems="center" aria-hidden="true">
+            {videos.map((v, i) => (
+              <Box
+                key={v.id}
+                component="button"
+                type="button"
+                tabIndex={-1}
+                onClick={() => go(i, "dot")}
+                sx={{
+                  width: i === index ? 22 : 8,
+                  height: 8,
+                  p: 0,
+                  border: 0,
+                  borderRadius: "999px",
+                  cursor: "pointer",
+                  bgcolor: (t) => (i === index ? t.palette.primary.main : alpha(t.palette.text.primary, 0.18)),
+                  transition: `width 180ms ${EASE_OUT}, background-color 180ms ${EASE_OUT}`,
+                  "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+                }}
+              />
+            ))}
           </Stack>
+
+          <IconButton
+            onClick={() => go(index + 1, "next")}
+            disabled={index === total - 1}
+            aria-label="Next video"
+            size="small"
+            sx={{ border: "1px solid", borderColor: "divider" }}
+          >
+            <ChevronRightRoundedIcon />
+          </IconButton>
+        </Stack>
         )}
 
         {/* the nudge — modal only, never on the floating card */}
