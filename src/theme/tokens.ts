@@ -264,6 +264,37 @@ const GROUP_ALIASES: Record<string, string> = {
   "blue-gray": "blueGray",
 };
 
+/**
+ * Every group `GlTokens` promises. The cast at the end of `getTokens` tells
+ * TypeScript what shape came back, but nothing verifies `colors.ts` actually
+ * delivers it — remove a ramp there and consumers get `undefined` at runtime
+ * with a perfectly green build. This list closes that gap in development.
+ */
+const REQUIRED_GROUPS: readonly (keyof GlTokens)[] = [
+  "text", "primary", "secondary", "action", "error", "warning",
+  "info", "success", "background", "other", "white", "black",
+  "extGrey", "grey", "greyA", "indigo", "indigoA", "deepPurple",
+  "deepPurpleA", "amber", "amberA", "orange", "orangeA", "pink",
+  "pinkA", "deepOrange", "deepOrangeA", "green", "greenA", "red",
+  "redA", "lightGreen", "lightGreenA", "purple", "purpleA", "lime",
+  "limeA", "lightBlue", "lightBlueA", "yellow", "yellowA", "cyan",
+  "cyanA", "teal", "tealA", "blue", "blueA", "blueGray",
+];
+
+/** Throws in dev if `colors.ts` stopped providing a group `GlTokens` claims. */
+function assertComplete(out: Record<string, Record<string, string>>): void {
+  const missing = REQUIRED_GROUPS.filter(
+    (g) => !out[g] || Object.keys(out[g]).length === 0,
+  );
+  if (missing.length) {
+    throw new Error(
+      `colors.ts is missing token group(s) that GlTokens declares: ` +
+        `${missing.join(", ")}. Either restore them in colors.ts or drop them ` +
+        `from the GlTokens interface — they are out of sync.`,
+    );
+  }
+}
+
 /* ── Public API ─────────────────────────────────────────────────── */
 
 /**
@@ -282,6 +313,8 @@ export function getTokens(mode: PaletteMode): GlTokens {
     }
     out[name] = values;
   }
+
+  if (import.meta.env?.DEV) assertComplete(out);
 
   return out as unknown as GlTokens;
 }
