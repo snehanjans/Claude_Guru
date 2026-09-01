@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { guruVideos, nudgePreviewVideo } from "@/data/demo-guru-videos";
 import { GuruVideoDialog } from "@/components/video/GuruVideoDialog";
-import { VideoThumbButton, clock } from "@/components/video/VideoThumbButton";
+import { VideoThumbButton } from "@/components/video/VideoThumbButton";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 /**
@@ -17,6 +17,10 @@ import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 export function HeroVideoPanel() {
   const [open, setOpen] = useState(false);
   const total = guruVideos.reduce((sum, v) => sum + v.durationSec, 0);
+  /* "5 min total", not "5:00": the badge stands for the whole series, and a
+     clock reads as one clip's runtime. Used for the badge and the aria label
+     alike so the two cannot say different things. */
+  const totalLabel = `${Math.round(total / 60)} min total`;
 
   const handleOpen = () => {
     // Distinct from the floating card's `opened` event, so the two placements
@@ -34,10 +38,11 @@ export function HeroVideoPanel() {
       <VideoThumbButton
         poster={nudgePreviewVideo.poster}
         durationSec={total}
+        durationLabel={totalLabel}
         countLabel={`${guruVideos.length} short videos`}
         playSize={52}
         onClick={handleOpen}
-        ariaLabel={`Play video: ${nudgePreviewVideo.title}. Opens a player with ${guruVideos.length} short videos, ${clock(total)} in total.`}
+        ariaLabel={`Play video: ${nudgePreviewVideo.title}. Opens a player with ${guruVideos.length} short videos, ${totalLabel}.`}
         sx={{
           /*
            * Stacked on mobile it sets its own height from the 16:10 ratio; in

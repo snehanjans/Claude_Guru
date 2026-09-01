@@ -24,6 +24,13 @@ export interface VideoThumbButtonProps {
   /** Wording on the pill. */
   playLabel?: string;
   /**
+   * Overrides the m:ss badge. A thumbnail standing for a whole series shows a
+   * sum, and `5:00` reads as one clip's runtime rather than five clips'
+   * total — so those callers pass their own wording. `durationSec` is still
+   * required, since the aria label is built from it either way.
+   */
+  durationLabel?: string;
+  /**
    * Bottom-left badge, mirroring the duration at bottom right — "5 short
    * videos" and the like. Omitted when the thumbnail stands for a single clip
    * and there is no count worth stating.
@@ -49,6 +56,7 @@ export function VideoThumbButton({
   onClick,
   playSize = 44,
   playLabel = "Watch now",
+  durationLabel,
   countLabel,
   sx,
 }: VideoThumbButtonProps) {
@@ -169,7 +177,7 @@ export function VideoThumbButton({
           fontVariantNumeric: "tabular-nums",
         }}
       >
-        {clock(durationSec)}
+        {durationLabel ?? clock(durationSec)}
       </Typography>
     </Box>
   );
