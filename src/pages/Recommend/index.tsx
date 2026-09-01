@@ -288,7 +288,10 @@ export default function RecommendPage() {
           <Typography
             sx={{
               mt: 0.75,
-              mb: hasAnyReferral ? 2.5 : 4,
+              /* The generous bottom margin exists to clear the how-it-works
+               tiles. Those are hidden on phones, so there it would just be
+               a gap above the button. */
+            mb: { xs: 2, sm: hasAnyReferral ? 2.5 : 4 },
               fontSize: 14,
               color: "text.secondary",
               maxWidth: 600,
@@ -341,9 +344,12 @@ export default function RecommendPage() {
             alignItems={{ xs: "stretch", sm: "center" }}
             justifyContent="space-between"
             sx={{
-              mt: { xs: 2, md: 3 },
-              pt: { xs: 1.75, md: 2.5 },
-              borderTop: "1px solid",
+              mt: { xs: 0.5, md: 3 },
+              pt: { xs: 0, md: 2.5 },
+              /* The rule separates the footer from the three tiles above it.
+                 With those hidden on phones it has nothing to divide, and it
+                 reads as a seam across an otherwise continuous card. */
+              borderTop: { xs: "none", sm: "1px solid" },
               borderColor: "divider",
             }}
           >
