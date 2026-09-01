@@ -380,7 +380,25 @@ function buildTheme(mode: "light" | "dark") {
       /* Dialog - 16px radius (outermost container level) */
       MuiDialog: {
         styleOverrides: {
-          paper: { borderRadius: 16 },
+          paper: {
+            borderRadius: 16,
+            /*
+             * MUI seats every Dialog at elevation 24, which in this palette is
+             * #4B4B4B — a mid grey that reads washed out against the #121212
+             * page. Re-point that one rung to elevation 8 (#252525): clearly
+             * raised, not pale, and close to what MUI's own dark Dialog
+             * renders. Light mode is unaffected, every elevation there is
+             * #ffffff.
+             *
+             * Done by class rather than defaultProps because 26 dialogs pass
+             * their own PaperProps, which replaces the theme default outright.
+             * Two classes also beats MuiPaper-elevation24 on specificity, so
+             * it does not depend on style injection order.
+             */
+            "&.MuiPaper-elevation24": {
+              backgroundColor: t.background["paper-elevation-8"],
+            },
+          },
         },
       },
 
