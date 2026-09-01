@@ -11,6 +11,9 @@ import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalance
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import HighlightOffOutlinedIcon from "@mui/icons-material/HighlightOffOutlined";
+import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined";
+import HowToRegOutlinedIcon from "@mui/icons-material/HowToRegOutlined";
+import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import { fmtMoney } from "@/lib/helpers";
 import { GURU_CURRENCY, toGuruCurrency } from "@/data/demo-ambassador";
 import { useRecommend, type RecommendTab } from "./RecommendContext";
@@ -21,6 +24,76 @@ import { HeroVideoPanel } from "@/components/recommend/HeroVideoPanel";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
+
+/* How a referral works — the same three steps in both heroes. */
+const HOW_IT_WORKS = [
+  { step: "1", title: "Share a program", sub: "Share your personalised link", icon: IosShareOutlinedIcon },
+  { step: "2", title: "They enroll", sub: "Your learner joins a cohort", icon: HowToRegOutlinedIcon },
+  { step: "3", title: "You earn", sub: "20% via your link, 10% if an advisor closes it", icon: PaymentsOutlinedIcon },
+];
+
+/**
+ * The three steps as a connected row of icon tiles.
+ *
+ * All three carry the same weight: this explains how a referral works, it isn't
+ * a progress tracker, so nothing is dimmed as "not reached yet". The connector
+ * runs from each tile to the edge of its column, which is where the next tile
+ * begins — no absolute positioning, so it survives the columns being resized.
+ *
+ * Used in the zero-referral hero only. The hero a guru with referrals sees is
+ * left exactly as it was.
+ */
+function HowItWorksSteps() {
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
+        gap: { xs: 1.75, sm: 0 },
+      }}
+    >
+      {HOW_IT_WORKS.map((s, i) => (
+        <Box key={s.step} sx={{ minWidth: 0, pr: { sm: i === HOW_IT_WORKS.length - 1 ? 0 : 1.5 } }}>
+          <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
+            <Box
+              sx={{
+                flexShrink: 0,
+                width: 36,
+                height: 36,
+                borderRadius: "10px",
+                display: "grid",
+                placeItems: "center",
+                color: "text.primary",
+                bgcolor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <s.icon sx={{ fontSize: 18 }} />
+            </Box>
+            {/* Runs to the next tile. The negative margin cancels the column's
+                gutter, which is there to keep the labels apart — without it the
+                line stops a gutter short and the row reads as disconnected. */}
+            {i < HOW_IT_WORKS.length - 1 && (
+              <Box
+                aria-hidden
+                sx={{
+                  display: { xs: "none", sm: "block" },
+                  flex: 1,
+                  height: "1px",
+                  bgcolor: "divider",
+                  mr: { sm: -1.5 },
+                }}
+              />
+            )}
+          </Stack>
+          <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>{s.title}</Typography>
+          <Typography sx={{ fontSize: 12.5, color: "text.secondary", lineHeight: 1.4 }}>{s.sub}</Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
 
 // Section heading shown under the tabs for the active view.
 const TAB_META: Record<RecommendTab, { title: string; subtitle: string }> = {
@@ -169,31 +242,29 @@ export default function RecommendPage() {
           </Typography>
 
           {/* how it works — always 3-across (stacks on the smallest screens) */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
-              gap: { xs: 1.75, sm: 2 },
-            }}
-          >
-            {(
-              [
-                { step: "1", title: "Share a program", sub: "Share your personalised link" },
-                { step: "2", title: "They enroll", sub: "Your learner joins a cohort" },
-                { step: "3", title: "You earn", sub: "20% via your link, 10% if an advisor closes it" },
-              ] as { step: string; title: string; sub: string }[]
-            ).map((s) => (
-              <Box key={s.step} sx={{ minWidth: 0 }}>
-                <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>
-                  <Box component="span" sx={{ color: "primary.main", mr: 0.5, ...TABULAR }}>
-                    {s.step}
-                  </Box>
-                  {s.title}
-                </Typography>
-                <Typography sx={{ fontSize: 12.5, color: "text.secondary", lineHeight: 1.4 }}>{s.sub}</Typography>
-              </Box>
-            ))}
-          </Box>
+          {hasAnyReferral ? (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+                gap: { xs: 1.75, sm: 2 },
+              }}
+            >
+              {HOW_IT_WORKS.map((s) => (
+                <Box key={s.step} sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>
+                    <Box component="span" sx={{ color: "primary.main", mr: 0.5, ...TABULAR }}>
+                      {s.step}
+                    </Box>
+                    {s.title}
+                  </Typography>
+                  <Typography sx={{ fontSize: 12.5, color: "text.secondary", lineHeight: 1.4 }}>{s.sub}</Typography>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <HowItWorksSteps />
+          )}
             </Box>
           </Box>
         </Box>
