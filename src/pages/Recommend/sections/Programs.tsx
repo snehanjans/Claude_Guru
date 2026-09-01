@@ -14,6 +14,7 @@ import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { demoAmbassadorPrograms } from "@/data/demo-ambassador";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { OtherCoursesYouTeach } from "@/components/recommend/OtherCoursesYouTeach";
+import { useAppSelector } from "@/store";
 import type { AmbassadorProgram } from "@/lib/types";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
@@ -124,6 +125,7 @@ function ProgramCard({ p, onOpen }: { p: AmbassadorProgram; onOpen: () => void }
 
 /* ── Section ──────────────────────────────────────────────────────────── */
 export function ProgramsSection() {
+  const pgReferral = useAppSelector((st) => st.devPanel.pgReferral);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
@@ -189,8 +191,9 @@ export function ProgramsSection() {
         </Grid>
       )}
 
-      {/* Referral links for the other programs this guru mentors. */}
-      {!loading && <OtherCoursesYouTeach />}
+      {/* Referral links for the other programs this guru mentors.
+          Behind the Dev Panel's "PG Referal" toggle, off by default. */}
+      {!loading && pgReferral && <OtherCoursesYouTeach />}
     </Box>
   );
 }

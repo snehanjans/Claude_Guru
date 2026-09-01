@@ -39,6 +39,7 @@ import {
   toggleRole,
   setGuruStage,
   toggleNoPromoCode,
+  togglePgReferral,
   GURU_ROLES,
   GURU_STAGES,
   type GuruRole,
@@ -65,6 +66,7 @@ export function DevPanel() {
   const selectedRoles = useAppSelector((s) => s.devPanel.selectedRoles);
   const guruStage = useAppSelector((s) => s.devPanel.guruStage);
   const noPromoCode = useAppSelector((s) => s.devPanel.noPromoCode);
+  const pgReferral = useAppSelector((s) => s.devPanel.pgReferral);
 
   // Cmd/Ctrl + K shortcut
   useEffect(() => {
@@ -302,6 +304,26 @@ export function DevPanel() {
                 </Typography>
                 <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem", display: "block" }}>
                   Referrals use the code on the program page
+                </Typography>
+              </Box>
+            }
+            sx={{ ml: 0, alignItems: "center", "& .MuiFormControlLabel-label": { ml: 0.75 } }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={pgReferral}
+                onChange={() => dispatch(togglePgReferral())}
+              />
+            }
+            label={
+              <Box>
+                <Typography variant="body2" sx={{ fontSize: "0.8rem", fontWeight: 500 }}>
+                  PG Referal
+                </Typography>
+                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem", display: "block" }}>
+                  Shows the &ldquo;every course you teach&rdquo; referral card
                 </Typography>
               </Box>
             }

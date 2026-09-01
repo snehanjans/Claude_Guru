@@ -46,6 +46,10 @@ interface DevPanelState {
   /** Recommend: when true the guru gets no personal promo code — referrals use
       the code shown on the program page instead. */
   noPromoCode: boolean;
+  /** Recommend: shows the "every course you teach, one place to refer" card.
+      Off by default — the card is opt-in while the PG referral flow is in
+      progress. */
+  pgReferral: boolean;
 }
 
 const savedRole =
@@ -76,6 +80,11 @@ const parseSavedNoPromoCode = (): boolean => {
   return window.localStorage.getItem("guru-dev-no-promo-code") === "true";
 };
 
+const parseSavedPgReferral = (): boolean => {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem("guru-dev-pg-referral") === "true";
+};
+
 const initialState: DevPanelState = {
   isOpen: false,
   selectedRole: resolvedRole,
@@ -84,6 +93,7 @@ const initialState: DevPanelState = {
   guruStage: "experienced",
   isV1Mode: parseSavedV1Mode(),
   noPromoCode: parseSavedNoPromoCode(),
+  pgReferral: parseSavedPgReferral(),
 };
 
 const devPanelSlice = createSlice({
@@ -160,8 +170,20 @@ const devPanelSlice = createSlice({
         window.localStorage.setItem("guru-dev-no-promo-code", String(state.noPromoCode));
       }
     },
+    setPgReferral(state, action: PayloadAction<boolean>) {
+      state.pgReferral = action.payload;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("guru-dev-pg-referral", String(action.payload));
+      }
+    },
+    togglePgReferral(state) {
+      state.pgReferral = !state.pgReferral;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("guru-dev-pg-referral", String(state.pgReferral));
+      }
+    },
   },
 });
 
-export const { toggleDevPanel, setDevPanelOpen, setSelectedRole, setSelectedRoles, toggleRole, clearRoleSwitching, setGuruStage, setV1Mode, toggleV1Mode, setNoPromoCode, toggleNoPromoCode } = devPanelSlice.actions;
+export const { toggleDevPanel, setDevPanelOpen, setSelectedRole, setSelectedRoles, toggleRole, clearRoleSwitching, setGuruStage, setV1Mode, toggleV1Mode, setNoPromoCode, toggleNoPromoCode, setPgReferral, togglePgReferral } = devPanelSlice.actions;
 export default devPanelSlice.reducer;
