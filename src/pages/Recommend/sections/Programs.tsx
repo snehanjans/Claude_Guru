@@ -13,6 +13,7 @@ import { alpha } from "@mui/material/styles";
 import SchoolOutlinedIcon from "@mui/icons-material/SchoolOutlined";
 import { demoAmbassadorPrograms } from "@/data/demo-ambassador";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { OtherCoursesYouTeach } from "@/components/recommend/OtherCoursesYouTeach";
 import type { AmbassadorProgram } from "@/lib/types";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
@@ -187,6 +188,9 @@ export function ProgramsSection() {
           ))}
         </Grid>
       )}
+
+      {/* Referral links for the other programs this guru mentors. */}
+      {!loading && <OtherCoursesYouTeach />}
     </Box>
   );
 }

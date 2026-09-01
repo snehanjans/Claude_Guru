@@ -33,6 +33,23 @@ export const ANALYTICS_EVENTS = {
   POLISH_SAVED: "recommend.polish_with_ai.saved",
   POLISH_DISCARDED: "recommend.polish_with_ai.discarded",
 
+  /* ── "Recommend another course" ──────────────────────────────────────────
+     A submit carries either the chosen course or, when nothing matched, the raw
+     query. Those unmatched queries are the signal for what to add next.      */
+  OTHER_COURSE_OPENED: "recommend.other_course.opened",
+  OTHER_COURSE_SUBMITTED: "recommend.other_course.submitted",
+  OTHER_COURSE_FAILED: "recommend.other_course.failed",
+
+  /* ── "Other courses you teach" carousel ────────────────────────────────── */
+  TEACH_SECTION_EXPANDED: "recommend.other_courses_you_teach.expanded",
+  TEACH_CAROUSEL_SCROLLED: "recommend.other_courses_you_teach.scrolled",
+
+  /* ── Catalogue course pages ──────────────────────────────────────────────
+     A course card opens its page, and the copy happens there. `from` on the
+     open event says which surface sent them — carousel or catalogue.        */
+  COURSE_OPENED: "recommend.course.opened",
+  COURSE_LINK_COPIED: "recommend.course.link_copied",
+
   /* ── Home page video nudge ───────────────────────────────────────────────
      The point of the video set is to find out whether watching it makes a guru
      refer, so the funnel has to be complete: the card appearing, both ways out
