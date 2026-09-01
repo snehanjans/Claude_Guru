@@ -55,12 +55,26 @@ function HowItWorksSteps() {
       sx={{
         display: "grid",
         gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
-        gap: { xs: 1.75, sm: 0 },
+        gap: { xs: 1.25, sm: 0 },
       }}
     >
       {HOW_IT_WORKS.map((s, i) => (
-        <Box key={s.step} sx={{ minWidth: 0, pr: { sm: i === HOW_IT_WORKS.length - 1 ? 0 : 1.5 } }}>
-          <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
+        <Box
+          key={s.step}
+          sx={{
+            minWidth: 0,
+            pr: { sm: i === HOW_IT_WORKS.length - 1 ? 0 : 1.5 },
+            /* Stacked icon-over-text runs to 267px on a phone — most of the
+               fold for three lines of copy. Laying each step out as a row
+               instead puts the icon beside its label and cuts that to ~140px,
+               with nothing dropped. From `sm` up the column layout returns,
+               because that is what the connector line runs along. */
+            display: { xs: "flex", sm: "block" },
+            alignItems: { xs: "center" },
+            gap: { xs: 1.5 },
+          }}
+        >
+          <Stack direction="row" alignItems="center" sx={{ mb: { xs: 0, sm: 1 } }}>
             <Box
               sx={{
                 flexShrink: 0,
@@ -93,8 +107,22 @@ function HowItWorksSteps() {
               />
             )}
           </Stack>
-          <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>{s.title}</Typography>
-          <Typography sx={{ fontSize: 12.5, color: "text.secondary", lineHeight: 1.4 }}>{s.sub}</Typography>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>{s.title}</Typography>
+            <Typography
+              sx={{
+                fontSize: 12.5,
+                color: "text.secondary",
+                lineHeight: 1.4,
+                /* Step 3's subtitle is one character too wide for a phone and
+                   orphans "it" onto its own line. Balancing splits it evenly
+                   instead; a no-op on the two that already fit. */
+                textWrap: "balance",
+              }}
+            >
+              {s.sub}
+            </Typography>
+          </Box>
         </Box>
       ))}
     </Box>
@@ -271,7 +299,12 @@ export default function RecommendPage() {
             consultant helps them decide. That's up to $160 or ₹8,000 per enrolment.
           </Typography>
 
-          {/* how it works — always 3-across (stacks on the smallest screens) */}
+          {/* How it works. Hidden on phones: it restates the paragraph above
+              in three tiles, and on a 390px screen those tiles were the
+              difference between the hero fitting the fold and not. The
+              explanation still reaches every reader through the copy above
+              and the FAQ tab. From `sm` up there is room, so it stays. */}
+          <Box sx={{ display: { xs: "none", sm: "block" } }}>
           {hasAnyReferral ? (
             <Box
               sx={{
@@ -295,6 +328,7 @@ export default function RecommendPage() {
           ) : (
             <HowItWorksSteps />
           )}
+          </Box>
             </Box>
           </Box>
 
@@ -307,13 +341,21 @@ export default function RecommendPage() {
             alignItems={{ xs: "stretch", sm: "center" }}
             justifyContent="space-between"
             sx={{
-              mt: { xs: 2.5, md: 3 },
-              pt: { xs: 2, md: 2.5 },
+              mt: { xs: 2, md: 3 },
+              pt: { xs: 1.75, md: 2.5 },
               borderTop: "1px solid",
               borderColor: "divider",
             }}
           >
-            <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
+            {/* The pitch here is chrome on a phone; the button is not. Hiding
+                the icon and the two lines of copy keeps the only way to book a
+                call while giving the hero back ~90px. */}
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1.5}
+              sx={{ minWidth: 0, display: { xs: "none", sm: "flex" } }}
+            >
               {/* Same 36px chip as the three steps above, so the footer reads as
                   part of the same banner rather than a bolted-on strip. */}
               <Box
