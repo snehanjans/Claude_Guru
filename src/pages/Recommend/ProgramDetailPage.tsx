@@ -1197,7 +1197,9 @@ export default function ProgramDetailPage() {
           alignItems: "stretch",
         }}
       >
-        <Box sx={{ minWidth: 0, alignSelf: "center" }}>
+        {/* Top-aligned, not centred: with a two-line title the badge would
+            otherwise drift below the video's top edge. */}
+        <Box sx={{ minWidth: 0, alignSelf: "start" }}>
       {/* header */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
