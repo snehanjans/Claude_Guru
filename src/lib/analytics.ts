@@ -72,4 +72,9 @@ export const ANALYTICS_EVENTS = {
      zero-referral targeting gets checked against the data.                  */
   HERO_VARIANT_SHOWN: "recommend.hero.variant_shown",
   HERO_VIDEO_CLICKED: "recommend.hero_video.clicked",
+
+  /* ── Program page intro video ────────────────────────────────────────────
+     Tagged with the program, since each page plays its own clip — that's what
+     makes per-program engagement comparable.                                */
+  PROGRAM_VIDEO_OPENED: "recommend.program_video.opened",
 } as const;

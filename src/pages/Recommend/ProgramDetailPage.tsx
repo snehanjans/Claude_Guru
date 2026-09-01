@@ -71,6 +71,10 @@ import { pushToast } from "@/store/slices/toastsSlice";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { MessageEditDialog } from "@/components/recommend/MessageEditDialog";
 import { CollateralMessagePanel } from "@/components/recommend/CollateralMessagePanel";
+import { GuruVideoDialog } from "@/components/video/GuruVideoDialog";
+import { VideoThumbButton, clock } from "@/components/video/VideoThumbButton";
+import { programVideoFor } from "@/data/demo-program-videos";
+import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 import {
   EmailPreview,
   InstagramPreview,
@@ -527,6 +531,7 @@ export default function ProgramDetailPage() {
   const dispatch = useAppDispatch();
   const noPromoCode = useAppSelector((s) => s.devPanel.noPromoCode);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [videoOpen, setVideoOpen] = useState(false);
   const [tab, setTab] = useState<"overview" | "collaterals" | "faq">("overview");
   const [faqExpanded, setFaqExpanded] = useState<string | false>("0-0");
   // Which collateral is expanded in the lightbox (asset id + label + filled caption), or null.
@@ -582,6 +587,19 @@ export default function ProgramDetailPage() {
       </Box>
     );
   }
+
+  /* This program's own intro clip, and the event that says which program's
+     video was opened — that's what makes engagement comparable per program. */
+  const introVideo = programVideoFor(program.id);
+  const openIntroVideo = () => {
+    if (!introVideo) return;
+    track(ANALYTICS_EVENTS.PROGRAM_VIDEO_OPENED, {
+      programId: program.id,
+      videoId: introVideo.id,
+      placement: "program_page",
+    });
+    setVideoOpen(true);
+  };
 
   // When the guru gets no personal promo code, collateral uses the promo-free
   // caption variant (points referrals to the code on the program page).
@@ -791,7 +809,27 @@ export default function ProgramDetailPage() {
 
   return (
     <Box sx={{ maxWidth: 840, mx: "auto" }}>
-      {/* back to catalog */}
+      {/*
+        * Header banner — back link, badge and title, with this program's own
+        * intro clip beside them. Same tinted treatment as the "Recommend, and
+        * earn" banner. Everything below it (tabs and their content) sits
+        * outside this container and is untouched.
+        */}
+      <Box
+        sx={{
+          mb: 2.5,
+          p: { xs: 2.5, sm: 3 },
+          borderRadius: "20px",
+          border: "1px solid",
+          borderColor: (t) => alpha(t.palette.primary.main, 0.16),
+          bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) 220px" },
+          gap: { xs: 2.5, md: 3 },
+          alignItems: "center",
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
       <Button
         variant="text"
         startIcon={<ArrowBackRoundedIcon sx={{ fontSize: 18 }} />}
@@ -817,7 +855,6 @@ export default function ProgramDetailPage() {
         direction={{ xs: "column", sm: "row" }}
         alignItems={{ xs: "flex-start", sm: "center" }}
         spacing={2}
-        sx={{ pb: 2.5 }}
       >
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5 }}>
@@ -854,6 +891,20 @@ export default function ProgramDetailPage() {
           </Typography>
         </Box>
       </Stack>
+        </Box>
+
+        {/* This program's intro. Absent for a program with no clip recorded —
+            the banner keeps its shape and simply has one column. */}
+        {introVideo && (
+          <VideoThumbButton
+            poster={introVideo.poster}
+            durationSec={introVideo.durationSec}
+            onClick={openIntroVideo}
+            ariaLabel={`Play video: ${introVideo.title}. ${clock(introVideo.durationSec)}. Opens a player.`}
+            sx={{ aspectRatio: "16 / 10", justifySelf: { md: "end" }, width: "100%" }}
+          />
+        )}
+      </Box>
 
       {/* section tabs */}
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
@@ -1488,6 +1539,20 @@ export default function ProgramDetailPage() {
           </Box>
         )}
       </Box>
+
+      {/* This program's intro, in the shared player. One clip, so it comes up
+          without the prev/next controls, and without the "Recommend now"
+          footer — the guru is already on the program they'd be recommending. */}
+      {introVideo && (
+        <GuruVideoDialog
+          open={videoOpen}
+          placement="program_page"
+          videos={[introVideo]}
+          showNudge={false}
+          onClose={() => setVideoOpen(false)}
+          onWatched={() => undefined}
+        />
+      )}
 
       {/* One "Edit message" modal serves all four channels — which one it edits
           is whatever `editingAssetId` points at. */}

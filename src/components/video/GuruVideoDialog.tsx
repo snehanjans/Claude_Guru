@@ -11,7 +11,7 @@ import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
-import { guruVideos } from "@/data/demo-guru-videos";
+import { guruVideos, type GuruVideo } from "@/data/demo-guru-videos";
 import { markVideoWatched } from "@/lib/videoNudge";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
@@ -20,11 +20,22 @@ const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 export interface GuruVideoDialogProps {
   open: boolean;
   /**
+   * Clips to step through. Defaults to the shared referral set; the program
+   * page passes that program's own intro, which is a set of one.
+   */
+  videos?: GuruVideo[];
+  /**
+   * The "Recommend now" footer. On by default; off where the guru is already
+   * looking at the thing being recommended, and sending them to Recommend
+   * would be a step backwards.
+   */
+  showNudge?: boolean;
+  /**
    * Where the guru opened it from. Rides on every per-video event, so watch and
    * completion rates can be compared between the Home card and the Recommend
    * hero rather than pooled.
    */
-  placement: "home_floating_card" | "recommend_hero";
+  placement: "home_floating_card" | "recommend_hero" | "program_page";
   /** Clip to open on — the card previews the first one, so it starts there. */
   initialIndex?: number;
   onClose: () => void;
@@ -50,6 +61,8 @@ export interface GuruVideoDialogProps {
 export function GuruVideoDialog({
   open,
   placement,
+  videos = guruVideos,
+  showNudge = true,
   initialIndex = 0,
   onClose,
   onWatched,
@@ -62,8 +75,8 @@ export function GuruVideoDialog({
      starts. */
   const startedRef = useRef<Set<string>>(new Set());
 
-  const video = guruVideos[index];
-  const total = guruVideos.length;
+  const video = videos[index];
+  const total = videos.length;
 
   useEffect(() => {
     if (!open) return;
@@ -78,13 +91,13 @@ export function GuruVideoDialog({
       track(ANALYTICS_EVENTS.VIDEO_NAVIGATED, {
         placement,
         control: how,
-        from: guruVideos[index].id,
-        to: guruVideos[clamped].id,
+        from: videos[index].id,
+        to: videos[clamped].id,
         position: clamped + 1,
       });
       setIndex(clamped);
     },
-    [index, total, placement],
+    [index, total, placement, videos],
   );
 
   const handlePlay = () => {
@@ -162,21 +175,25 @@ export function GuruVideoDialog({
               {video.blurb}
             </Typography>
           </Box>
-          <Typography
-            sx={{
-              flexShrink: 0,
-              mt: 0.25,
-              fontSize: 12.5,
-              fontWeight: 700,
-              color: "text.secondary",
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            {index + 1} of {total}
-          </Typography>
+          {total > 1 && (
+            <Typography
+              sx={{
+                flexShrink: 0,
+                mt: 0.25,
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: "text.secondary",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {index + 1} of {total}
+            </Typography>
+          )}
         </Stack>
 
-        {/* navigation — arrows, and dots that say how much is left */}
+        {/* navigation — arrows, and dots that say how much is left. A set of
+            one (a program's own intro) has nothing to step through. */}
+        {total > 1 && (
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1.5 }}>
           <IconButton
             onClick={() => go(index - 1, "previous")}
@@ -189,7 +206,7 @@ export function GuruVideoDialog({
           </IconButton>
 
           <Stack direction="row" spacing={0.75} alignItems="center" aria-hidden="true">
-            {guruVideos.map((v, i) => (
+            {videos.map((v, i) => (
               <Box
                 key={v.id}
                 component="button"
@@ -221,8 +238,10 @@ export function GuruVideoDialog({
             <ChevronRightRoundedIcon />
           </IconButton>
         </Stack>
+        )}
 
         {/* the nudge — modal only, never on the floating card */}
+        {showNudge && (
         <Box
           sx={{
             mt: 2,
@@ -261,6 +280,7 @@ export function GuruVideoDialog({
             </Button>
           </Stack>
         </Box>
+        )}
       </Box>
     </Dialog>
   );
