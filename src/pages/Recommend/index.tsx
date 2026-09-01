@@ -352,9 +352,16 @@ export default function RecommendPage() {
               pt: { xs: 0, md: 2.5 },
               /* The rule separates the footer from the three tiles above it.
                  With those hidden on phones it has nothing to divide, and it
-                 reads as a seam across an otherwise continuous card. */
-              borderTop: { xs: "none", sm: "1px solid" },
-              borderColor: "divider",
+                 reads as a seam across an otherwise continuous card.
+
+                 Longhands, not the `borderTop` shorthand: made responsive, the
+                 shorthand lands inside a media query, which outranks the
+                 unmediated `borderColor` regardless of source order — and a
+                 shorthand with no colour resets it to currentColor, painting
+                 the rule in the near-black text colour. */
+              borderTopWidth: { xs: 0, sm: "1px" },
+              borderTopStyle: "solid",
+              borderTopColor: "divider",
             }}
           >
             {/* The pitch here is chrome on a phone; the button is not. Hiding
