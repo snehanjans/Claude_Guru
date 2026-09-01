@@ -1,4 +1,4 @@
-import { useMemo, type ComponentType } from "react";
+import { useEffect, useMemo, type ComponentType } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
@@ -11,14 +11,89 @@ import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalance
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import TrendingUpOutlinedIcon from "@mui/icons-material/TrendingUpOutlined";
 import HighlightOffOutlinedIcon from "@mui/icons-material/HighlightOffOutlined";
+import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined";
+import HowToRegOutlinedIcon from "@mui/icons-material/HowToRegOutlined";
+import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import { fmtMoney } from "@/lib/helpers";
 import { GURU_CURRENCY, toGuruCurrency } from "@/data/demo-ambassador";
 import { useRecommend, type RecommendTab } from "./RecommendContext";
 import { ProgramsSection } from "./sections/Programs";
 import { MyReferralsSection } from "./sections/MyReferrals";
 import { FaqSection } from "./sections/Faq";
+import { HeroVideoPanel } from "@/components/recommend/HeroVideoPanel";
+import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
+
+/* How a referral works — the same three steps in both heroes. */
+const HOW_IT_WORKS = [
+  { step: "1", title: "Share a program", sub: "Share your personalised link", icon: IosShareOutlinedIcon },
+  { step: "2", title: "They enroll", sub: "Your learner joins a cohort", icon: HowToRegOutlinedIcon },
+  { step: "3", title: "You earn", sub: "20% via your link, 10% if an advisor closes it", icon: PaymentsOutlinedIcon },
+];
+
+/**
+ * The three steps as a connected row of icon tiles.
+ *
+ * All three carry the same weight: this explains how a referral works, it isn't
+ * a progress tracker, so nothing is dimmed as "not reached yet". The connector
+ * runs from each tile to the edge of its column, which is where the next tile
+ * begins — no absolute positioning, so it survives the columns being resized.
+ *
+ * Used in the zero-referral hero only. The hero a guru with referrals sees is
+ * left exactly as it was.
+ */
+function HowItWorksSteps() {
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
+        gap: { xs: 1.75, sm: 0 },
+      }}
+    >
+      {HOW_IT_WORKS.map((s, i) => (
+        <Box key={s.step} sx={{ minWidth: 0, pr: { sm: i === HOW_IT_WORKS.length - 1 ? 0 : 1.5 } }}>
+          <Stack direction="row" alignItems="center" sx={{ mb: 1 }}>
+            <Box
+              sx={{
+                flexShrink: 0,
+                width: 36,
+                height: 36,
+                borderRadius: "10px",
+                display: "grid",
+                placeItems: "center",
+                color: "text.primary",
+                bgcolor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <s.icon sx={{ fontSize: 18 }} />
+            </Box>
+            {/* Runs to the next tile. The negative margin cancels the column's
+                gutter, which is there to keep the labels apart — without it the
+                line stops a gutter short and the row reads as disconnected. */}
+            {i < HOW_IT_WORKS.length - 1 && (
+              <Box
+                aria-hidden
+                sx={{
+                  display: { xs: "none", sm: "block" },
+                  flex: 1,
+                  height: "1px",
+                  bgcolor: "divider",
+                  mr: { sm: -1.5 },
+                }}
+              />
+            )}
+          </Stack>
+          <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>{s.title}</Typography>
+          <Typography sx={{ fontSize: 12.5, color: "text.secondary", lineHeight: 1.4 }}>{s.sub}</Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
 
 // Section heading shown under the tabs for the active view.
 const TAB_META: Record<RecommendTab, { title: string; subtitle: string }> = {
@@ -63,6 +138,26 @@ export default function RecommendPage() {
   // card instead of a dead "₹0 / 0 / 0" hero. The first referral flips this off.
   const noActivity = enrollments === 0 && pendingCount === 0;
 
+  /*
+   * Whether the hero carries the video panel.
+   *
+   * Every referral counts, whatever became of it — pipeline, enrolled, or
+   * rejected — so this is the referral count and not `noActivity`, which
+   * ignores the rejected ones. Derived on every render rather than stored as a
+   * "new guru" flag: a guru whose only referral disappears sees the video
+   * again, and one who makes their first stops seeing it from then on.
+   */
+  const hasAnyReferral = referrals.length > 0;
+
+  /* Which hero this guru saw, with the count that decided it — the only way to
+     check the targeting against the data afterwards. */
+  useEffect(() => {
+    track(ANALYTICS_EVENTS.HERO_VARIANT_SHOWN, {
+      variant: hasAnyReferral ? "text_only" : "video",
+      referrals: referrals.length,
+    });
+  }, [hasAnyReferral, referrals.length]);
+
   const tabs: { label: string; value: RecommendTab }[] = [
     { label: "Programs", value: "programs" },
     { label: "My referrals", value: "referrals" },
@@ -72,12 +167,16 @@ export default function RecommendPage() {
   return (
     <>
       {/* ── Hero — membership KPI cards ─────────────────────────────── */}
-      <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.75 }}>
-        <WorkspacePremiumOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />
-        <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: "primary.main" }}>
-          GREAT LEARNING AMBASSADORS
-        </Typography>
-      </Stack>
+      {/* The zero-referral hero carries this inside itself, above the heading,
+          so it isn't said twice. */}
+      {hasAnyReferral && (
+        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.75 }}>
+          <WorkspacePremiumOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />
+          <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: "primary.main" }}>
+            GREAT LEARNING AMBASSADORS
+          </Typography>
+        </Stack>
+      )}
 
       {/* Getting-started card is always shown; when there's activity it narrows
           into the left column and the KPI stats sit beside it on the right. */}
@@ -116,39 +215,81 @@ export default function RecommendPage() {
               pointerEvents: "none",
             }}
           />
+          {/*
+            * Zero referrals: video panel left, the copy below unchanged on the
+            * right. One or more: no grid and no panel, so the card renders
+            * exactly as it always has.
+            */}
+          <Box
+            sx={
+              hasAnyReferral
+                ? undefined
+                : {
+                    display: "grid",
+                    /* Just under half the banner, so the video reads as a panel
+                       rather than a thumbnail beside the copy. */
+                    gridTemplateColumns: { xs: "1fr", md: "minmax(0, 44%) minmax(0, 1fr)" },
+                    gap: { xs: 2, md: 3 },
+                    // Stretch, so the panel's height is the copy's height.
+                    alignItems: "stretch",
+                  }
+            }
+          >
+            {!hasAnyReferral && <HeroVideoPanel />}
+            <Box sx={{ minWidth: 0 }}>
+          {!hasAnyReferral && (
+            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }}>
+              <WorkspacePremiumOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />
+              <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: "primary.main" }}>
+                GREAT LEARNING AMBASSADORS
+              </Typography>
+            </Stack>
+          )}
           <Typography sx={{ fontSize: { xs: 20, sm: 22 }, fontWeight: 800, letterSpacing: "-0.02em" }}>
             Recommend, and earn on every enrollment
           </Typography>
-          <Typography sx={{ mt: 0.75, mb: 2.5, fontSize: 14, color: "text.secondary", maxWidth: 600, lineHeight: 1.55 }}>
+          {/* 32px above the connected steps, which need more room than the old
+              numbered row did; the hero for a guru with referrals keeps its
+              original 20px. */}
+          <Typography
+            sx={{
+              mt: 0.75,
+              mb: hasAnyReferral ? 2.5 : 4,
+              fontSize: 14,
+              color: "text.secondary",
+              maxWidth: 600,
+              lineHeight: 1.55,
+            }}
+          >
             Earn 20% when your referral enrols through your link, or 10% if they book a call and a GL learning
             consultant helps them decide. That's up to $160 or ₹8,000 per enrolment.
           </Typography>
 
           {/* how it works — always 3-across (stacks on the smallest screens) */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
-              gap: { xs: 1.75, sm: 2 },
-            }}
-          >
-            {(
-              [
-                { step: "1", title: "Share a program", sub: "Share your personalised link" },
-                { step: "2", title: "They enroll", sub: "Your learner joins a cohort" },
-                { step: "3", title: "You earn", sub: "20% via your link, 10% if an advisor closes it" },
-              ] as { step: string; title: string; sub: string }[]
-            ).map((s) => (
-              <Box key={s.step} sx={{ minWidth: 0 }}>
-                <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>
-                  <Box component="span" sx={{ color: "primary.main", mr: 0.5, ...TABULAR }}>
-                    {s.step}
-                  </Box>
-                  {s.title}
-                </Typography>
-                <Typography sx={{ fontSize: 12.5, color: "text.secondary", lineHeight: 1.4 }}>{s.sub}</Typography>
-              </Box>
-            ))}
+          {hasAnyReferral ? (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+                gap: { xs: 1.75, sm: 2 },
+              }}
+            >
+              {HOW_IT_WORKS.map((s) => (
+                <Box key={s.step} sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}>
+                    <Box component="span" sx={{ color: "primary.main", mr: 0.5, ...TABULAR }}>
+                      {s.step}
+                    </Box>
+                    {s.title}
+                  </Typography>
+                  <Typography sx={{ fontSize: 12.5, color: "text.secondary", lineHeight: 1.4 }}>{s.sub}</Typography>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <HowItWorksSteps />
+          )}
+            </Box>
           </Box>
         </Box>
 

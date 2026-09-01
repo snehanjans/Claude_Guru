@@ -32,4 +32,32 @@ export const ANALYTICS_EVENTS = {
   /** Terminal outcome for a session that used polish at least once. */
   POLISH_SAVED: "recommend.polish_with_ai.saved",
   POLISH_DISCARDED: "recommend.polish_with_ai.discarded",
+
+  /* ── Home page video nudge ───────────────────────────────────────────────
+     The point of the video set is to find out whether watching it makes a guru
+     refer, so the funnel has to be complete: the card appearing, both ways out
+     of it, per-clip starts and completions, and the CTA. Starts without
+     completions say a clip is too long; completions without a
+     RECOMMEND_CLICKED say the videos aren't converting.                     */
+  VIDEO_NUDGE_SHOWN: "home.video_nudge.shown",
+  VIDEO_NUDGE_DISMISSED: "home.video_nudge.dismissed",
+  VIDEO_NUDGE_OPENED: "home.video_nudge.opened",
+  VIDEO_NUDGE_MUTE_TOGGLED: "home.video_nudge.mute_toggled",
+  VIDEO_STARTED: "home.video_nudge.video_started",
+  VIDEO_COMPLETED: "home.video_nudge.video_completed",
+  VIDEO_NAVIGATED: "home.video_nudge.video_navigated",
+  VIDEO_NUDGE_RECOMMEND_CLICKED: "home.video_nudge.recommend_clicked",
+
+  /* ── Recommend hero video ────────────────────────────────────────────────
+     Its own click event, not the floating card's, so the two placements can be
+     compared rather than pooled. HERO_VARIANT_SHOWN records which hero each
+     guru got and their referral count with it, which is how the
+     zero-referral targeting gets checked against the data.                  */
+  HERO_VARIANT_SHOWN: "recommend.hero.variant_shown",
+  HERO_VIDEO_CLICKED: "recommend.hero_video.clicked",
+
+  /* ── Program page intro video ────────────────────────────────────────────
+     Tagged with the program, since each page plays its own clip — that's what
+     makes per-program engagement comparable.                                */
+  PROGRAM_VIDEO_OPENED: "recommend.program_video.opened",
 } as const;

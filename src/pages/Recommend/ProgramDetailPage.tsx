@@ -76,9 +76,33 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { MessageEditDialog } from "@/components/recommend/MessageEditDialog";
+import { GuruVideoDialog } from "@/components/video/GuruVideoDialog";
+import { VideoThumbButton, clock } from "@/components/video/VideoThumbButton";
+import { programVideosFor } from "@/data/demo-program-videos";
+import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { saveCollateralEdit, collateralEditKey } from "@/store/slices/collateralEditsSlice";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+
+/**
+ * The program title with a break after the colon.
+ *
+ * One heading, one style — the name and what it does just start on their own
+ * lines, so the wrap lands in the same place on every program instead of
+ * wherever the column happens to run out. Titles without a colon (the
+ * university programs) are returned untouched.
+ */
+function titleWithBreak(title: string): ReactNode {
+  const at = title.indexOf(":");
+  if (at === -1) return title;
+  return (
+    <>
+      {title.slice(0, at + 1)}
+      <br />
+      {title.slice(at + 1).trim()}
+    </>
+  );
+}
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 
 /* Per-program share/meta image (og:image) shown in link previews. Drop the files
@@ -559,6 +583,7 @@ export default function ProgramDetailPage() {
   const dispatch = useAppDispatch();
   const noPromoCode = useAppSelector((s) => s.devPanel.noPromoCode);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [videoOpen, setVideoOpen] = useState(false);
   const [tab, setTab] = useState<"overview" | "collaterals" | "faq">("overview");
   const [faqExpanded, setFaqExpanded] = useState<string | false>("0-0");
   // Which collateral is expanded in the lightbox (asset id + label + filled caption), or null.
@@ -614,6 +639,23 @@ export default function ProgramDetailPage() {
       </Box>
     );
   }
+
+  /* This program's own clips, and the event that says which program's videos
+     were opened — that's what makes engagement comparable per program. The
+     thumbnail shows the first and the player carries the rest. */
+  const programClips = programVideosFor(program.id);
+  const leadClip = programClips[0];
+  const clipsTotalSec = programClips.reduce((sum, v) => sum + v.durationSec, 0);
+  const openProgramVideos = () => {
+    if (!leadClip) return;
+    track(ANALYTICS_EVENTS.PROGRAM_VIDEO_OPENED, {
+      programId: program.id,
+      videoId: leadClip.id,
+      videos: programClips.length,
+      placement: "program_page",
+    });
+    setVideoOpen(true);
+  };
 
   // When the guru gets no personal promo code, collateral uses the promo-free
   // caption variant (points referrals to the code on the program page).
@@ -1145,7 +1187,14 @@ export default function ProgramDetailPage() {
 
   return (
     <Box sx={{ maxWidth: 840, mx: "auto" }}>
-      {/* back to catalog */}
+      {/*
+        * Header banner — back link, badge and title, with this program's own
+        * intro clip beside them. Same tinted treatment as the "Recommend, and
+        * earn" banner. Everything below it (tabs and their content) sits
+        * outside this container and is untouched.
+        */}
+      {/* Back sits above the banner, not inside it: it belongs to the page, not
+          to the program being described. */}
       <Button
         variant="text"
         startIcon={<ArrowBackRoundedIcon sx={{ fontSize: 18 }} />}
@@ -1166,12 +1215,30 @@ export default function ProgramDetailPage() {
         All programs
       </Button>
 
+      <Box
+        sx={{
+          mb: 2.5,
+          p: { xs: 2.5, sm: 3 },
+          borderRadius: "20px",
+          border: "1px solid",
+          borderColor: (t) => alpha(t.palette.primary.main, 0.16),
+          bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) 260px" },
+          gap: { xs: 2.5, md: 3 },
+          // Stretch, so the thumbnail's edges line up with the banner's content
+          // rather than floating in the middle of it.
+          alignItems: "stretch",
+        }}
+      >
+        {/* Top-aligned, not centred: with a two-line title the badge would
+            otherwise drift below the video's top edge. */}
+        <Box sx={{ minWidth: 0, alignSelf: "start" }}>
       {/* header */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
         alignItems={{ xs: "flex-start", sm: "center" }}
         spacing={2}
-        sx={{ pb: 2.5 }}
       >
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 1.5 }}>
@@ -1203,11 +1270,41 @@ export default function ProgramDetailPage() {
               }}
             />
           </Stack>
-          <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}>
-            {program.title}
+          <Typography
+            variant="h4"
+            sx={{ fontSize: 28, fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}
+          >
+            {titleWithBreak(program.title)}
           </Typography>
         </Box>
       </Stack>
+        </Box>
+
+        {/* This program's clips, behind one thumbnail — the badge counts the
+            whole set, so the guru knows there's more than the first. Absent for
+            a program with none recorded: the banner keeps its shape and simply
+            has one column. */}
+        {leadClip && (
+          <VideoThumbButton
+            poster={leadClip.poster}
+            durationSec={clipsTotalSec}
+            onClick={openProgramVideos}
+            ariaLabel={
+              programClips.length > 1
+                ? `Play videos about this program: ${programClips.length} clips, ${clock(clipsTotalSec)} in total, starting with ${leadClip.title}. Opens a player.`
+                : `Play video: ${leadClip.title}. ${clock(clipsTotalSec)}. Opens a player.`
+            }
+            sx={{
+              /* Its own 16:10 when stacked; in the two-column layout the
+                 banner's height wins, so top and bottom align with the text. */
+              aspectRatio: { xs: "16 / 10", md: "auto" },
+              height: { md: "100%" },
+              minHeight: { md: 150 },
+              width: "100%",
+            }}
+          />
+        )}
+      </Box>
 
       {/* section tabs */}
       <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
@@ -2005,6 +2102,21 @@ export default function ProgramDetailPage() {
           </Box>
         )}
       </Box>
+
+      {/* This program's clips, in the shared player: it steps through them with
+          the same prev/next and counter the referral set uses, and drops both
+          if a program only has one. No "Recommend now" footer — the guru is
+          already on the program they'd be recommending. */}
+      {leadClip && (
+        <GuruVideoDialog
+          open={videoOpen}
+          placement="program_page"
+          videos={programClips}
+          showNudge={false}
+          onClose={() => setVideoOpen(false)}
+          onWatched={() => undefined}
+        />
+      )}
 
       {/* One "Edit message" modal serves all four channels — which one it edits
           is whatever `editingAssetId` points at. */}
