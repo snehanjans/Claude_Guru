@@ -21,6 +21,14 @@ export interface VideoThumbButtonProps {
   onClick: () => void;
   /** Play badge diameter — the hero's panel is larger than the banner's. */
   playSize?: number;
+  /** Wording on the pill. */
+  playLabel?: string;
+  /**
+   * Bottom-left badge, mirroring the duration at bottom right — "5 short
+   * videos" and the like. Omitted when the thumbnail stands for a single clip
+   * and there is no count worth stating.
+   */
+  countLabel?: string;
   sx?: SxProps<Theme>;
 }
 
@@ -40,6 +48,8 @@ export function VideoThumbButton({
   ariaLabel,
   onClick,
   playSize = 44,
+  playLabel = "Watch now",
+  countLabel,
   sx,
 }: VideoThumbButtonProps) {
   return (
@@ -98,21 +108,50 @@ export function VideoThumbButton({
             )} 100%)`,
         }}
       >
+        {/* A pill rather than a bare disc: the icon alone says "video", the
+            words say what pressing it does. playSize still sets the scale, so
+            the hero's panel stays larger than the banner's. */}
         <Box
           sx={{
-            width: playSize,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.75,
             height: playSize,
-            borderRadius: "50%",
-            display: "grid",
-            placeItems: "center",
+            px: 2,
+            borderRadius: 999,
             color: (t) => t.palette.black.main,
             bgcolor: (t) => alpha(t.palette.white.main, 0.94),
             boxShadow: 3,
+            fontSize: Math.max(13, Math.round(playSize * 0.28)),
+            fontWeight: 700,
+            lineHeight: 1,
+            whiteSpace: "nowrap",
           }}
         >
-          <PlayArrowRoundedIcon sx={{ fontSize: Math.round(playSize * 0.58) }} />
+          <PlayArrowRoundedIcon sx={{ fontSize: Math.round(playSize * 0.46) }} />
+          {playLabel}
         </Box>
       </Box>
+
+      {countLabel && (
+        <Typography
+          aria-hidden
+          sx={{
+            position: "absolute",
+            left: 8,
+            bottom: 8,
+            px: 0.75,
+            py: 0.25,
+            borderRadius: "6px",
+            fontSize: 11,
+            fontWeight: 700,
+            color: (t) => t.palette.white.main,
+            bgcolor: (t) => alpha(t.palette.black.main, 0.62),
+          }}
+        >
+          {countLabel}
+        </Typography>
+      )}
 
       <Typography
         aria-hidden

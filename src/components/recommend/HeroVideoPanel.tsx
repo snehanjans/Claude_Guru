@@ -34,6 +34,7 @@ export function HeroVideoPanel() {
       <VideoThumbButton
         poster={nudgePreviewVideo.poster}
         durationSec={total}
+        countLabel={`${guruVideos.length} short videos`}
         playSize={52}
         onClick={handleOpen}
         ariaLabel={`Play video: ${nudgePreviewVideo.title}. Opens a player with ${guruVideos.length} short videos, ${clock(total)} in total.`}
