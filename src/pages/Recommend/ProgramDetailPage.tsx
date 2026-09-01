@@ -77,6 +77,26 @@ import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { saveCollateralEdit, collateralEditKey } from "@/store/slices/collateralEditsSlice";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
+
+/**
+ * The program title with a break after the colon.
+ *
+ * One heading, one style — the name and what it does just start on their own
+ * lines, so the wrap lands in the same place on every program instead of
+ * wherever the column happens to run out. Titles without a colon (the
+ * university programs) are returned untouched.
+ */
+function titleWithBreak(title: string): ReactNode {
+  const at = title.indexOf(":");
+  if (at === -1) return title;
+  return (
+    <>
+      {title.slice(0, at + 1)}
+      <br />
+      {title.slice(at + 1).trim()}
+    </>
+  );
+}
 const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 
 /* Per-program share/meta image (og:image) shown in link previews. Drop the files
@@ -1244,7 +1264,7 @@ export default function ProgramDetailPage() {
             variant="h4"
             sx={{ fontSize: 28, fontWeight: 800, lineHeight: 1.2, letterSpacing: "-0.015em" }}
           >
-            {program.title}
+            {titleWithBreak(program.title)}
           </Typography>
         </Box>
       </Stack>
