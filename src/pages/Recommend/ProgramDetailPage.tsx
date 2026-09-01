@@ -72,7 +72,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { MessageEditDialog } from "@/components/recommend/MessageEditDialog";
 import { GuruVideoDialog } from "@/components/video/GuruVideoDialog";
 import { VideoThumbButton, clock } from "@/components/video/VideoThumbButton";
-import { programVideoFor } from "@/data/demo-program-videos";
+import { programVideosFor } from "@/data/demo-program-videos";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { saveCollateralEdit, collateralEditKey } from "@/store/slices/collateralEditsSlice";
 
@@ -614,14 +614,18 @@ export default function ProgramDetailPage() {
     );
   }
 
-  /* This program's own intro clip, and the event that says which program's
-     video was opened — that's what makes engagement comparable per program. */
-  const introVideo = programVideoFor(program.id);
-  const openIntroVideo = () => {
-    if (!introVideo) return;
+  /* This program's own clips, and the event that says which program's videos
+     were opened — that's what makes engagement comparable per program. The
+     thumbnail shows the first and the player carries the rest. */
+  const programClips = programVideosFor(program.id);
+  const leadClip = programClips[0];
+  const clipsTotalSec = programClips.reduce((sum, v) => sum + v.durationSec, 0);
+  const openProgramVideos = () => {
+    if (!leadClip) return;
     track(ANALYTICS_EVENTS.PROGRAM_VIDEO_OPENED, {
       programId: program.id,
-      videoId: introVideo.id,
+      videoId: leadClip.id,
+      videos: programClips.length,
       placement: "program_page",
     });
     setVideoOpen(true);
@@ -1246,14 +1250,20 @@ export default function ProgramDetailPage() {
       </Stack>
         </Box>
 
-        {/* This program's intro. Absent for a program with no clip recorded —
-            the banner keeps its shape and simply has one column. */}
-        {introVideo && (
+        {/* This program's clips, behind one thumbnail — the badge counts the
+            whole set, so the guru knows there's more than the first. Absent for
+            a program with none recorded: the banner keeps its shape and simply
+            has one column. */}
+        {leadClip && (
           <VideoThumbButton
-            poster={introVideo.poster}
-            durationSec={introVideo.durationSec}
-            onClick={openIntroVideo}
-            ariaLabel={`Play video: ${introVideo.title}. ${clock(introVideo.durationSec)}. Opens a player.`}
+            poster={leadClip.poster}
+            durationSec={clipsTotalSec}
+            onClick={openProgramVideos}
+            ariaLabel={
+              programClips.length > 1
+                ? `Play videos about this program: ${programClips.length} clips, ${clock(clipsTotalSec)} in total, starting with ${leadClip.title}. Opens a player.`
+                : `Play video: ${leadClip.title}. ${clock(clipsTotalSec)}. Opens a player.`
+            }
             sx={{
               /* Its own 16:10 when stacked; in the two-column layout the
                  banner's height wins, so top and bottom align with the text. */
@@ -2063,14 +2073,15 @@ export default function ProgramDetailPage() {
         )}
       </Box>
 
-      {/* This program's intro, in the shared player. One clip, so it comes up
-          without the prev/next controls, and without the "Recommend now"
-          footer — the guru is already on the program they'd be recommending. */}
-      {introVideo && (
+      {/* This program's clips, in the shared player: it steps through them with
+          the same prev/next and counter the referral set uses, and drops both
+          if a program only has one. No "Recommend now" footer — the guru is
+          already on the program they'd be recommending. */}
+      {leadClip && (
         <GuruVideoDialog
           open={videoOpen}
           placement="program_page"
-          videos={[introVideo]}
+          videos={programClips}
           showNudge={false}
           onClose={() => setVideoOpen(false)}
           onWatched={() => undefined}
