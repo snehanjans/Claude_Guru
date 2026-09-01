@@ -13,6 +13,7 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 import { guruVideos, type GuruVideo } from "@/data/demo-guru-videos";
 import { markVideoWatched } from "@/lib/videoNudge";
+import { loadVimeoSdk, vimeoFrameSx, type VimeoPlayer } from "@/lib/vimeo";
 import { track, ANALYTICS_EVENTS } from "@/lib/analytics";
 
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
@@ -41,56 +42,6 @@ export interface GuruVideoDialogProps {
   onClose: () => void;
   /** Fired as each clip is watched, so the card can stop autoplaying. */
   onWatched: (id: string) => void;
-}
-
-/* ── Vimeo Player SDK ────────────────────────────────────────────── */
-
-interface VimeoPlayer {
-  on: (event: string, cb: () => void) => void;
-  destroy: () => Promise<void>;
-}
-
-type VimeoPlayerCtor = new (
-  el: HTMLElement,
-  opts: {
-    id: number;
-    autoplay?: boolean;
-    responsive?: boolean;
-    dnt?: boolean;
-    title?: boolean;
-    byline?: boolean;
-    portrait?: boolean;
-    pip?: boolean;
-    transparent?: boolean;
-  },
-) => VimeoPlayer;
-
-declare global {
-  interface Window {
-    Vimeo?: { Player: VimeoPlayerCtor };
-  }
-}
-
-/**
- * Loads the Vimeo Player SDK once and resolves when it is ready.
- *
- * Shared promise rather than a script tag per clip: two clips mounting at the
- * same time would otherwise each append the script and race.
- */
-let sdkPromise: Promise<VimeoPlayerCtor> | null = null;
-
-function loadVimeoSdk(): Promise<VimeoPlayerCtor> {
-  if (window.Vimeo?.Player) return Promise.resolve(window.Vimeo.Player);
-  if (sdkPromise) return sdkPromise;
-
-  sdkPromise = new Promise<VimeoPlayerCtor>((resolve, reject) => {
-    const tag = document.createElement("script");
-    tag.src = "https://player.vimeo.com/api/player.js";
-    tag.onload = () => resolve((window.Vimeo as { Player: VimeoPlayerCtor }).Player);
-    tag.onerror = () => reject(new Error("Vimeo SDK failed to load"));
-    document.head.appendChild(tag);
-  });
-  return sdkPromise;
 }
 
 /**
@@ -160,31 +111,7 @@ function VimeoClip({
   }, [videoId]);
 
   return (
-    /*
-     * Sizing lives on this wrapper, not on the div below: the SDK owns that
-     * node and the iframe it injects carries its own width/height attributes,
-     * which overflow the dialog. Styling `& iframe` from the parent is what
-     * actually constrains it.
-     */
-    <Box
-      sx={{
-        position: "relative",
-        width: "100%",
-        aspectRatio: "16 / 9",
-        overflow: "hidden",
-        "& iframe": {
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          border: 0,
-          display: "block",
-        },
-        /* `responsive: true` wraps the iframe in a padding-top div of its own;
-           the absolute iframe above does the work, so flatten it. */
-        "& > div": { position: "static", paddingTop: "0 !important" },
-      }}
-    >
+    <Box sx={vimeoFrameSx}>
       {/* The SDK injects its iframe into this node. */}
       <div ref={hostRef} />
     </Box>

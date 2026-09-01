@@ -10,6 +10,7 @@ import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
 import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
 import { guruVideos, nudgePreviewVideo } from "@/data/demo-guru-videos";
+import { loadVimeoSdk, vimeoFrameSx, type VimeoPlayer } from "@/lib/vimeo";
 import {
   DISMISS_TTL_MS,
   dismissNudge,
@@ -49,6 +50,58 @@ const riseIn = keyframes`
  * requests. Once the whole set has been watched the video is never fetched at
  * all — a returning guru gets the still with a play badge.
  */
+/**
+ * The card's own headline. Deliberately not the clip's title: on the card this
+ * is a hook aimed at someone who may not know the scheme exists, while in the
+ * modal the same clip needs a plain label that reads as one of five.
+ */
+const NUDGE_HEADLINE = "Do you know about GL Ambassadors?";
+
+/**
+ * The muted, looping preview that plays inside the card.
+ *
+ * Vimeo's background mode is exactly this shape: it autoplays, loops, mutes and
+ * hides every piece of player chrome, so the tile reads as motion rather than
+ * as an embedded player. Pointer events are off so the click lands on the card
+ * behind it and opens the full modal, which is the only thing this is for.
+ */
+function VimeoPreview({ videoId, onFail }: { videoId: number; onFail: () => void }) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const onFailRef = useRef(onFail);
+  onFailRef.current = onFail;
+
+  useEffect(() => {
+    let player: VimeoPlayer | null = null;
+    let cancelled = false;
+
+    void loadVimeoSdk()
+      .then((Player) => {
+        if (cancelled || !hostRef.current) return;
+        player = new Player(hostRef.current, {
+          id: videoId,
+          background: true,
+          muted: true,
+          loop: true,
+          dnt: true,
+          responsive: true,
+        });
+      })
+      /* Fall back to the poster rather than leaving a dead black rectangle. */
+      .catch(() => onFailRef.current());
+
+    return () => {
+      cancelled = true;
+      void player?.destroy();
+    };
+  }, [videoId]);
+
+  return (
+    <Box sx={{ ...vimeoFrameSx, pointerEvents: "none" }}>
+      <div ref={hostRef} />
+    </Box>
+  );
+}
+
 export function VideoNudge() {
   // Dismissal is read once on mount: a card closed earlier this session must not
   // reappear, and one closed now must not come back until the next visit.
@@ -66,11 +119,11 @@ export function VideoNudge() {
 
   const allWatched = hasWatchedEverything(watched);
   /** Motion only for a guru who hasn't seen the whole set. */
-  /* No local file means nothing can play inline — a YouTube clip only plays in
-     the modal. Folding that in here is enough: it swaps the <video> for the
-     poster, adds the play badge to the still, and drops the mute control, since
-     all three already hang off wantsMotion. */
-  const wantsMotion = !allWatched && !videoFailed && Boolean(nudgePreviewVideo.src);
+  const wantsMotion = !allWatched && !videoFailed;
+  /* A Vimeo preview runs in background mode: always muted, no controls. The
+     mute toggle only means anything for a local file, so it hangs off that
+     rather than off wantsMotion. */
+  const canMute = wantsMotion && Boolean(nudgePreviewVideo.src);
 
   /*
    * TESTING: bring the card back when the dismissal expires, without a reload.
@@ -228,7 +281,12 @@ export function VideoNudge() {
             {/* The poster is a plain image, so something is on screen before any
                 video byte is requested. It stays under the video as its own
                 poster attribute too, covering the gap while it buffers. */}
-            {loadVideo && wantsMotion ? (
+            {loadVideo && wantsMotion && nudgePreviewVideo.vimeoId ? (
+              <VimeoPreview
+                videoId={nudgePreviewVideo.vimeoId}
+                onFail={() => setVideoFailed(true)}
+              />
+            ) : loadVideo && wantsMotion && nudgePreviewVideo.src ? (
               <Box
                 component="video"
                 ref={videoRef}
@@ -258,10 +316,10 @@ export function VideoNudge() {
               />
             )}
 
-            {/* Play badge for the still: the card no longer moves, so it has to
-                say it's a video some other way. */}
-            {!wantsMotion && (
-              <Box
+            {/* Always shown, over the preview as well as the still. The motion
+                alone reads as decoration; the badge is what says "this opens
+                something". */}
+            <Box
                 sx={{
                   position: "absolute",
                   inset: 0,
@@ -282,10 +340,9 @@ export function VideoNudge() {
                     boxShadow: 2,
                   }}
                 >
-                  <PlayArrowRoundedIcon sx={{ fontSize: 24 }} />
-                </Box>
+                <PlayArrowRoundedIcon sx={{ fontSize: 24 }} />
               </Box>
-            )}
+            </Box>
           </Box>
 
           {/* Close and mute sit outside the card's own button, so neither one
@@ -299,7 +356,7 @@ export function VideoNudge() {
             <CloseRoundedIcon sx={{ fontSize: 15 }} />
           </IconButton>
 
-          {wantsMotion && (
+          {canMute && (
             <IconButton
               onClick={toggleMute}
               aria-label={muted ? "Unmute video" : "Mute video"}
@@ -336,8 +393,18 @@ export function VideoNudge() {
             "&:hover": { bgcolor: "action.hover" },
           }}
         >
-          <Typography sx={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.35 }} noWrap>
-            {nudgePreviewVideo.title}
+          {/* Wraps rather than truncating: the headline is a question, and a
+              question cut off mid-word ("Do you know about GL Ambassa…") asks
+              nothing. The card has no fixed height, so it grows to fit. */}
+          <Typography
+            sx={{
+              fontSize: 12.5,
+              fontWeight: 700,
+              lineHeight: 1.35,
+              textWrap: "pretty",
+            }}
+          >
+            {NUDGE_HEADLINE}
           </Typography>
           <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.125 }}>
             <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
