@@ -141,7 +141,11 @@ export function ProgramsSection() {
     () =>
       demoAmbassadorPrograms
         .filter((p) => p.family === "gl")
-        .sort((a, b) => (a.audience ? 0 : 1) - (b.audience ? 0 : 1)),
+        /* The general programme leads: it is the one that fits any guru's
+           network, and the role-specific ones read as variations of it. It is
+           the only GL programme with no `audience`, which is what this sorts
+           on — the role-specific three keep their data order behind it. */
+        .sort((a, b) => (a.audience ? 1 : 0) - (b.audience ? 1 : 0)),
     [],
   );
 
