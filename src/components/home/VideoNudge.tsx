@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import Typography from "@mui/material/Typography";
 import { alpha, keyframes } from "@mui/material/styles";
 import type { Theme } from "@mui/material/styles";
@@ -117,6 +119,7 @@ export function VideoNudge() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const shownRef = useRef(false);
 
+  const isMobile = useMediaQuery((t: Theme) => t.breakpoints.down("md"));
   const allWatched = hasWatchedEverything(watched);
   /** Motion only for a guru who hasn't seen the whole set. */
   const wantsMotion = !allWatched && !videoFailed;
@@ -224,7 +227,144 @@ export function VideoNudge() {
     setWatched((prev) => (prev.includes(id) ? prev : [...prev, id]));
   }, []);
 
+  /* Shared by both layouts so they cannot drift apart. */
+  const shellSx = {
+    position: "fixed" as const,
+    zIndex: CARD_Z,
+    borderRadius: "14px",
+    overflow: "hidden",
+    bgcolor: "background.paper",
+    border: "1px solid",
+    borderColor: "divider",
+    boxShadow: 8,
+    opacity: dialogOpen ? 0 : 1,
+    pointerEvents: dialogOpen ? ("none" as const) : ("auto" as const),
+    transition: `opacity 160ms ${EASE_OUT}`,
+    animation: `${riseIn} 260ms ${EASE_OUT}`,
+    "@media (prefers-reduced-motion: reduce)": { animation: "none", transition: "none" },
+  };
+
   if (!visible) return null;
+
+  /*
+   * Mobile gets a banner rather than the card: a portrait card that tall eats
+   * the screen, and a preview playing under a thumb that is about to scroll is
+   * wasted bandwidth. So a still, a line, and the action — full width above the
+   * bottom nav, 96px so it reads as a strip and not a second surface.
+   */
+  if (isMobile) {
+    return (
+      <>
+        <Box
+          ref={cardRef}
+          sx={{
+            ...shellSx,
+            left: 12,
+            right: 12,
+            /* 16px clear of the bottom nav. The nav occupies 65px — a 64px
+               bar plus its 1px top border (MobileNav.tsx) — over the
+               home-indicator inset. Measured off the nav rather than the
+               viewport so the gap holds on devices with an inset. */
+            bottom: "calc(65px + env(safe-area-inset-bottom) + 16px)",
+            height: 96,
+            display: "flex",
+            alignItems: "stretch",
+          }}
+        >
+          {/* Poster only. Flush to the left edge, cropped rather than letterboxed
+              so the strip keeps a straight edge at this height. */}
+          <Box
+            component="img"
+            src={nudgePreviewVideo.poster}
+            alt=""
+            sx={{ width: 112, height: "100%", objectFit: "cover", flexShrink: 0, display: "block" }}
+          />
+
+          <Box
+            component="button"
+            type="button"
+            onClick={handleOpen}
+            aria-label={`Watch: ${nudgePreviewVideo.title}. ${guruVideos.length} short videos.`}
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.25,
+              px: 1.25,
+              border: 0,
+              bgcolor: "transparent",
+              textAlign: "left",
+              font: "inherit",
+              color: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                sx={{
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  lineHeight: 1.3,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {NUDGE_HEADLINE}
+              </Typography>
+              <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 0.25 }}>
+                {guruVideos.length} short videos
+                {allWatched && " · Watched"}
+              </Typography>
+            </Box>
+
+            {/* Rendered as a span: it sits inside the banner's own button, and a
+                button inside a button is invalid and unfocusable. */}
+            <Button
+              component="span"
+              variant="contained"
+              disableElevation
+              size="small"
+              sx={{
+                flexShrink: 0,
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: "999px",
+                px: 1.5,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Watch now
+            </Button>
+          </Box>
+
+          <IconButton
+            onClick={handleDismiss}
+            aria-label="Dismiss video"
+            size="small"
+            sx={{
+              position: "absolute",
+              top: 2,
+              right: 2,
+              color: "text.secondary",
+              "&:hover": { bgcolor: "action.hover" },
+            }}
+          >
+            <CloseRoundedIcon sx={{ fontSize: 15 }} />
+          </IconButton>
+        </Box>
+
+        <GuruVideoDialog
+          open={dialogOpen}
+          placement="home_floating_card"
+          onClose={handleClose}
+          onWatched={handleWatched}
+        />
+      </>
+    );
+  }
 
   return (
     <>
