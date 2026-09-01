@@ -234,7 +234,9 @@ export function VideoNudge() {
           position: "fixed",
           zIndex: CARD_Z,
           right: { xs: 16, md: 24 },
-          // Clears the mobile bottom nav; nothing else sits in this corner.
+          /* Clears the mobile bottom nav. The Dev Panel trigger now shares
+             this corner and overlaps the card's bottom-right on desktop;
+             it sits on top and stays clickable. */
           bottom: { xs: "calc(5rem + env(safe-area-inset-bottom) + 16px)", md: 24 },
           width: CARD_W,
           borderRadius: "14px",

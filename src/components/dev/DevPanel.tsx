@@ -89,11 +89,13 @@ export function DevPanel() {
           onClick={() => dispatch(setDevPanelOpen(true))}
           sx={{
             position: "fixed",
-            // Top right. On mobile that means below the app bar (56px plus the
-            // notch inset), which is fixed at the top of the viewport.
-            top: { xs: "calc(56px + env(safe-area-inset-top) + 12px)", md: 24 },
+            /* Bottom right. On mobile that means above the bottom nav (64px
+               plus the home-indicator inset). */
+            bottom: { xs: "calc(64px + env(safe-area-inset-bottom) + 12px)", md: 24 },
             right: { xs: 16, md: 24 },
-            zIndex: 1200,
+            /* Above modals, snackbars and tooltips: a dev tool you cannot reach
+               while a dialog is open is no use for debugging dialogs. */
+            zIndex: (t) => t.zIndex.tooltip + 1,
             bgcolor: "background.paper",
             color: "text.secondary",
             border: 1,
@@ -111,6 +113,11 @@ export function DevPanel() {
         anchor="right"
         open={isOpen}
         onClose={() => dispatch(setDevPanelOpen(false))}
+        /* Drawer defaults to zIndex.drawer (1200), which sits under modal
+           (1300) — so the panel vanished behind any open dialog. Lifted past
+           tooltip (1500), the top of MUI's scale, so it is reachable over
+           anything the app can put on screen. */
+        sx={{ zIndex: (t) => t.zIndex.tooltip + 1 }}
         PaperProps={{
           sx: {
             width: DRAWER_WIDTH,
