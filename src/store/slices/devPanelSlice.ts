@@ -90,7 +90,11 @@ const initialState: DevPanelState = {
   selectedRole: resolvedRole,
   selectedRoles: parseSavedRoles() ?? [resolvedRole],
   isRoleSwitching: false,
-  guruStage: "experienced",
+  /* The prototype opens as a brand-new guru: that is the story the Recommend
+     work is built around (zero referrals, so the hero shows the video panel).
+     Note this flag is shared — Dashboard and Profile also read it and will
+     show their new-user states. Dev Panel > Recommend preview switches it. */
+  guruStage: "new",
   isV1Mode: parseSavedV1Mode(),
   noPromoCode: parseSavedNoPromoCode(),
   pgReferral: parseSavedPgReferral(),
