@@ -32,57 +32,32 @@ export interface GuruVideo {
   poster: string;
   /** WebVTT captions. Absent on a YouTube clip, which carries its own. */
   captions?: string;
-  /** Published length, for the "5 clips · 25s" style summary. */
+  /** Published length, as reported by the host. Drives the duration badge. */
   durationSec: number;
 }
 
 const base = "/videos";
 
+/**
+ * The Ambassadors explainer — one clip, not a series.
+ *
+ * It began as five short clips; the five-second placeholders behind three of
+ * them were never replaced, and the two real ones have been recut into this
+ * single video. `guruVideos` stays an array because every consumer already
+ * reads it as one, and the dialog's playlist chrome hides itself at length 1
+ * — so a second clip can be appended without touching any component.
+ *
+ * `durationSec` is the length Vimeo reports for the asset (115s), not an
+ * estimate.
+ */
 export const guruVideos: GuruVideo[] = [
   {
-    /* Hosted on Vimeo rather than shipped as a file, so it can be re-cut
-       without a deploy. The id is unchanged, so watched-state carries over. */
     id: "how-it-works",
     title: "What GL Ambassadors is?",
     blurb: "How your recommendations reach the people who need them",
-    vimeoId: 1223053859,
-    poster: `${base}/gl-referrals-how-it-works-vimeo.jpg`,
-    durationSec: 92,
-  },
-  {
-    id: "your-link",
-    title: "AI native professionals for business roles",
-    blurb: "Who are these programs meant for, and how they benefit.",
-    vimeoId: 1223057201,
-    poster: `${base}/gl-referrals-your-link-vimeo.jpg`,
-    durationSec: 72,
-  },
-  {
-    id: "write-a-post",
-    title: "Writing a post that lands",
-    blurb: "What to say when you post it yourself.",
-    src: `${base}/gl-referrals-write-a-post.webm`,
-    poster: `${base}/gl-referrals-write-a-post.jpg`,
-    captions: `${base}/gl-referrals-write-a-post.vtt`,
-    durationSec: 48,
-  },
-  {
-    id: "what-you-earn",
-    title: "What you earn, and when",
-    blurb: "The bonus per enrolment and the payout timing.",
-    src: `${base}/gl-referrals-what-you-earn.webm`,
-    poster: `${base}/gl-referrals-what-you-earn.jpg`,
-    captions: `${base}/gl-referrals-what-you-earn.vtt`,
-    durationSec: 46,
-  },
-  {
-    id: "learner-questions",
-    title: "Answering learner questions",
-    blurb: "The three things learners always ask back.",
-    src: `${base}/gl-referrals-learner-questions.webm`,
-    poster: `${base}/gl-referrals-learner-questions.jpg`,
-    captions: `${base}/gl-referrals-learner-questions.vtt`,
-    durationSec: 42,
+    vimeoId: 1223332958,
+    poster: `${base}/gl-ambassadors-overview.jpg`,
+    durationSec: 115,
   },
 ];
 

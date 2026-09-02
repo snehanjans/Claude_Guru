@@ -59,6 +59,15 @@ const riseIn = keyframes`
  */
 const NUDGE_HEADLINE = "Do you know about GL Ambassadors?";
 
+/*
+ * The line under the headline used to count the set ("5 short videos"). There
+ * is one clip now, so there is nothing to count — what a guru still wants to
+ * know before tapping is how long it will take, so promise that instead.
+ * Rounded to the minute: the exact runtime belongs on the duration badge,
+ * where the reader is already looking at a clock.
+ */
+const NUDGE_META = `${Math.round(nudgePreviewVideo.durationSec / 60)} min watch`;
+
 /**
  * The muted, looping preview that plays inside the card.
  *
@@ -284,7 +293,7 @@ export function VideoNudge() {
             component="button"
             type="button"
             onClick={handleOpen}
-            aria-label={`Watch: ${nudgePreviewVideo.title}. ${guruVideos.length} short videos.`}
+            aria-label={`Watch: ${nudgePreviewVideo.title}. ${NUDGE_META}.`}
             sx={{
               flex: 1,
               minWidth: 0,
@@ -315,7 +324,7 @@ export function VideoNudge() {
                 {NUDGE_HEADLINE}
               </Typography>
               <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 0.25 }}>
-                {guruVideos.length} short videos
+                {NUDGE_META}
                 {allWatched && " · Watched"}
               </Typography>
             </Box>
@@ -406,7 +415,7 @@ export function VideoNudge() {
             component="button"
             type="button"
             onClick={handleOpen}
-            aria-label={`Watch: ${nudgePreviewVideo.title}. ${guruVideos.length} short videos.`}
+            aria-label={`Watch: ${nudgePreviewVideo.title}. ${NUDGE_META}.`}
             sx={{
               display: "block",
               width: "100%",
@@ -560,7 +569,7 @@ export function VideoNudge() {
           </Typography>
           <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.125 }}>
             <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
-              {guruVideos.length} short videos
+              {NUDGE_META}
             </Typography>
             {allWatched && (
               <Typography sx={{ fontSize: 11, color: "success.main", fontWeight: 700 }}>
