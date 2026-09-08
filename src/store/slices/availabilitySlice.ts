@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { Pattern, Block, NA, BuilderPreset, PresetCard } from "@/lib/types";
 import { demoPatterns } from "@/data/demo-availability";
+import { setGuruStage, stageHasHistory, initialGuruStage } from "./devPanelSlice";
 // API calls (save, fetch) live in src/api/ninja/availabilityApi.ts (RTK Query)
 
 interface AvailabilityState {
@@ -53,7 +54,13 @@ const initialState: AvailabilityState = {
   patterns: savedAvailability?.patterns ?? demoPatterns,
   oneOffAvail: [],
   unavailable: [],
-  hasUserConfiguredAvailability: savedAvailability?.hasConfigured ?? false,
+  /* Falls back to the dev stage rather than a flat `false`. This flag gates
+     the whole of Home and Calendar, so a stage that means "has a history"
+     has to arrive with availability already set or those pages render only
+     their "Set your availability" prompt and every stage looks identical.
+     A saved value still wins: that is a choice the user made in the app. */
+  hasUserConfiguredAvailability:
+    savedAvailability?.hasConfigured ?? stageHasHistory(initialGuruStage),
   userConfiguredPatterns: [],
   maxPerWeek: 6,
   rangeDays: 60,
@@ -201,6 +208,24 @@ const availabilitySlice = createSlice({
         window.localStorage.removeItem("guru-availability");
       }
     },
+  },
+  extraReducers: (builder) => {
+    /* Changing the dev stage is a deliberate "show me this guru" action, so it
+       is authoritative here — unlike the initial state above, it overrides a
+       saved value in both directions. Persisted alongside the stage itself so
+       the two cannot disagree after a reload. */
+    builder.addCase(setGuruStage, (state, action) => {
+      state.hasUserConfiguredAvailability = stageHasHistory(action.payload);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          "guru-availability",
+          JSON.stringify({
+            hasConfigured: state.hasUserConfiguredAvailability,
+            patterns: state.patterns,
+          }),
+        );
+      }
+    });
   },
 });
 

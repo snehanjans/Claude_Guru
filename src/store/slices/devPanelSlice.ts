@@ -80,6 +80,29 @@ const parseSavedNoPromoCode = (): boolean => {
   return window.localStorage.getItem("guru-dev-no-promo-code") === "true";
 };
 
+/**
+ * Stages that imply the guru already has a history in the product.
+ *
+ * `hasUserConfiguredAvailability` gates the entire Home and Calendar body, so
+ * without this the stage switcher looked broken: picking "Experienced" left
+ * both pages showing "Set your availability to get started" and none of the
+ * stage-dependent sections ever rendered. Availability is derived from the
+ * stage in availabilitySlice; this is the shared definition.
+ */
+export const stageHasHistory = (stage: GuruStage): boolean =>
+  stage === "early" || stage === "mid" || stage === "experienced";
+
+const parseSavedStage = (): GuruStage | null => {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem("guru-dev-stage");
+  return raw && GURU_STAGES.some((s) => s.value === raw) ? (raw as GuruStage) : null;
+};
+
+/* The prototype opens as a brand-new guru unless a stage was chosen before.
+   Exported so availabilitySlice can derive its own initial state from the
+   same value rather than re-reading localStorage. */
+export const initialGuruStage: GuruStage = parseSavedStage() ?? "new";
+
 const parseSavedPgReferral = (): boolean => {
   if (typeof window === "undefined") return false;
   return window.localStorage.getItem("guru-dev-pg-referral") === "true";
@@ -93,8 +116,10 @@ const initialState: DevPanelState = {
   /* The prototype opens as a brand-new guru: that is the story the Recommend
      work is built around (zero referrals, so the hero shows the video panel).
      Note this flag is shared — Dashboard and Profile also read it and will
-     show their new-user states. Dev Panel > Recommend preview switches it. */
-  guruStage: "new",
+     show their new-user states. Dev Panel > Recommend preview switches it.
+     Persisted, like every other dev toggle, so a chosen stage survives the
+     reload that Vite performs on every edit. */
+  guruStage: initialGuruStage,
   isV1Mode: parseSavedV1Mode(),
   noPromoCode: parseSavedNoPromoCode(),
   pgReferral: parseSavedPgReferral(),
@@ -149,6 +174,9 @@ const devPanelSlice = createSlice({
     },
     setGuruStage(state, action: PayloadAction<GuruStage>) {
       state.guruStage = action.payload;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("guru-dev-stage", action.payload);
+      }
     },
     setV1Mode(state, action: PayloadAction<boolean>) {
       state.isV1Mode = action.payload;

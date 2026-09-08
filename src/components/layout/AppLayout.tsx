@@ -75,6 +75,11 @@ export function AppLayout() {
     return (
       <Suspense>
         <OnboardingPage />
+        {/* The dev panel has to survive this branch. It is the only way back
+            out of the onboarding stage, and the stage is persisted now — so
+            without it, picking "Onboarding" would strand the prototype there
+            until someone cleared localStorage by hand. */}
+        <DevPanel />
       </Suspense>
     );
   }
