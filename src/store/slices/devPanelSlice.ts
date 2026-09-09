@@ -80,9 +80,19 @@ const parseSavedV1Mode = (): boolean => {
   return window.localStorage.getItem("guru-dev-v1-mode") === "true";
 };
 
+/*
+ * Defaults ON: no scholarship code is the behaviour the prototype presents.
+ *
+ * Note the `=== null` check rather than the `=== "true"` shorthand the other
+ * flags use. That shorthand cannot express a true default — an absent key and
+ * an explicit "false" both read as false — so it would keep this off for
+ * everyone. Distinguishing them means a fresh browser gets the new default
+ * while someone who deliberately switched it off keeps their choice.
+ */
 const parseSavedNoPromoCode = (): boolean => {
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem("guru-dev-no-promo-code") === "true";
+  if (typeof window === "undefined") return true;
+  const raw = window.localStorage.getItem("guru-dev-no-promo-code");
+  return raw === null ? true : raw === "true";
 };
 
 /**
