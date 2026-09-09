@@ -14,13 +14,16 @@ export type GuruRole =
 
 export type GuruStage = "experienced" | "mid" | "new" | "early" | "onboarding" | "empty";
 
+/* Ordered most to least data, so the list reads as a single scale. Onboarding
+   sits last because it is not a point on that scale — it replaces the whole
+   app with the first-run flow rather than varying how much data a guru has. */
 export const GURU_STAGES: { value: GuruStage; label: string; description: string }[] = [
-  { value: "onboarding", label: "Onboarding", description: "Code of Conduct acceptance, first-time setup" },
   { value: "experienced", label: "Experienced", description: "Full data, all sections populated" },
   { value: "mid", label: "Mid (6 months)", description: "6 months in, partial data, building track record" },
   { value: "early", label: "Early (2 weeks)", description: "Has availability & upcoming sessions, no completions" },
   { value: "new", label: "New (Day 0)", description: "Just onboarded, zero data everywhere" },
   { value: "empty", label: "Empty", description: "Zero data everywhere, tests all empty states" },
+  { value: "onboarding", label: "Onboarding", description: "Code of Conduct acceptance, first-time setup" },
 ];
 
 export const GURU_ROLES: GuruRole[] = [
