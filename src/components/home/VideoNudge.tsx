@@ -16,8 +16,6 @@ import { loadVimeoSdk, vimeoFrameSx, type VimeoPlayer } from "@/lib/vimeo";
 import {
   DISMISS_TTL_MS,
   dismissNudge,
-  getWatchedIds,
-  hasWatchedEverything,
   isNudgeDismissed,
   nudgeDismissRemainingMs,
 } from "@/lib/videoNudge";
@@ -118,7 +116,6 @@ export function VideoNudge() {
   // reappear, and one closed now must not come back until the next visit.
   const [visible, setVisible] = useState(() => !isNudgeDismissed());
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [watched, setWatched] = useState<string[]>(() => getWatchedIds());
   const [muted, setMuted] = useState(true);
   /** Set once the clip may be fetched — see the staging note above. */
   const [loadVideo, setLoadVideo] = useState(false);
@@ -129,9 +126,17 @@ export function VideoNudge() {
   const shownRef = useRef(false);
 
   const isMobile = useMediaQuery((t: Theme) => t.breakpoints.down("md"));
-  const allWatched = hasWatchedEverything(watched);
-  /** Motion only for a guru who hasn't seen the whole set. */
-  const wantsMotion = !allWatched && !videoFailed;
+  /*
+   * Watch history deliberately does not change this card.
+   *
+   * It used to: a finished set swapped the preview for a still and appended a
+   * "Watched" tag. Both are gone — the tag because the card's job is to pull a
+   * guru into the video, and a badge saying they need not bother works against
+   * that; the still because with the tag removed it would be an unexplained
+   * change of behaviour rather than a signal. The dialog still records watches
+   * for analytics; nothing here reads them.
+   */
+  const wantsMotion = !videoFailed;
   /* A Vimeo preview runs in background mode: always muted, no controls. The
      mute toggle only means anything for a local file, so it hangs off that
      rather than off wantsMotion. */
@@ -162,9 +167,9 @@ export function VideoNudge() {
     track(ANALYTICS_EVENTS.VIDEO_NUDGE_SHOWN, {
       videoId: nudgePreviewVideo.id,
       videos: guruVideos.length,
-      state: allWatched ? "thumbnail" : "autoplay",
+      state: "autoplay",
     });
-  }, [visible, allWatched]);
+  }, [visible]);
 
   /* Fetch the clip only when the browser has nothing better to do and the card
      is on screen. requestIdleCallback isn't in Safari, hence the timeout. */
@@ -200,7 +205,7 @@ export function VideoNudge() {
   const handleDismiss = () => {
     track(ANALYTICS_EVENTS.VIDEO_NUDGE_DISMISSED, {
       videoId: nudgePreviewVideo.id,
-      state: allWatched ? "thumbnail" : "autoplay",
+      state: "autoplay",
     });
     dismissNudge();
     setVisible(false);
@@ -227,13 +232,8 @@ export function VideoNudge() {
 
   const handleClose = useCallback(() => {
     setDialogOpen(false);
-    // Resume the loop only while there's still something unwatched.
-    const el = videoRef.current;
-    if (el && !hasWatchedEverything()) void el.play().catch(() => undefined);
-  }, []);
-
-  const handleWatched = useCallback((id: string) => {
-    setWatched((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    // Resume the loop; watch history no longer suppresses it.
+    videoRef.current?.play().catch(() => undefined);
   }, []);
 
   /* Shared by both layouts so they cannot drift apart. */
@@ -325,7 +325,6 @@ export function VideoNudge() {
               </Typography>
               <Typography sx={{ fontSize: 11, color: "text.secondary", mt: 0.25 }}>
                 {NUDGE_META}
-                {allWatched && " · Watched"}
               </Typography>
             </Box>
 
@@ -369,7 +368,8 @@ export function VideoNudge() {
           open={dialogOpen}
           placement="home_floating_card"
           onClose={handleClose}
-          onWatched={handleWatched}
+          /* The dialog records the watch itself; nothing here reacts. */
+          onWatched={() => undefined}
         />
       </>
     );
@@ -571,11 +571,6 @@ export function VideoNudge() {
             <Typography sx={{ fontSize: 11, color: "text.secondary" }}>
               {NUDGE_META}
             </Typography>
-            {allWatched && (
-              <Typography sx={{ fontSize: 11, color: "success.main", fontWeight: 700 }}>
-                · Watched
-              </Typography>
-            )}
           </Stack>
         </Box>
       </Box>
@@ -584,7 +579,8 @@ export function VideoNudge() {
         open={dialogOpen}
         placement="home_floating_card"
         onClose={handleClose}
-        onWatched={handleWatched}
+        /* The dialog records the watch itself; nothing here reacts. */
+        onWatched={() => undefined}
       />
     </>
   );
