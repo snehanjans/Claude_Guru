@@ -49,6 +49,7 @@ import {
   type RecommendStage,
 } from "@/store/slices/devPanelSlice";
 import { ROLE_TO_CATEGORY } from "@/lib/role-config";
+import { resetNudgeState } from "@/lib/videoNudge";
 
 const DRAWER_WIDTH = 320;
 
@@ -460,7 +461,7 @@ export function DevPanel() {
 
         <Divider sx={{ my: 1.5, mx: 2.5 }} />
 
-        <Box sx={{ px: 2.5, pb: 2 }}>
+        <Box sx={{ px: 2.5, pb: 2, display: "grid", gap: 1 }}>
           <Button
             variant="soft"
             size="small"
@@ -473,6 +474,24 @@ export function DevPanel() {
             sx={{ textTransform: "none", fontSize: "0.8rem" }}
           >
             Reset availability
+          </Button>
+          <Button
+            variant="soft"
+            size="small"
+            color="primary"
+            startIcon={<RestartAltOutlinedIcon sx={{ fontSize: 16 }} />}
+            fullWidth
+            onClick={() => {
+              resetNudgeState();
+              /* The nudge reads this storage once on mount and keeps the
+                 result in component state, so clearing it is only visible
+                 after a remount. Reloading is the honest way to make a dev
+                 reset take effect rather than leaving a stale "Watched". */
+              window.location.reload();
+            }}
+            sx={{ textTransform: "none", fontSize: "0.8rem" }}
+          >
+            Reset video nudge
           </Button>
         </Box>
       </Drawer>

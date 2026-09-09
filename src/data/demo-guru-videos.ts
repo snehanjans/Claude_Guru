@@ -52,7 +52,12 @@ const base = "/videos";
  */
 export const guruVideos: GuruVideo[] = [
   {
-    id: "how-it-works",
+    /* Renamed off "how-it-works" deliberately. Watched state is keyed by id
+       and persists in localStorage, so reusing the old id made anyone who had
+       finished one of the retired five-second placeholders see this new video
+       as already "Watched". The content is entirely different — a new id is
+       what makes that stale flag clear itself. */
+    id: "gl-ambassadors-overview",
     title: "What GL Ambassadors is?",
     blurb: "How your recommendations reach the people who need them",
     vimeoId: 1223332958,

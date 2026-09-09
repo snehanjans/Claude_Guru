@@ -90,6 +90,22 @@ export function markVideoWatched(id: string): void {
   }
 }
 
+/**
+ * Forget both the watched clips and the dismissal.
+ *
+ * For the dev panel: watched state is keyed by clip id in localStorage and
+ * there is no product path back to "never seen it", so demoing the nudge
+ * twice on one machine otherwise needs the browser console.
+ */
+export function resetNudgeState(): void {
+  try {
+    localStorage.removeItem(WATCHED_KEY);
+    sessionStorage.removeItem(DISMISSED_KEY);
+  } catch {
+    /* see dismissNudge */
+  }
+}
+
 /** True once every clip in the set has been watched at least once. */
 export function hasWatchedEverything(watched: string[] = readWatched()): boolean {
   const seen = new Set(watched);
