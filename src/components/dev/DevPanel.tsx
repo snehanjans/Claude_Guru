@@ -38,20 +38,24 @@ import {
   setSelectedRole,
   toggleRole,
   setGuruStage,
+  setRecommendStage,
   toggleNoPromoCode,
   togglePgReferral,
   GURU_ROLES,
   GURU_STAGES,
   type GuruRole,
   type GuruStage,
+  type RecommendStage,
 } from "@/store/slices/devPanelSlice";
 import { ROLE_TO_CATEGORY } from "@/lib/role-config";
 
 const DRAWER_WIDTH = 320;
 
 // One-tap shortcuts for previewing the Recommend dashboard's journey stages.
-// These set the shared `guruStage` that Recommend reads for its zero/early states.
-const RECOMMEND_STAGES: { value: GuruStage; label: string }[] = [
+// These set `recommendStage`, which only the Recommend page reads — picking
+// "Full" here seeds its referral table without touching the guru's history
+// elsewhere in the product. `guruStage` above is the platform-wide axis.
+const RECOMMEND_STAGES: { value: RecommendStage; label: string }[] = [
   { value: "new", label: "New" },
   { value: "empty", label: "Empty" },
   { value: "early", label: "Early" },
@@ -65,6 +69,7 @@ export function DevPanel() {
   const selectedRole = useAppSelector((s) => s.devPanel.selectedRole);
   const selectedRoles = useAppSelector((s) => s.devPanel.selectedRoles);
   const guruStage = useAppSelector((s) => s.devPanel.guruStage);
+  const recommendStage = useAppSelector((s) => s.devPanel.recommendStage);
   const noPromoCode = useAppSelector((s) => s.devPanel.noPromoCode);
   const pgReferral = useAppSelector((s) => s.devPanel.pgReferral);
 
@@ -263,11 +268,11 @@ export function DevPanel() {
             </Typography>
           </Stack>
           <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem", display: "block", mb: 1 }}>
-            Jump to a Recommend dashboard stage
+            Seeds the Recommend page only
           </Typography>
           <Stack direction="row" flexWrap="wrap" gap={0.75}>
             {RECOMMEND_STAGES.map((s) => {
-              const isActive = guruStage === s.value;
+              const isActive = recommendStage === s.value;
               return (
                 <Chip
                   key={s.value}
@@ -275,7 +280,7 @@ export function DevPanel() {
                   size="small"
                   color={isActive ? "primary" : "default"}
                   variant={isActive ? "filled" : "outlined"}
-                  onClick={() => dispatch(setGuruStage(s.value))}
+                  onClick={() => dispatch(setRecommendStage(s.value))}
                   sx={{
                     fontSize: "0.65rem",
                     height: 24,

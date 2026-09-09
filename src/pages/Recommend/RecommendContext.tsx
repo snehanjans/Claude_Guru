@@ -59,11 +59,14 @@ export interface RecommendContextValue {
 const RecommendCtx = createContext<RecommendContextValue | null>(null);
 
 export function RecommendProvider({ children }: { children: ReactNode }) {
-  const guruStage = useAppSelector((s) => s.devPanel.guruStage);
+  /* `recommendStage`, not `guruStage`: this page's seed is its own dev axis,
+     so previewing a populated referral table does not also age the guru's
+     Home, Calendar and Profile. */
+  const recommendStage = useAppSelector((s) => s.devPanel.recommendStage);
   // Base seed is derived from the lifecycle stage (reactive, so the Dev Panel
   // stage switch updates the view live). Referrals sent this session are kept
   // separate so a brand-new guru's first send still shows above the base seed.
-  const baseReferrals = useMemo(() => baseReferralsForStage(guruStage), [guruStage]);
+  const baseReferrals = useMemo(() => baseReferralsForStage(recommendStage), [recommendStage]);
   const [addedReferrals, setAddedReferrals] = useState<AmbassadorReferral[]>([]);
   const referrals = useMemo(
     () => [...addedReferrals, ...baseReferrals],

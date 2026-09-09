@@ -42,6 +42,8 @@ interface DevPanelState {
   selectedRoles: GuruRole[];
   isRoleSwitching: boolean;
   guruStage: GuruStage;
+  /** Recommend page only — see `RecommendStage`. */
+  recommendStage: RecommendStage;
   isV1Mode: boolean;
   /** Recommend: when true the guru gets no personal promo code — referrals use
       the code shown on the program page instead. */
@@ -92,6 +94,35 @@ const parseSavedNoPromoCode = (): boolean => {
 export const stageHasHistory = (stage: GuruStage): boolean =>
   stage === "early" || stage === "mid" || stage === "experienced";
 
+/**
+ * Stages the Recommend preview offers — a subset of `GuruStage`.
+ *
+ * Deliberately a separate axis from `guruStage`. The preview chips seed the
+ * referral list on one page; `guruStage` decides whether the guru has any
+ * history on the platform at all (Home, Calendar, Profile, availability).
+ * They used to be the same field, so jumping to "Full" to look at a populated
+ * referral table also rewrote the rest of the product.
+ */
+export type RecommendStage = Extract<
+  GuruStage,
+  "new" | "empty" | "early" | "experienced"
+>;
+
+const RECOMMEND_STAGE_VALUES: readonly RecommendStage[] = [
+  "new",
+  "empty",
+  "early",
+  "experienced",
+];
+
+const parseSavedRecommendStage = (): RecommendStage | null => {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem("guru-dev-recommend-stage");
+  return raw && RECOMMEND_STAGE_VALUES.includes(raw as RecommendStage)
+    ? (raw as RecommendStage)
+    : null;
+};
+
 const parseSavedStage = (): GuruStage | null => {
   if (typeof window === "undefined") return null;
   const raw = window.localStorage.getItem("guru-dev-stage");
@@ -120,6 +151,8 @@ const initialState: DevPanelState = {
      Persisted, like every other dev toggle, so a chosen stage survives the
      reload that Vite performs on every edit. */
   guruStage: initialGuruStage,
+  /* Opens on the zero-referral story the Recommend work is built around. */
+  recommendStage: parseSavedRecommendStage() ?? "new",
   isV1Mode: parseSavedV1Mode(),
   noPromoCode: parseSavedNoPromoCode(),
   pgReferral: parseSavedPgReferral(),
@@ -178,6 +211,12 @@ const devPanelSlice = createSlice({
         window.localStorage.setItem("guru-dev-stage", action.payload);
       }
     },
+    setRecommendStage(state, action: PayloadAction<RecommendStage>) {
+      state.recommendStage = action.payload;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("guru-dev-recommend-stage", action.payload);
+      }
+    },
     setV1Mode(state, action: PayloadAction<boolean>) {
       state.isV1Mode = action.payload;
       if (typeof window !== "undefined") {
@@ -217,5 +256,5 @@ const devPanelSlice = createSlice({
   },
 });
 
-export const { toggleDevPanel, setDevPanelOpen, setSelectedRole, setSelectedRoles, toggleRole, clearRoleSwitching, setGuruStage, setV1Mode, toggleV1Mode, setNoPromoCode, toggleNoPromoCode, setPgReferral, togglePgReferral } = devPanelSlice.actions;
+export const { toggleDevPanel, setDevPanelOpen, setSelectedRole, setSelectedRoles, toggleRole, clearRoleSwitching, setGuruStage, setRecommendStage, setV1Mode, toggleV1Mode, setNoPromoCode, toggleNoPromoCode, setPgReferral, togglePgReferral } = devPanelSlice.actions;
 export default devPanelSlice.reducer;
