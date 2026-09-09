@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
 import Fab from "@mui/material/Fab";
+import type { Theme } from "@mui/material/styles";
 import IconButton from "@mui/material/IconButton";
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
@@ -50,6 +51,22 @@ import {
 import { ROLE_TO_CATEGORY } from "@/lib/role-config";
 
 const DRAWER_WIDTH = 320;
+
+/*
+ * The panel sits above tooltips so it stays usable while a dialog is open —
+ * a dev tool you cannot reach over a modal is no use for debugging modals.
+ *
+ * That has a catch: anything the panel portals to the body, like a Select
+ * menu, is NOT a DOM child of the drawer and so does not inherit its stacking
+ * context. MUI gives those menus zIndex.modal (1300), which is below the
+ * drawer's own value — so the menu opens behind the panel that spawned it.
+ * Both values live here so the menu can never fall back under the panel.
+ */
+const PANEL_Z = (t: Theme) => t.zIndex.tooltip + 1;
+const PANEL_MENU_Z = (t: Theme) => t.zIndex.tooltip + 2;
+
+/** Applied to every Select inside the panel. */
+const PANEL_MENU_PROPS = { sx: { zIndex: PANEL_MENU_Z } } as const;
 
 // One-tap shortcuts for previewing the Recommend dashboard's journey stages.
 // These set `recommendStage`, which only the Recommend page reads — picking
@@ -100,7 +117,7 @@ export function DevPanel() {
             right: { xs: 16, md: 24 },
             /* Above modals, snackbars and tooltips: a dev tool you cannot reach
                while a dialog is open is no use for debugging dialogs. */
-            zIndex: (t) => t.zIndex.tooltip + 1,
+            zIndex: PANEL_Z,
             bgcolor: "background.paper",
             color: "text.secondary",
             border: 1,
@@ -122,7 +139,7 @@ export function DevPanel() {
            (1300) — so the panel vanished behind any open dialog. Lifted past
            tooltip (1500), the top of MUI's scale, so it is reachable over
            anything the app can put on screen. */
-        sx={{ zIndex: (t) => t.zIndex.tooltip + 1 }}
+        sx={{ zIndex: PANEL_Z }}
         PaperProps={{
           sx: {
             width: DRAWER_WIDTH,
@@ -175,6 +192,7 @@ export function DevPanel() {
               label="Role"
               value={selectedRole}
               onChange={(e) => dispatch(setSelectedRole(e.target.value as GuruRole))}
+              MenuProps={PANEL_MENU_PROPS}
               sx={{ fontSize: "0.85rem" }}
             >
               {GURU_ROLES.map((role) => (
@@ -245,6 +263,7 @@ export function DevPanel() {
               label="Stage"
               value={guruStage}
               onChange={(e) => dispatch(setGuruStage(e.target.value as GuruStage))}
+              MenuProps={PANEL_MENU_PROPS}
               sx={{ fontSize: "0.8rem" }}
             >
               {GURU_STAGES.map((stage) => (
