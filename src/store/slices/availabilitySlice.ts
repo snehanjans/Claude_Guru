@@ -54,13 +54,18 @@ const initialState: AvailabilityState = {
   patterns: savedAvailability?.patterns ?? demoPatterns,
   oneOffAvail: [],
   unavailable: [],
-  /* Falls back to the dev stage rather than a flat `false`. This flag gates
-     the whole of Home and Calendar, so a stage that means "has a history"
-     has to arrive with availability already set or those pages render only
-     their "Set your availability" prompt and every stage looks identical.
-     A saved value still wins: that is a choice the user made in the app. */
-  hasUserConfiguredAvailability:
-    savedAvailability?.hasConfigured ?? stageHasHistory(initialGuruStage),
+  /* The dev stage is authoritative for this flag, not the saved value.
+     It gates the whole of Home and Calendar, so if the two can disagree the
+     stage switcher looks broken — and worse, it becomes unrecoverable: when
+     the persisted stage already equals the one you want, re-picking it in the
+     dropdown fires no onChange, so nothing re-derives the flag and there is
+     no way back from the UI. Deriving it here means load-time state can never
+     contradict the stage label ("zero data everywhere" / "full data").
+
+     The cost is that configuring availability by hand at a no-history stage
+     does not survive a reload. That is the right trade for a prototype whose
+     stages are the thing being demonstrated. */
+  hasUserConfiguredAvailability: stageHasHistory(initialGuruStage),
   userConfiguredPatterns: [],
   maxPerWeek: 6,
   rangeDays: 60,
