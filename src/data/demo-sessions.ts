@@ -1,5 +1,7 @@
 import { minutes } from "@/lib/helpers";
-import type { Session, LearnerRating, SessionFeedbackSummary, RatingHistoryEntry, MonthlyEarning, DeclinedSession, Busy, CohortStart, CourseCatalogItem, CourseModuleData, PlannedEvent, QualitativeFeedback } from "@/lib/types";
+import { demoNow } from "@/lib/constants";
+import { demoPatterns } from "@/data/demo-availability";
+import type { Session, SessionType, LearnerRating, SessionFeedbackSummary, RatingHistoryEntry, MonthlyEarning, DeclinedSession, Busy, CohortStart, CourseCatalogItem, CourseModuleData, PlannedEvent, QualitativeFeedback } from "@/lib/types";
 
 /** Reusable demo group member pools */
 const GROUP_MEMBERS_A = [
@@ -20,7 +22,13 @@ const GROUP_MEMBERS_B = [
   { name: "Siddharth Das", email: "siddharth.das@example.com" },
 ];
 
-export const demoSessions: Session[] = [
+/**
+ * Hand-authored sessions — the ones carrying detail the prototype actually
+ * demonstrates: prep materials, ratings, combined batches, overdue
+ * evaluations, residency schedules. `demoSessions` below is these plus a
+ * generated backbone; import that, not this.
+ */
+const authoredSessions: Session[] = [
   // ── Completed sessions (before demoNow = 2026-02-16) ──
   {
     id: "c1",
@@ -2362,6 +2370,210 @@ export const demoSessions: Session[] = [
       agenda: "Full mock loop — ML system design and coding",
     },
   },
+];
+
+/* ── Recurring schedule filler ─────────────────────────────────────────────
+ *
+ * The authored sessions above only put 58 activities in the six months after
+ * `demoNow`, leaving 21 of those 27 weeks below a believable load — several
+ * with none at all. A guru demoing the calendar saw a mostly empty diary.
+ *
+ * This tops every week up to `WEEKLY_TARGET`. It never removes or edits an
+ * authored session and never occupies a slot one already holds, so the
+ * hand-written detail stays exactly as it was.
+ *
+ * Deterministic by construction — no `Math.random`, no `new Date()` beyond the
+ * fixed `demoNow` anchor — so the same build always produces the same diary
+ * and screenshots stay comparable.
+ *
+ * Scope: the filler emits only the three types a Course Mentor sees, because
+ * that is the prototype's default role. Career-mentor, evaluation, moderation
+ * and CV-review loads are still whatever the authored data gives them.
+ *
+ * Times come from `demoPatterns` — see `slotsFromAvailability` below. Authored
+ * sessions keep whatever times they were written with; only generated ones are
+ * held to the availability windows.
+ */
+
+const WEEKLY_TARGET = 6;
+const HORIZON_DAYS = 183;
+
+const FILLER_TYPES: SessionType[] = [
+  "Mentored Learning session",
+  "Online session",
+  "Online class",
+];
+
+/* Slots come from the guru's own availability, not a made-up timetable:
+   Mon-Fri 18:00-20:00 and Sat/Sun 10:00-12:00 as `demoPatterns` declares them.
+   Derived rather than copied, so editing availability moves the diary with it.
+
+   Preference order is "inside the window", then "butted against it" — the
+   hour before, then the hour after. A week only reaches the adjacent slots if
+   authored sessions already occupy the windows themselves, which keeps the
+   generated diary sitting where the guru actually said they were free. */
+
+const DAY_INDEX: Record<string, number> = {
+  Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4,
+  Friday: 5, Saturday: 6, Sunday: 7,
+};
+
+/** Nothing before 08:00 or after 21:00, however the windows sit. */
+const DAY_FLOOR = minutes(8);
+const DAY_CEIL = minutes(21);
+
+type FillSlot = { dow: number; start: number; end: number; rank: number };
+
+function slotsFromAvailability(): FillSlot[] {
+  const out: FillSlot[] = [];
+  for (const pattern of demoPatterns) {
+    for (const dayName of pattern.days) {
+      const dow = DAY_INDEX[dayName];
+      if (!dow) continue;
+      const span = Math.min(pattern.end - pattern.start, 120);
+
+      /* rank 0 — the window itself */
+      out.push({ dow, start: pattern.start, end: pattern.start + span, rank: 0 });
+
+      /* rank 1 — immediately before it */
+      const beforeStart = pattern.start - span;
+      if (beforeStart >= DAY_FLOOR) {
+        out.push({ dow, start: beforeStart, end: pattern.start, rank: 1 });
+      }
+
+      /* rank 2 — immediately after it */
+      const afterEnd = pattern.end + span;
+      if (afterEnd <= DAY_CEIL) {
+        out.push({ dow, start: pattern.end, end: afterEnd, rank: 2 });
+      }
+    }
+  }
+  return out.sort((a, b) => a.rank - b.rank || a.dow - b.dow || a.start - b.start);
+}
+
+const FILLER_SLOTS: FillSlot[] = slotsFromAvailability();
+
+const FILLER_COHORTS = [
+  { cohort: "AIML Online February 26 A", program: "PGP-AIML", group: "Group 03" },
+  { cohort: "PGPDS.O.MAR26.A", program: "PGP-DS", group: "Group 07" },
+  { cohort: "AIML Online Oct 25 B", program: "PGP-AIML", group: "Group 02" },
+  { cohort: "PGP-DS Online Oct 25 A", program: "PGP-DS", group: "Group 06" },
+  { cohort: "PGP-AIML-BA-UTA-Nov25-C", program: "PGP-AIML", group: "Group 08" },
+];
+
+const FILLER_TOPICS: { title: string; topic: string }[] = [
+  { title: "Statistics for Data Science", topic: "Hypothesis testing & confidence intervals" },
+  { title: "Decision Trees & Ensembles", topic: "Bagging, boosting and when each wins" },
+  { title: "Feature Engineering", topic: "Encoding, scaling and leakage" },
+  { title: "Model Evaluation", topic: "Precision, recall and threshold choice" },
+  { title: "Introduction to SQL", topic: "Joins, subqueries and window functions" },
+  { title: "Python Fundamentals", topic: "Data structures and comprehensions" },
+  { title: "Regression Deep Dive", topic: "Linear, ridge and lasso in practice" },
+  { title: "Clustering in Practice", topic: "K-means, DBSCAN and picking k" },
+  { title: "Time Series Basics", topic: "Trend, seasonality and baselines" },
+  { title: "Neural Networks Primer", topic: "Layers, activations and training loops" },
+  { title: "NLP Foundations", topic: "Tokenisation, embeddings and classification" },
+  { title: "Capstone Checkpoint", topic: "Scoping, data access and success metrics" },
+];
+
+const ymd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+function buildScheduleFiller(authored: Session[]): Session[] {
+  const anchor = new Date(demoNow);
+  anchor.setHours(0, 0, 0, 0);
+  const horizon = new Date(anchor);
+  horizon.setDate(horizon.getDate() + HORIZON_DAYS);
+  /* Run to the END of the week the horizon lands in. Stopping mid-week left
+     that last week short of the target and looking like a gap in the data. */
+  horizon.setDate(horizon.getDate() + ((7 - horizon.getDay()) % 7));
+
+  /* Slots the authored data already occupies, so the filler never lands on
+     top of a hand-written session. */
+  const taken = new Set(authored.map((s) => `${s.dateYmd}@${s.start}`));
+
+  /* Authored sessions per week, counting only what this role actually sees —
+     a week full of evaluations still needs mentoring sessions. */
+  const perWeek = new Map<string, number>();
+  const weekKey = (d: Date) => {
+    const m = new Date(d);
+    m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); // back to Monday
+    return ymd(m);
+  };
+  for (const s of authored) {
+    if (!FILLER_TYPES.includes(s.sessionType)) continue;
+    const d = new Date(`${s.dateYmd}T00:00:00`);
+    if (d < anchor || d > horizon) continue;
+    const k = weekKey(d);
+    perWeek.set(k, (perWeek.get(k) ?? 0) + 1);
+  }
+
+  const out: Session[] = [];
+  let n = 0;
+
+  const monday = new Date(anchor);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+
+  for (let cursor = new Date(monday); cursor <= horizon; cursor.setDate(cursor.getDate() + 7)) {
+    const k = weekKey(cursor);
+    let have = perWeek.get(k) ?? 0;
+
+    for (const slot of FILLER_SLOTS) {
+      if (have >= WEEKLY_TARGET) break;
+
+      const day = new Date(cursor);
+      day.setDate(day.getDate() + (slot.dow - 1));
+      /* The anchor week is half spent, and nothing past the horizon. */
+      if (day < anchor || day > horizon) continue;
+
+      const dateYmd = ymd(day);
+      if (taken.has(`${dateYmd}@${slot.start}`)) continue;
+      taken.add(`${dateYmd}@${slot.start}`);
+
+      const cohort = FILLER_COHORTS[n % FILLER_COHORTS.length];
+      const topic = FILLER_TOPICS[n % FILLER_TOPICS.length];
+      const type = FILLER_TYPES[n % FILLER_TYPES.length];
+      const hours = (slot.end - slot.start) / 60;
+
+      out.push({
+        id: `sch-${dateYmd}-${slot.start}`,
+        title: topic.title,
+        topic: topic.topic,
+        batch: cohort.cohort,
+        program: cohort.program,
+        cohort: cohort.cohort,
+        group: cohort.group,
+        groupMembers: n % 2 === 0 ? GROUP_MEMBERS_A : GROUP_MEMBERS_B,
+        dateYmd,
+        start: slot.start,
+        end: slot.end,
+        location: "Online",
+        sessionType: type,
+        contentReady: true,
+        paymentAmountInr: Math.round(hours * 3000),
+        paymentStatus: "invoice_not_raised",
+        scheduledByName: "Bhargavi CS",
+        scheduledByEmail: "bhargavi.cs@greatlearning.in",
+        audienceType: "Group",
+        timeZone: "Asia/Kolkata",
+        paymentModel: "hourly",
+        hourlyRateInr: 3000,
+        totalEarningsInr: Math.round(hours * 3000),
+      });
+
+      have += 1;
+      n += 1;
+    }
+    perWeek.set(k, have);
+  }
+
+  return out;
+}
+
+/** Authored detail first, then the generated backbone that fills the diary. */
+export const demoSessions: Session[] = [
+  ...authoredSessions,
+  ...buildScheduleFiller(authoredSessions),
 ];
 
 export const demoLearnerRatingsBySessionId: Record<string, LearnerRating[]> = {
