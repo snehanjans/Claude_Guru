@@ -580,7 +580,7 @@ export default function DashboardPage() {
                 position: "relative",
                 overflow: "hidden",
                 borderRadius: "16px",
-                p: { xs: 2.25, sm: 2.75 },
+                p: { xs: 1.5, sm: 1.75 },
                 mb: { xs: 2, md: 3 },
                 cursor: "pointer",
                 color: "common.white",
@@ -618,15 +618,15 @@ export default function DashboardPage() {
                   <Box
                     sx={{
                       flexShrink: 0,
-                      width: 46,
-                      height: 46,
-                      borderRadius: "12px",
+                      width: 38,
+                      height: 38,
+                      borderRadius: "10px",
                       display: "grid",
                       placeItems: "center",
                       bgcolor: alpha("#fff", 0.16),
                     }}
                   >
-                    <CampaignOutlinedIcon sx={{ fontSize: 24 }} />
+                    <CampaignOutlinedIcon sx={{ fontSize: 20 }} />
                   </Box>
                   <Box sx={{ minWidth: 0 }}>
                     <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.25 }}>
@@ -649,9 +649,6 @@ export default function DashboardPage() {
                     </Stack>
                     <Typography sx={{ fontSize: { xs: 16, sm: 18 }, fontWeight: 800, letterSpacing: "-0.01em", lineHeight: 1.25 }}>
                       Recommend, and earn on every enrollment
-                    </Typography>
-                    <Typography sx={{ mt: 0.25, fontSize: 13, opacity: 0.85, maxWidth: 520, lineHeight: 1.5 }}>
-                      Share Great Learning's AI-Native Professional programs with your network and earn up to 20% on every enrollment through you.
                     </Typography>
                   </Box>
                 </Stack>
