@@ -652,28 +652,30 @@ export default function DashboardPage() {
                     </Typography>
                   </Box>
                 </Stack>
-                <Button
-                  variant="contained"
-                  disableElevation
-                  endIcon={<ArrowForwardOutlinedIcon sx={{ fontSize: 18 }} />}
+                {/* Arrow only. The label is dropped from the face, not from
+                    the accessibility tree — an unlabelled button announces as
+                    just "button", so the aria-label carries what the text
+                    used to. Circular rather than the old 10px radius, since a
+                    rounded rectangle around a lone glyph reads as a clipped
+                    button. */}
+                <IconButton
+                  aria-label="Explore programs"
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate("/recommend");
                   }}
                   sx={{
                     flexShrink: 0,
-                    textTransform: "none",
-                    fontWeight: 700,
-                    borderRadius: "10px",
-                    px: 2.25,
+                    width: 38,
+                    height: 38,
+                    alignSelf: { xs: "flex-end", sm: "auto" },
                     color: "primary.main",
                     bgcolor: "common.white",
-                    alignSelf: { xs: "stretch", sm: "auto" },
                     "&:hover": { bgcolor: alpha("#fff", 0.9) },
                   }}
                 >
-                  Explore programs
-                </Button>
+                  <ArrowForwardOutlinedIcon sx={{ fontSize: 20 }} />
+                </IconButton>
               </Stack>
             </Box>
 
