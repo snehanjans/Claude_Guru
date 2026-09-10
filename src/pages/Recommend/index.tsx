@@ -15,8 +15,6 @@ import HighlightOffOutlinedIcon from "@mui/icons-material/HighlightOffOutlined";
 import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined";
 import HowToRegOutlinedIcon from "@mui/icons-material/HowToRegOutlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
-import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
-import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import { fmtMoney } from "@/lib/helpers";
 import { GURU_CURRENCY, toGuruCurrency } from "@/data/demo-ambassador";
 import { useRecommend, type RecommendTab } from "./RecommendContext";
@@ -30,7 +28,6 @@ const TABULAR = { fontVariantNumeric: "tabular-nums" as const };
 
 /* How a referral works — the same three steps in both heroes. */
 /** Booking page for a walkthrough of the Ambassadors scheme. */
-const SCHEDULE_CALL_URL = "https://calendar.app.google/Cs6eGAekkn4688G38";
 
 const HOW_IT_WORKS = [
   { step: "1", title: "Share a program", sub: "Share your personalised link", icon: IosShareOutlinedIcon },
@@ -335,91 +332,6 @@ export default function RecommendPage() {
             </Box>
           </Box>
 
-          {/* Closing the hero: the copy above explains the scheme, this offers
-              a person to ask. Sits below both columns so it reads as a footer
-              to the whole banner rather than a fourth step. */}
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            /* Stack spacing becomes a margin-top on the second child, and it
-               still applies when the first is display:none — which is the case
-               on xs, so the button was carrying 12px of spacing off a hidden
-               sibling. */
-            spacing={{ xs: 0, sm: 2 }}
-            alignItems={{ xs: "stretch", sm: "center" }}
-            justifyContent="space-between"
-            sx={{
-              mt: { xs: 0, md: 3 },
-              pt: { xs: 0, md: 2.5 },
-              /* The rule separates the footer from the three tiles above it.
-                 With those hidden on phones it has nothing to divide, and it
-                 reads as a seam across an otherwise continuous card.
-
-                 Longhands, not the `borderTop` shorthand: made responsive, the
-                 shorthand lands inside a media query, which outranks the
-                 unmediated `borderColor` regardless of source order — and a
-                 shorthand with no colour resets it to currentColor, painting
-                 the rule in the near-black text colour. */
-              borderTopWidth: { xs: 0, sm: "1px" },
-              borderTopStyle: "solid",
-              borderTopColor: "divider",
-            }}
-          >
-            {/* The pitch here is chrome on a phone; the button is not. Hiding
-                the icon and the two lines of copy keeps the only way to book a
-                call while giving the hero back ~90px. */}
-            <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1.5}
-              sx={{ minWidth: 0, display: { xs: "none", sm: "flex" } }}
-            >
-              {/* Same 36px chip as the three steps above, so the footer reads as
-                  part of the same banner rather than a bolted-on strip. */}
-              <Box
-                sx={{
-                  flexShrink: 0,
-                  width: 36,
-                  height: 36,
-                  borderRadius: "10px",
-                  display: "grid",
-                  placeItems: "center",
-                  color: "text.primary",
-                  bgcolor: "background.paper",
-                  border: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <PhoneOutlinedIcon sx={{ fontSize: 18 }} />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ fontSize: 14, fontWeight: 700, lineHeight: 1.4 }}>
-                Talk to us
-              </Typography>
-              <Typography
-                sx={{ mt: 0.25, fontSize: 13.5, color: "text.secondary", lineHeight: 1.5 }}
-              >
-                Want to know more about GL Ambassadors? Book a call and we&rsquo;ll walk you
-                through it.
-              </Typography>
-              </Box>
-            </Stack>
-            <Button
-              component="a"
-              href={SCHEDULE_CALL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              variant="outlined"
-              startIcon={<CalendarMonthOutlinedIcon sx={{ fontSize: 18 }} />}
-              sx={{
-                flexShrink: 0,
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: "10px",
-              }}
-            >
-              Schedule a call
-            </Button>
-          </Stack>
         </Box>
 
         {/* ── KPI stats — appear once there's activity ─────────────────── */}
