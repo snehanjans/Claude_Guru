@@ -41,7 +41,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { keyframes, alpha } from "@mui/system";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { setCalendarViewMode, setAnchorDate, type CalendarViewMode } from "@/store/slices/calendarSlice";
-import { setSessionFocus, clearRecentlyConfirmed, declineSession } from "@/store/slices/sessionsSlice";
+import { setSessionFocus, clearRecentlyConfirmed, declineSession, requestCancellation } from "@/store/slices/sessionsSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { setRequestFocus } from "@/store/slices/requestsSlice";
 import { addOneOffAvail, addUnavailable, removeUnavailableByGroupId } from "@/store/slices/availabilitySlice";
@@ -90,7 +90,10 @@ import {
 import { compactDatePickerProps, compactTimePickerProps } from "@/lib/pickerProps";
 import {
   DeclineReasonFields,
-  SchedulerContactNotice,
+  LateCancellationWarning,
+  LateCancellationInstructions,
+  CANCELLATION_REQUESTED_TOAST,
+  sessionsTooCloseToDecline,
   composeDeclineReason,
   canSubmitDeclineReason,
   EMPTY_DECLINE_REASON,
@@ -280,6 +283,7 @@ export default function CalendarPage() {
   const sessions = useAppSelector((s) => s.sessions.items);
   const sessionDeclined = useAppSelector((s) => s.sessions.sessionDeclined);
   const recentlyConfirmedIds = useAppSelector((s) => s.sessions.recentlyConfirmedIds);
+  const cancellationRequests = useAppSelector((s) => s.sessions.cancellationRequests);
   const calendarViewMode = useAppSelector((s) => s.calendar.calendarViewMode);
   const timeZoneMode = useAppSelector((s) => s.profile.timeZoneMode);
   const manualTimeZone = useAppSelector((s) => s.profile.manualTimeZone);
@@ -419,6 +423,9 @@ export default function CalendarPage() {
    */
   const [spotConflictStep, setSpotConflictStep] = useState(false);
   const [spotDeclineReason, setSpotDeclineReason] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
+  // Third step, only when some covered sessions start inside the late-cancellation
+  // threshold: what the guru must do themselves before the leave is marked.
+  const [spotInstructionsStep, setSpotInstructionsStep] = useState(false);
   // The edited group's reason, carried through so editing times doesn't reset a
   // custom reason ("Sick leave", …) back to the generic default.
   const [spotEditReason, setSpotEditReason] = useState<string | null>(null);
@@ -515,10 +522,15 @@ export default function CalendarPage() {
     return sessions.filter(
       (s) =>
         !sessionDeclined[s.id] &&
+        // Already waiting on the PM — requesting it again would change nothing.
+        !cancellationRequests[s.id] &&
         s.dateYmd >= todayYmd &&
         segments.some((seg) => seg.dateYmd === s.dateYmd && overlaps(seg.start, seg.end, s.start, s.end)),
     );
-  }, [pendingSpot, spotKind, leaveFromYmd, leaveToYmd, sessions, sessionDeclined, todayYmd]);
+  }, [pendingSpot, spotKind, leaveFromYmd, leaveToYmd, sessions, sessionDeclined, cancellationRequests, todayYmd]);
+
+  /** Covered sessions inside the threshold: these become cancellation requests, not declines. */
+  const spotLateConflicts = sessionsTooCloseToDecline(spotLeaveConflicts, realNow.getTime());
 
   const spotDeclineReasonText = composeDeclineReason(spotDeclineReason, isCareerMentorRole);
   const canConfirmSpotConflicts = canSubmitDeclineReason(spotDeclineReason, isCareerMentorRole);
@@ -532,6 +544,11 @@ export default function CalendarPage() {
       setSpotConflictStep(true);
       return;
     }
+    // Late sessions need the guru to act themselves — show that before committing.
+    if (spotKind === "leave" && spotLateConflicts.length > 0 && !spotInstructionsStep) {
+      setSpotInstructionsStep(true);
+      return;
+    }
     if (spotKind === "leave") {
       // One block per day, all sharing a groupId so the range deletes as a unit.
       // Editing rewrites the group wholesale: the day count can change, so there is
@@ -541,15 +558,23 @@ export default function CalendarPage() {
       generateLeaveSegments(leaveFromYmd, leaveToYmd, start, end, spotEditReason ?? "Leave").forEach((seg, i) => {
         dispatch(addUnavailable({ id: `na-${Date.now()}-${i}`, groupId, ...seg }));
       });
-      if (spotLeaveConflicts.length > 0) {
-        spotLeaveConflicts.forEach((s) =>
-          dispatch(declineSession({ id: s.id, dateYmd: todayYmd, reason: spotDeclineReasonText })),
-        );
+      // Inside the threshold it is only a request (the PM accepts it later); further
+      // out the session is declined straight away.
+      const lateIds = new Set(spotLateConflicts.map((s) => s.id));
+      const declined = spotLeaveConflicts.filter((s) => !lateIds.has(s.id));
+      spotLateConflicts.forEach((s) =>
+        dispatch(requestCancellation({ id: s.id, dateYmd: todayYmd, reason: spotDeclineReasonText })),
+      );
+      declined.forEach((s) =>
+        dispatch(declineSession({ id: s.id, dateYmd: todayYmd, reason: spotDeclineReasonText })),
+      );
+      if (declined.length > 0) {
         dispatch(pushToast({
           title: "Leave marked",
-          description: `${spotLeaveConflicts.length} session${spotLeaveConflicts.length > 1 ? "s" : ""} declined`,
+          description: `${declined.length} session${declined.length > 1 ? "s" : ""} declined`,
         }));
       }
+      if (spotLateConflicts.length > 0) dispatch(pushToast(CANCELLATION_REQUESTED_TOAST));
     } else {
       dispatch(addOneOffAvail({
         id: `oneoff-${ymd}-${start}-${end}-${Date.now()}`,
@@ -562,6 +587,7 @@ export default function CalendarPage() {
     setSpotEditGroupId(null);
     setSpotEditReason(null);
     setSpotConflictStep(false);
+    setSpotInstructionsStep(false);
     setSpotDeclineReason(EMPTY_DECLINE_REASON);
   };
   const cancelSpot = () => {
@@ -570,6 +596,7 @@ export default function CalendarPage() {
     setSpotEditGroupId(null);
     setSpotEditReason(null);
     setSpotConflictStep(false);
+    setSpotInstructionsStep(false);
     setSpotDeclineReason(EMPTY_DECLINE_REASON);
   };
 
@@ -1007,6 +1034,7 @@ export default function CalendarPage() {
                     .filter((s) => s.dateYmd === mobileSelectedDay && !sessionDeclined[s.id])
                     .map((s) => {
                       const sColors = sessionColors(false);
+                      const cancelRequested = !!cancellationRequests[s.id];
                       const topPct = timeToPercent(s.start);
                       const blockHeight = timeToPercent(s.end) - topPct;
                       const totalPx = HOUR_LABELS.length * GRID_ROW_PX;
@@ -1022,7 +1050,9 @@ export default function CalendarPage() {
                             right: 4,
                             bgcolor: sColors.bg,
                             borderRadius: '8px',
-                            border: 'none',
+                            // Pending cancellation: still scheduled, flagged by a red border only.
+                            border: cancelRequested ? '1px solid' : 'none',
+                            borderColor: 'error.main',
                             cursor: 'pointer',
                             textAlign: 'left',
                             px: 1,
@@ -1666,6 +1696,7 @@ export default function CalendarPage() {
                       {/* §8.2 Draw order: 5. Sessions (top) - with status dot + pulse */}
                       {daySessions.map((s) => {
                         const declined = !!sessionDeclined[s.id];
+                        const cancelRequested = !declined && !!cancellationRequests[s.id];
                         const isPastSession = s.dateYmd < todayYmd || (s.dateYmd === todayYmd && s.start < realNow.getHours() * 60 + realNow.getMinutes());
                         // "Missed" used to mean a past session never confirmed. Confirmation
                         // no longer exists, so a past session is completed unless declined.
@@ -1675,6 +1706,8 @@ export default function CalendarPage() {
                           : sessionColors(declined);
                         const statusLabel = declined
                           ? "Declined"
+                          : cancelRequested
+                            ? "Cancellation requested"
                           : isCompletedSession
                             ? "Completed"
                             : "Scheduled";
@@ -1704,7 +1737,10 @@ export default function CalendarPage() {
                               width: `calc(${widthPct}% - ${TILE_INSET_PX * 2}px)`,
                               ...tileBox(s.start, s.end),
                               bgcolor: sColors.bg,
-                              border: 'none',
+                              // Pending cancellation: still scheduled, flagged by a red border
+                              // only. The strike-through waits until the PM accepts.
+                              border: cancelRequested ? '1px solid' : 'none',
+                              borderColor: 'error.main',
                               borderRadius: '8px',
                               zIndex: 5,
                               px: 0.75,
@@ -1746,10 +1782,17 @@ export default function CalendarPage() {
                             </Typography>
                             {pxHeight > 56 && (
                               <Typography
-                                sx={{ fontSize: '0.56rem', color: sColors.sub, mt: 0.25, lineHeight: '1.2', opacity: 0.8 }}
+                                sx={{
+                                  fontSize: '0.56rem',
+                                  mt: 0.25,
+                                  lineHeight: '1.2',
+                                  ...(cancelRequested
+                                    ? { color: 'error.main', fontWeight: 600 }
+                                    : { color: sColors.sub, opacity: 0.8 }),
+                                }}
                                 noWrap
                               >
-                                {s.sessionType}
+                                {cancelRequested ? 'Cancellation requested' : s.sessionType}
                               </Typography>
                             )}
                           </Box>
@@ -1852,14 +1895,37 @@ export default function CalendarPage() {
             // needs more room than the date/time step.
             slotProps={{ paper: { sx: { borderRadius: '12px', p: 1.75, width: spotConflictStep ? 340 : 288, maxWidth: 'calc(100vw - 24px)' } } }}
           >
+            {/* Step 3 — some covered sessions start inside the threshold. */}
+            {pendingSpot && spotConflictStep && spotInstructionsStep && (
+              <>
+                <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1 }}>Request cancellation</Typography>
+                <LateCancellationInstructions compact sessions={spotLateConflicts} />
+                <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1.75 }}>
+                  <Button size="small" color="inherit" onClick={() => setSpotInstructionsStep(false)} sx={{ fontSize: 12 }}>
+                    Back
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="error"
+                    disableElevation
+                    onClick={confirmSpot}
+                    sx={{ fontSize: 12 }}
+                  >
+                    Request cancellation
+                  </Button>
+                </Stack>
+              </>
+            )}
+
             {/* Step 2 — leave covers scheduled sessions, so collect a decline reason. */}
-            {pendingSpot && spotConflictStep && (
+            {pendingSpot && spotConflictStep && !spotInstructionsStep && (
               <>
                 <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 0.25 }}>
                   {spotLeaveConflicts.length === 1 ? 'This overlaps a session' : `This overlaps ${spotLeaveConflicts.length} sessions`}
                 </Typography>
                 <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1.25 }}>
-                  Marking this leave declines {spotLeaveConflicts.length === 1 ? 'it' : 'them'}. Please add a reason for the scheduler.
+                  Marking this leave {spotLateConflicts.length > 0 ? 'cancels' : 'declines'} {spotLeaveConflicts.length === 1 ? 'it' : 'them'}. Please add a reason for the scheduler.
                 </Typography>
 
                 <Stack
@@ -1885,9 +1951,11 @@ export default function CalendarPage() {
                   ))}
                 </Stack>
 
-                <Box sx={{ mb: 1.5 }}>
-                  <SchedulerContactNotice compact sessions={spotLeaveConflicts} nowMs={realNow.getTime()} />
-                </Box>
+                {spotLateConflicts.length > 0 && (
+                  <Box sx={{ mb: 1.5 }}>
+                    <LateCancellationWarning compact count={spotLateConflicts.length} />
+                  </Box>
+                )}
 
                 <DeclineReasonFields
                   compact
@@ -1910,7 +1978,11 @@ export default function CalendarPage() {
                     onClick={confirmSpot}
                     sx={{ fontSize: 12 }}
                   >
-                    {spotLeaveConflicts.length === 1 ? 'Mark leave & decline' : `Mark leave & decline ${spotLeaveConflicts.length}`}
+                    {spotLateConflicts.length > 0
+                      ? 'Next'
+                      : spotLeaveConflicts.length === 1
+                        ? 'Mark leave & decline'
+                        : `Mark leave & decline ${spotLeaveConflicts.length}`}
                   </Button>
                 </Stack>
               </>
@@ -2100,7 +2172,7 @@ export default function CalendarPage() {
                   const dayNA = unavailable.filter((n) => n.dateYmd === ymd);
 
                   /* §9.3 Sorting priority: leave first, session/confirmed next, request next, availability last */
-                  type EventChip = { key: string; label: string; type: "leave" | "session" | "request" | "availability"; color: string; bg: string };
+                  type EventChip = { key: string; label: string; type: "leave" | "session" | "request" | "availability"; color: string; bg: string; flagged?: boolean };
                   const chips: EventChip[] = [];
 
                   // Leave tags
@@ -2125,6 +2197,7 @@ export default function CalendarPage() {
                       type: "session",
                       color: sColors.text,
                       bg: sColors.bg,
+                      flagged: !declined && !!cancellationRequests[s.id],
                     });
                   });
 
@@ -2248,6 +2321,8 @@ export default function CalendarPage() {
                             borderRadius: "8px",
                             bgcolor: chip.bg,
                             color: chip.color,
+                            // Inset ring rather than a border, so a flagged chip keeps the same height.
+                            boxShadow: chip.flagged ? (t) => `inset 0 0 0 1px ${t.palette.error.main}` : undefined,
                             px: 0.5,
                             fontSize: '0.5625rem',
                             lineHeight: '14px',

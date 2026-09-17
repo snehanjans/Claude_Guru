@@ -535,6 +535,7 @@ export function SessionDetailsModal() {
   const confirmations = useAppSelector((s) => s.sessions.confirmations);
   const allSessions = useAppSelector((s) => s.sessions.items);
   const sessionDeclined = useAppSelector((s) => s.sessions.sessionDeclined);
+  const cancellationRequests = useAppSelector((s) => s.sessions.cancellationRequests);
   const paymentsShowValues = useAppSelector((s) => s.ui.paymentsShowValues);
   const nowMs = demoNow.getTime();
   const tzOffset = useAppSelector((s) => s.profile.tzOffsetMinutes);
@@ -569,6 +570,7 @@ export function SessionDetailsModal() {
   const isCompleted = session ? dateTimeMs(session.dateYmd, session.end) < nowMs : false;
   const isPast = session ? dateTimeMs(session.dateYmd, session.start) < nowMs : false;
   const isMissed = isPast && !isConfirmed && !isCompleted;
+  const isCancelRequested = session ? !!cancellationRequests[session.id] && !sessionDeclined[session.id] : false;
   const linkedCourse = session?.linkedCourseId
     ? demoCourseCatalog.find((c) => c.id === session.linkedCourseId)
     : null;
@@ -583,8 +585,10 @@ export function SessionDetailsModal() {
   const showPolls = session && isConfirmed && !isCompleted && !isSecondaryGuru;
 
   /* Status chip config */
-  const statusLabel = isCompleted ? "Completed" : isMissed ? "Missed" : isConfirmed ? "Confirmed" : isPast ? "Past" : "Scheduled";
-  const statusSx = isCompleted
+  const statusLabel = isCompleted ? "Completed" : isMissed ? "Missed" : isCancelRequested ? "Cancellation requested" : isConfirmed ? "Confirmed" : isPast ? "Past" : "Scheduled";
+  const statusSx = isCancelRequested && !isCompleted
+    ? { bgcolor: "var(--gl-status-declined-bg)", color: "var(--gl-status-declined-text)", border: "1px solid var(--gl-status-declined-border)" }
+    : isCompleted
     ? { bgcolor: "var(--gl-status-completed-bg)", color: "var(--gl-status-completed-text)", border: "1px solid var(--gl-status-completed-border)" }
     : isConfirmed
       ? { bgcolor: "var(--gl-status-confirmed-bg)", color: "var(--gl-status-confirmed-text)", border: "1px solid var(--gl-status-confirmed-border)" }
@@ -1302,7 +1306,12 @@ export function SessionDetailsModal() {
           <Button variant="text" color="inherit" size="small" onClick={handleClose}>
             Close
           </Button>
-          {session && !isCompleted && !isPast && (
+          {session && !isCompleted && !isPast && isCancelRequested && (
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem", textAlign: "right" }}>
+              Waiting for your Program Manager to accept
+            </Typography>
+          )}
+          {session && !isCompleted && !isPast && !isCancelRequested && (
             <Stack direction="row" spacing={1}>
               <Button
                 variant="soft"
