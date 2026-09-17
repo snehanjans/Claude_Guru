@@ -32,6 +32,10 @@ import StarOutlinedIcon from "@mui/icons-material/StarOutlined";
 import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { resetAvailability } from "@/store/slices/availabilitySlice";
+import { approveCancellation } from "@/store/slices/sessionsSlice";
+import { pushToast } from "@/store/slices/toastsSlice";
+import { toYmd } from "@/lib/helpers";
+import EventBusyOutlinedIcon from "@mui/icons-material/EventBusyOutlined";
 import { setOpenLearnerRatings, setLearnerRatingsSessionId } from "@/store/slices/uiSlice";
 import {
   toggleDevPanel,
@@ -90,6 +94,9 @@ export function DevPanel() {
   const recommendStage = useAppSelector((s) => s.devPanel.recommendStage);
   const noPromoCode = useAppSelector((s) => s.devPanel.noPromoCode);
   const pgReferral = useAppSelector((s) => s.devPanel.pgReferral);
+  const cancellationRequests = useAppSelector((s) => s.sessions.cancellationRequests);
+  const allSessions = useAppSelector((s) => s.sessions.items);
+  const pendingCancellations = allSessions.filter((s) => cancellationRequests[s.id]);
 
   // Cmd/Ctrl + K shortcut
   useEffect(() => {
@@ -418,6 +425,53 @@ export function DevPanel() {
             />
           </ListItemButton>
         </List>
+
+        <Divider sx={{ my: 1.5, mx: 2.5 }} />
+
+        {/* Cancellation requests — stands in for the Program Manager accepting */}
+        <Box sx={{ px: 2.5, pb: 1.5 }}>
+          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.5 }}>
+            <EventBusyOutlinedIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Cancellation requests
+            </Typography>
+          </Stack>
+          <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem", display: "block", mb: 1 }}>
+            Accept as the Program Manager to decline the session
+          </Typography>
+          {pendingCancellations.length === 0 ? (
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+              No pending requests
+            </Typography>
+          ) : (
+            <Stack spacing={0.75}>
+              {pendingCancellations.map((s) => (
+                <Stack key={s.id} direction="row" alignItems="center" spacing={1}>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography variant="body2" fontWeight={500} sx={{ fontSize: "0.78rem" }} noWrap>
+                      {s.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+                      {s.dateYmd}
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="soft"
+                    size="small"
+                    color="primary"
+                    onClick={() => {
+                      dispatch(approveCancellation({ id: s.id, dateYmd: toYmd(new Date()) }));
+                      dispatch(pushToast({ title: "Cancellation accepted", description: s.title }));
+                    }}
+                    sx={{ textTransform: "none", fontSize: "0.75rem", flexShrink: 0 }}
+                  >
+                    Accept
+                  </Button>
+                </Stack>
+              ))}
+            </Stack>
+          )}
+        </Box>
 
         <Divider sx={{ my: 1.5, mx: 2.5 }} />
 

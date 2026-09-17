@@ -1,5 +1,6 @@
+import { Fragment, type ReactNode } from "react";
 import Box from "@mui/material/Box";
-import Stack from "@mui/material/Stack";
+import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import FormControl from "@mui/material/FormControl";
@@ -10,6 +11,7 @@ import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import { dateTimeMs } from "@/lib/helpers";
+import FlexBox from "@/components/Utils/FlexBox";
 import type { Session } from "@/lib/types";
 
 /** Career Mentor cancellation reasons (single-select), per production flow. */
@@ -51,43 +53,32 @@ export function canSubmitDeclineReason(v: DeclineReasonValue, isCareerMentor: bo
 }
 
 /** Inside this window there isn't time for the scheduler to find a replacement. */
-export const DECLINE_CLOSE_THRESHOLD_MS = 48 * 60 * 60 * 1000; // 48 hours
+export const DECLINE_CLOSE_THRESHOLD_HOURS = 72;
+export const DECLINE_CLOSE_THRESHOLD_MS = DECLINE_CLOSE_THRESHOLD_HOURS * 60 * 60 * 1000;
+
+/** Who a guru contacts when pulling out of a session inside the threshold. */
+export const PROGRAM_MANAGER_CONTACT = { name: "Bhargavi CS", email: "bhargavi.cs@greatlearning.in", phone: "+91 98765 43210" };
 
 /** Sessions starting within the threshold — those the scheduler must be told about. */
 export function sessionsTooCloseToDecline(sessions: Session[], nowMs: number) {
   return sessions.filter((s) => dateTimeMs(s.dateYmd, s.start) - nowMs < DECLINE_CLOSE_THRESHOLD_MS);
 }
 
+/** Shown once a late cancellation request is sent. Stays up until dismissed. */
+export const CANCELLATION_REQUESTED_TOAST = {
+  title: "Cancellation requested",
+  description: "We've let the Program Manager know about your request. You can reach out to them for more information.",
+  persistent: true,
+};
+
+const MUTED = "hsl(var(--md-on-surface-variant))";
+
 /**
- * Warning shown when a decline lands too near the session to be absorbed quietly:
- * names who scheduled each one and how to reach them. Renders nothing when no
- * session is inside the threshold, so callers can drop it in unconditionally.
+ * Red banner on the reason step of a late cancellation: says the session(s) are
+ * inside the threshold and that the next step explains what to do.
  */
-export function SchedulerContactNotice({
-  sessions,
-  nowMs,
-  compact = false,
-}: {
-  sessions: Session[];
-  nowMs: number;
-  compact?: boolean;
-}) {
-  const tooClose = sessionsTooCloseToDecline(sessions, nowMs);
-  if (tooClose.length === 0) return null;
-
-  // One line per scheduler, not per session — the same person often owns several.
-  const byScheduler = new Map<string, { name: string; email?: string; phone?: string; titles: string[] }>();
-  for (const s of tooClose) {
-    const name = s.scheduledByName || "the scheduler";
-    const key = s.scheduledByEmail || name;
-    const entry = byScheduler.get(key) ?? { name, email: s.scheduledByEmail, phone: s.scheduledByPhone, titles: [] };
-    entry.titles.push(s.title);
-    byScheduler.set(key, entry);
-  }
-
-  const bodySize = compact ? 11 : { xs: "0.75rem", sm: "0.875rem" };
-  const headSize = compact ? 12 : { xs: "0.78rem", sm: "0.875rem" };
-
+export function LateCancellationWarning({ count, compact = false }: { count: number; compact?: boolean }) {
+  if (count === 0) return null;
   return (
     <Box
       sx={{
@@ -98,52 +89,141 @@ export function SchedulerContactNotice({
         p: compact ? 1.25 : 2,
       }}
     >
-      <Stack direction="row" spacing={1} alignItems="flex-start">
+      <FlexBox gap={1} alignItems="flex-start">
         <WarningAmberOutlinedIcon
           sx={{ fontSize: compact ? 14 : 18, color: "var(--gl-status-declined-text)", flexShrink: 0, mt: "2px" }}
         />
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="body2" fontWeight={600} sx={{ color: "var(--gl-status-declined-text)", mb: 0.5, fontSize: headSize }}>
-            {tooClose.length === 1
-              ? "This session starts within 48 hours"
-              : `${tooClose.length} of these start within 48 hours`}
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            sx={{ color: "var(--gl-status-declined-text)", mb: 0.5, fontSize: compact ? 12 : undefined }}
+          >
+            {count === 1
+              ? `This session starts within ${DECLINE_CLOSE_THRESHOLD_HOURS} hours`
+              : `${count} of these start within ${DECLINE_CLOSE_THRESHOLD_HOURS} hours`}
           </Typography>
-          <Typography variant="body2" sx={{ color: "hsl(var(--md-on-surface-variant))", mb: 1.5, fontSize: bodySize }}>
-            Please let {[...byScheduler.values()].map((v) => v.name).join(", ")} know directly so they can arrange a replacement.
+          <Typography variant="body2" sx={{ color: MUTED, fontSize: compact ? 11 : undefined }}>
+            There isn't time to arrange a replacement without your help. On the next step we'll show you what to do.
           </Typography>
-          <Stack spacing={0.75}>
-            {[...byScheduler.values()].map((v) => (
-              <Box key={v.email || v.name}>
-                {byScheduler.size > 1 && (
-                  <Typography variant="body2" fontWeight={600} sx={{ fontSize: bodySize }}>
-                    {v.name}
-                    <Box component="span" sx={{ fontWeight: 400, color: "hsl(var(--md-on-surface-variant))" }}>
-                      {" — "}{v.titles.join(", ")}
-                    </Box>
-                  </Typography>
-                )}
-                {v.email && (
-                  <Stack direction="row" alignItems="center" spacing={0.75}>
-                    <EmailOutlinedIcon sx={{ fontSize: compact ? 11 : { xs: 12, sm: 14 }, color: "hsl(var(--md-on-surface-variant))" }} />
-                    <Typography variant="body2" fontWeight={500} sx={{ fontSize: bodySize, wordBreak: "break-all" }}>
-                      {v.email}
-                    </Typography>
-                  </Stack>
-                )}
-                {v.phone && (
-                  <Stack direction="row" alignItems="center" spacing={0.75}>
-                    <PhoneOutlinedIcon sx={{ fontSize: compact ? 11 : { xs: 12, sm: 14 }, color: "hsl(var(--md-on-surface-variant))" }} />
-                    <Typography variant="body2" fontWeight={500} sx={{ fontSize: bodySize }}>
-                      {v.phone}
-                    </Typography>
-                  </Stack>
-                )}
-              </Box>
-            ))}
-          </Stack>
         </Box>
-      </Stack>
+      </FlexBox>
     </Box>
+  );
+}
+
+/** One numbered instruction on the late-cancellation step. */
+function InstructionStep({
+  n,
+  title,
+  compact,
+  children,
+}: {
+  n: number;
+  title: string;
+  compact: boolean;
+  children: ReactNode;
+}) {
+  const badge = compact ? 20 : 24;
+  return (
+    <FlexBox gap={compact ? 1 : 1.5} alignItems="flex-start">
+      <FlexBox
+        alignItems="center"
+        justifyContent="center"
+        sx={{
+          width: badge,
+          height: badge,
+          borderRadius: "50%",
+          flexShrink: 0,
+          bgcolor: "var(--gl-status-declined-bg)",
+          color: "var(--gl-status-declined-text)",
+          fontSize: compact ? "0.68rem" : "0.75rem",
+          fontWeight: 600,
+        }}
+      >
+        {n}
+      </FlexBox>
+      <Box sx={{ minWidth: 0, pt: "2px" }}>
+        <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5, fontSize: compact ? 12 : undefined }}>
+          {title}
+        </Typography>
+        {children}
+      </Box>
+    </FlexBox>
+  );
+}
+
+/**
+ * What a guru must do themselves when pulling out of sessions inside the threshold:
+ * tell the Program Manager, and tell the learners. Shared by the session dialog and
+ * both leave flows so the instructions never drift.
+ */
+export function LateCancellationInstructions({ sessions, compact = false }: { sessions: Session[]; compact?: boolean }) {
+  if (sessions.length === 0) return null;
+  const bodySx = { color: MUTED, fontSize: compact ? 11 : undefined };
+  const highlightSx = { color: "text.primary", fontWeight: 600, wordBreak: "break-word" } as const;
+  const iconSx = { fontSize: compact ? 12 : 14, color: MUTED };
+  const linkSx = { fontSize: compact ? 11 : undefined, wordBreak: "break-all" } as const;
+  const batches = [...new Set(sessions.map((s) => s.batch).filter((b): b is string => !!b))];
+  const subject = sessions.length === 1 ? `Unable to take: ${sessions[0].title}` : `Unable to take ${sessions.length} sessions`;
+
+  return (
+    <FlexBox flexDirection="column" gap={compact ? 1.75 : 2.5}>
+      <Typography variant="body2" sx={bodySx}>
+        {sessions.length === 1 ? (
+          <Box component="span" sx={highlightSx}>{sessions[0].title}</Box>
+        ) : (
+          <Box component="span" sx={highlightSx}>{sessions.length} sessions</Box>
+        )}{" "}
+        {sessions.length === 1 ? "starts" : "start"} in less than {DECLINE_CLOSE_THRESHOLD_HOURS} hours. Before you step
+        away, please do both of these:
+      </Typography>
+
+      <InstructionStep n={1} title="Contact your Program Manager" compact={compact}>
+        <Typography variant="body2" sx={{ ...bodySx, mb: 0.75 }}>
+          Let {PROGRAM_MANAGER_CONTACT.name} know so they can arrange a replacement.
+        </Typography>
+        <FlexBox flexDirection="column" gap={0.5}>
+          <FlexBox alignItems="center" gap={0.75}>
+            <EmailOutlinedIcon sx={iconSx} />
+            <Link
+              href={`mailto:${PROGRAM_MANAGER_CONTACT.email}?subject=${encodeURIComponent(subject)}`}
+              variant="body2"
+              fontWeight={500}
+              underline="hover"
+              sx={linkSx}
+            >
+              {PROGRAM_MANAGER_CONTACT.email}
+            </Link>
+          </FlexBox>
+          <FlexBox alignItems="center" gap={0.75}>
+            <PhoneOutlinedIcon sx={iconSx} />
+            <Link
+              href={`tel:${PROGRAM_MANAGER_CONTACT.phone.replace(/\s/g, "")}`}
+              variant="body2"
+              fontWeight={500}
+              underline="hover"
+              sx={linkSx}
+            >
+              {PROGRAM_MANAGER_CONTACT.phone}
+            </Link>
+          </FlexBox>
+        </FlexBox>
+      </InstructionStep>
+
+      <InstructionStep n={2} title="Post a message to your students" compact={compact}>
+        <Typography variant="body2" sx={bodySx}>
+          Let the learners
+          {batches.map((b, i) => (
+            <Fragment key={b}>
+              {i === 0 ? " in " : i === batches.length - 1 ? " and " : ", "}
+              <Box component="span" sx={highlightSx}>{b}</Box>
+            </Fragment>
+          ))}{" "}
+          know that you're unable to take {sessions.length === 1 ? "this class" : "these classes"}.
+        </Typography>
+      </InstructionStep>
+    </FlexBox>
   );
 }
 

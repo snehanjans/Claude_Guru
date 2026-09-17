@@ -8,6 +8,8 @@ interface SessionsState {
   sessionDeclined: Record<string, boolean>;
   sessionDeclinedAtYmd: Record<string, string>;
   sessionDeclinedReasons: Record<string, string>;
+  /** Late cancellations awaiting the Program Manager. Still scheduled until approved. */
+  cancellationRequests: Record<string, { requestedAtYmd: string; reason: string }>;
   sessionFocus: Session | null;
   homeSessionsView: "next" | "completed" | "declined";
   selectedSessionType: "All" | SessionType;
@@ -29,6 +31,7 @@ const initialState: SessionsState = {
   sessionDeclined: {},
   sessionDeclinedAtYmd: {},
   sessionDeclinedReasons: {},
+  cancellationRequests: {},
   sessionFocus: null,
   homeSessionsView: "next",
   selectedSessionType: "All",
@@ -57,6 +60,21 @@ const sessionsSlice = createSlice({
       if (action.payload.reason) {
         state.sessionDeclinedReasons[action.payload.id] = action.payload.reason;
       }
+    },
+    requestCancellation(state, action: PayloadAction<{ id: string; dateYmd: string; reason: string }>) {
+      state.cancellationRequests[action.payload.id] = {
+        requestedAtYmd: action.payload.dateYmd,
+        reason: action.payload.reason,
+      };
+    },
+    /** The Program Manager accepted — only now does the session become declined. */
+    approveCancellation(state, action: PayloadAction<{ id: string; dateYmd: string }>) {
+      const request = state.cancellationRequests[action.payload.id];
+      if (!request) return;
+      delete state.cancellationRequests[action.payload.id];
+      state.sessionDeclined[action.payload.id] = true;
+      state.sessionDeclinedAtYmd[action.payload.id] = action.payload.dateYmd;
+      if (request.reason) state.sessionDeclinedReasons[action.payload.id] = request.reason;
     },
     /** §8.3 Accept from Declined - undecline + re-confirm */
     acceptSession(state, action: PayloadAction<string>) {
@@ -98,6 +116,8 @@ export const {
   setSessions,
   clearRecentlyConfirmed,
   declineSession,
+  requestCancellation,
+  approveCancellation,
   acceptSession,
   setSessionFocus,
   setHomeSessionsView,

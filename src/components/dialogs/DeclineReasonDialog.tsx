@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
+import FlexBox from "@/components/Utils/FlexBox";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
   declineSession,
+  requestCancellation,
   setDeclineSessionFocus,
   setDeclineReason,
   setSessionFocus,
@@ -17,11 +18,15 @@ import { setOpenDeclineReason, setOpenSession } from "@/store/slices/uiSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { toYmd } from "@/lib/helpers";
 import { SessionCard } from "@/components/shared/SessionCard";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 import {
   DeclineReasonFields,
-  SchedulerContactNotice,
   composeDeclineReason,
   canSubmitDeclineReason,
+  sessionsTooCloseToDecline,
+  LateCancellationWarning,
+  LateCancellationInstructions,
+  CANCELLATION_REQUESTED_TOAST,
 } from "@/components/shared/DeclineReasonFields";
 
 export function DeclineReasonDialog() {
@@ -35,10 +40,13 @@ export function DeclineReasonDialog() {
   // Career-mentor single-select reason + free-text detail (local to the dialog).
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
+  // Late declines take two steps: the reason, then what the guru must do themselves.
+  const [step, setStep] = useState<"reason" | "instructions">("reason");
   useEffect(() => {
     if (!open) {
       setReason("");
       setDetails("");
+      setStep("reason");
     }
   }, [open]);
 
@@ -50,10 +58,12 @@ export function DeclineReasonDialog() {
   /**
    * Real clock, not `demoNow`. The calendar renders "today" from the real clock and
    * the session data sits months after the demo date, so measuring against `demoNow`
-   * put every session ~113 days out — the 48-hour notice could never fire. The other
-   * two decline surfaces already use the real clock.
+   * put every session ~113 days out — the late-decline notice could never fire. The
+   * other two decline surfaces already use the real clock.
    */
   const nowMs = Date.now();
+  const isLate = !!declineSessionFocus && sessionsTooCloseToDecline([declineSessionFocus], nowMs).length > 0;
+  const onInstructions = isLate && step === "instructions";
 
   const handleClose = () => {
     dispatch(setOpenDeclineReason(false));
@@ -64,21 +74,37 @@ export function DeclineReasonDialog() {
   const handleSubmit = () => {
     if (!declineSessionFocus || !canSubmit) return;
     const s = declineSessionFocus;
-    // Stamp the day it was actually declined, matching the other decline surfaces.
-    dispatch(declineSession({ id: s.id, dateYmd: toYmd(new Date()), reason: composedReason }));
+    // Stamp the real day, matching the other decline surfaces. Inside the threshold
+    // it is only a request: the session stays scheduled until the PM accepts it.
+    const dateYmd = toYmd(new Date());
+    if (isLate) dispatch(requestCancellation({ id: s.id, dateYmd, reason: composedReason }));
+    else dispatch(declineSession({ id: s.id, dateYmd, reason: composedReason }));
     dispatch(setOpenDeclineReason(false));
     dispatch(setOpenSession(false));
     dispatch(setSessionFocus(null));
     dispatch(setDeclineSessionFocus(null));
     dispatch(setDeclineReason(""));
-    dispatch(pushToast({ title: "Marked unavailable", description: `${s.title}` }));
+    dispatch(
+      pushToast(
+        isLate ? CANCELLATION_REQUESTED_TOAST : { title: "Marked unavailable", description: `${s.title}` },
+      ),
+    );
+  };
+
+  const handlePrimary = () => {
+    if (!canSubmit) return;
+    if (isLate && step === "reason") setStep("instructions");
+    else handleSubmit();
   };
 
   return (
     <Dialog open={open} onClose={handleClose} disableRestoreFocus maxWidth="xs" fullWidth>
-      <DialogTitle>Mark unavailable</DialogTitle>
+      <DialogTitle component={FlexBox} alignItems="center" justifyContent="space-between" gap={1}>
+        Mark unavailable
+        <DialogCloseButton onClick={handleClose} />
+      </DialogTitle>
       <DialogContent>
-        {declineSessionFocus ? (
+        {declineSessionFocus && !onInstructions ? (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <SessionCard
               title={declineSessionFocus.title}
@@ -99,11 +125,11 @@ export function DeclineReasonDialog() {
               }}
             />
 
-            <SchedulerContactNotice sessions={[declineSessionFocus]} nowMs={nowMs} />
+            <LateCancellationWarning count={isLate ? 1 : 0} />
 
             {/* Free-text lives in redux here (`declineReason`); the career-mentor
                 select/details stay local. The shared fields render both shapes. */}
-            <Box onKeyDown={(e) => { if (e.key === "Enter" && e.metaKey && canSubmit) handleSubmit(); }}>
+            <Box onKeyDown={(e) => { if (e.key === "Enter" && e.metaKey) handlePrimary(); }}>
               <DeclineReasonFields
                 isCareerMentor={isCareerMentor}
                 autoFocus
@@ -117,14 +143,18 @@ export function DeclineReasonDialog() {
             </Box>
           </Box>
         ) : null}
+
+        {declineSessionFocus && onInstructions ? <LateCancellationInstructions sessions={[declineSessionFocus]} /> : null}
       </DialogContent>
       <DialogActions sx={{ flexDirection: { xs: "column", sm: "row" }, gap: { xs: 1, sm: 0 }, "& > :not(:first-of-type)": { ml: { xs: 0, sm: 1 } } }}>
-        <Button variant="text" color="inherit" onClick={handleClose} sx={{ width: { xs: "100%", sm: "auto" } }}>
-          Cancel
-        </Button>
+        {onInstructions && (
+          <Button variant="text" color="inherit" onClick={() => setStep("reason")} sx={{ width: { xs: "100%", sm: "auto" } }}>
+            Back
+          </Button>
+        )}
         <Button
           variant="soft"
-          onClick={handleSubmit}
+          onClick={handlePrimary}
           disabled={!canSubmit}
           sx={{
             width: { xs: "100%", sm: "auto" },
@@ -135,7 +165,7 @@ export function DeclineReasonDialog() {
             "&.Mui-disabled": { bgcolor: "rgba(211,47,47,0.05)", color: "rgba(211,47,47,0.4)" },
           }}
         >
-          I'm unavailable
+          {!isLate ? "I'm unavailable" : onInstructions ? "Request cancellation" : "Next"}
         </Button>
       </DialogActions>
     </Dialog>
