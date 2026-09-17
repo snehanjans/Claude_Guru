@@ -10,20 +10,23 @@ export function ToastViewport() {
 
   const MAX_VISIBLE = 2;
 
-  // Auto-dismiss after 3.5 seconds
+  // Auto-dismiss after 3.5 seconds, unless the toast is persistent
   useEffect(() => {
     if (!toasts.length) return;
     const latest = toasts[toasts.length - 1];
+    if (latest.persistent) return;
     const timer = window.setTimeout(() => {
       dispatch(dismissToast(latest.id));
     }, 3500);
     return () => clearTimeout(timer);
   }, [toasts, dispatch]);
 
-  // Auto-dismiss overflow toasts
+  // Auto-dismiss overflow toasts, oldest first, never a persistent one
   useEffect(() => {
     if (toasts.length <= MAX_VISIBLE) return;
-    const overflow = toasts.slice(0, toasts.length - MAX_VISIBLE);
+    const overflow = toasts
+      .filter((t) => !t.persistent)
+      .slice(0, toasts.length - MAX_VISIBLE);
     overflow.forEach((t) => dispatch(dismissToast(t.id)));
   }, [toasts, dispatch]);
 

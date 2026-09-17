@@ -222,6 +222,8 @@ export type ToastMsg = {
   description?: string;
   variant?: ToastVariant;
   titleTone?: "default" | "danger";
+  /** Stays up until the user dismisses it — for messages they need to act on. */
+  persistent?: boolean;
 };
 
 // ─── Notification Types ─────────────────────────────────────────────────────
