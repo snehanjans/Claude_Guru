@@ -377,6 +377,32 @@ function buildTheme(mode: "light" | "dark") {
         },
       },
 
+      /* Drawer - flat surface, same elevation problem as Dialog below */
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            /*
+             * MUI seats every Drawer at elevation 16, which in this palette is
+             * #383838 — brighter than the sticky header and footer that each
+             * drawer pins to `background.paper` (#121212), so the panel read as
+             * three mismatched bands. Re-point that one rung to elevation 0:
+             * the shell becomes a single flat surface, and the cards inside it
+             * still sit above it on `--md-surface-container`. The backdrop and
+             * the left border separate the drawer from the page, so it does not
+             * need a lighter fill to do that. Light mode is unaffected, every
+             * elevation there is #ffffff.
+             *
+             * By class, not defaultProps, for the same reason as Dialog: two
+             * classes beat MuiPaper-elevation16 without depending on style
+             * injection order.
+             */
+            "&.MuiPaper-elevation16": {
+              backgroundColor: t.background["paper-elevation-0"],
+            },
+          },
+        },
+      },
+
       /* Dialog - 16px radius (outermost container level) */
       MuiDialog: {
         styleOverrides: {

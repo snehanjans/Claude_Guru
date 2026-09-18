@@ -95,6 +95,14 @@ function SectionHeading({ children, icon }: { children: React.ReactNode; icon?: 
   );
 }
 
+/*
+ * Surfaces in this drawer run on two steps, and nothing uses a partial alpha of
+ * the step it sits on — that composites to the parent's own colour and vanishes.
+ *   paper            `--md-surface`            #121212 dark / #ffffff light
+ *   card on paper    `--md-surface-container`  #1B1B1B dark / #f5f5f5 light
+ * A block nested inside a card drops back to `--md-surface`, which reads as a
+ * recessed well in dark mode and a raised one in light.
+ */
 function SectionCard({ children }: { children: React.ReactNode }) {
   return (
     <Box
@@ -102,7 +110,7 @@ function SectionCard({ children }: { children: React.ReactNode }) {
         borderRadius: "12px",
         border: 1,
         borderColor: "divider",
-        bgcolor: "hsl(var(--md-surface))",
+        bgcolor: "hsl(var(--md-surface-container))",
         p: 2,
       }}
     >
@@ -126,7 +134,7 @@ function AttendeeRow({
         borderRadius: "10px",
         border: 1,
         borderColor: "divider",
-        bgcolor: "hsl(var(--md-surface))",
+        bgcolor: "hsl(var(--md-surface-container))",
         px: 1.5,
         py: 0.875,
       }}
@@ -181,7 +189,7 @@ function PollCard({ poll, onEdit, onDelete, onToggleStatus }: {
           px: 1.5,
           py: 0.75,
           bgcolor: isDraft
-            ? "hsl(var(--md-surface-container) / 0.4)"
+            ? "hsl(var(--md-surface-container))"
             : "var(--gl-status-confirmed-bg)",
           borderBottom: "1px solid",
           borderColor: "divider",
@@ -227,7 +235,7 @@ function PollCard({ poll, onEdit, onDelete, onToggleStatus }: {
                 px: 1.25,
                 py: 0.5,
                 borderRadius: "8px",
-                bgcolor: "hsl(var(--md-surface-container) / 0.3)",
+                bgcolor: "hsl(var(--md-surface-container))",
               }}
             >
               <Box
@@ -294,7 +302,7 @@ function PollCreationForm({ onSave, onCancel, editingPoll }: {
         borderRadius: "8px",
         border: "1px solid",
         borderColor: "primary.main",
-        bgcolor: "hsl(var(--md-surface-container) / 0.2)",
+        bgcolor: "hsl(var(--md-surface-container))",
         overflow: "hidden",
       }}
     >
@@ -302,7 +310,7 @@ function PollCreationForm({ onSave, onCancel, editingPoll }: {
         sx={{
           px: 1.5,
           py: 1,
-          bgcolor: "hsl(var(--md-surface-container) / 0.5)",
+          bgcolor: "hsl(var(--md-surface))",
           borderBottom: "1px solid",
           borderColor: "divider",
           display: "flex",
@@ -670,7 +678,7 @@ export function SessionDetailsModal() {
                     mt: 2,
                     p: 1.75,
                     borderRadius: "12px",
-                    bgcolor: "hsl(var(--md-surface-container) / 0.5)",
+                    bgcolor: "hsl(var(--md-surface-container))",
                     border: "1px solid",
                     borderColor: "divider",
                   }}
@@ -693,7 +701,7 @@ export function SessionDetailsModal() {
 
                     {/* Location */}
                     <Stack direction="row" alignItems="center" spacing={1.5}>
-                      <Box sx={{ width: 36, height: 36, borderRadius: "8px", bgcolor: "hsl(var(--md-surface-container))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Box sx={{ width: 36, height: 36, borderRadius: "8px", bgcolor: "hsl(var(--md-surface))", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <PlaceOutlinedIcon sx={{ fontSize: 16, color: "text.secondary" }} />
                       </Box>
                       <Box sx={{ flex: 1 }}>
@@ -1042,7 +1050,7 @@ export function SessionDetailsModal() {
                             sx={{
                               p: 1.25,
                               borderRadius: "10px",
-                              bgcolor: "hsl(var(--md-surface-container) / 0.4)",
+                              bgcolor: "hsl(var(--md-surface))",
                               fontSize: "0.8125rem",
                               lineHeight: 1.55,
                               color: lc.agenda ? "hsl(var(--md-on-surface))" : "hsl(var(--md-on-surface-variant))",
@@ -1097,7 +1105,7 @@ export function SessionDetailsModal() {
                               mt: 1.5,
                               p: 1.25,
                               borderRadius: "10px",
-                              bgcolor: "hsl(var(--md-surface-container) / 0.3)",
+                              bgcolor: "hsl(var(--md-surface))",
                               fontSize: "0.8rem",
                               color: "hsl(var(--md-on-surface-variant))",
                               lineHeight: 1.5,
