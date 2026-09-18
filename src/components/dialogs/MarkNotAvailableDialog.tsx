@@ -56,6 +56,9 @@ import {
   DECLINE_CLOSE_THRESHOLD_HOURS,
   composeDeclineReason,
   canSubmitDeclineReason,
+  EMPTY_LATE_ACK,
+  lateAckComplete,
+  type LateCancellationAck,
   EMPTY_DECLINE_REASON,
   type DeclineReasonValue,
 } from "@/components/shared/DeclineReasonFields";
@@ -100,6 +103,8 @@ export function MarkNotAvailableDialog() {
   // Why the overlapping sessions are being declined. Required before confirming
   // while auto-decline is on — a decline without a reason tells the scheduler nothing.
   const [declineReasonValue, setDeclineReasonValue] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
+  // Ticked on step 3. Survives Back/Next within one dialog visit.
+  const [lateAck, setLateAck] = useState<LateCancellationAck>(EMPTY_LATE_ACK);
   const isCareerMentorRole = useAppSelector((s) => s.devPanel.selectedRole) === "Career Mentor";
 
   /* ── Pre-fill when editing existing leave ───────────────────────── */
@@ -126,6 +131,7 @@ export function MarkNotAvailableDialog() {
       setStep(1);
       setAutoDecline(true);
       setDeclineReasonValue(EMPTY_DECLINE_REASON);
+      setLateAck(EMPTY_LATE_ACK);
     }
   }, [open]);
 
@@ -179,6 +185,8 @@ export function MarkNotAvailableDialog() {
   /** Covered sessions inside the threshold: these become cancellation requests, not declines. */
   const lateSessions = willDecline ? sessionsTooCloseToDecline(conflictingSessions, Date.now()) : [];
   const needsInstructions = lateSessions.length > 0;
+  /* Step 3 sends the requests, so it also needs both instructions confirmed. */
+  const canConfirmStep3 = canConfirmStep2 && lateAckComplete(lateAck);
 
   const handleMarkLeave = () => {
     // If there are conflicts, go to step 2 for confirmation
@@ -477,7 +485,9 @@ export function MarkNotAvailableDialog() {
             )}
           </Box>
         )}
-        {step === 3 && <LateCancellationInstructions sessions={lateSessions} />}
+        {step === 3 && (
+          <LateCancellationInstructions sessions={lateSessions} ack={lateAck} onAckChange={setLateAck} />
+        )}
       </DialogContent>
 
       {/* ── Footer ── */}
@@ -504,7 +514,7 @@ export function MarkNotAvailableDialog() {
                 ? () => setStep(3)
                 : handleConfirm
           }
-          disabled={step === 1 ? !isValid : !canConfirmStep2}
+          disabled={step === 1 ? !isValid : step === 3 ? !canConfirmStep3 : !canConfirmStep2}
           sx={{ px: 2, minWidth: DIALOG_ACTION_MIN_WIDTH }}
         >
           {step === 3

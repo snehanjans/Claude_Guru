@@ -7,6 +7,8 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
@@ -51,6 +53,17 @@ export function composeDeclineReason(v: DeclineReasonValue, isCareerMentor: bool
 export function canSubmitDeclineReason(v: DeclineReasonValue, isCareerMentor: boolean) {
   return isCareerMentor ? !!v.reason : !!v.freeText.trim();
 }
+
+/**
+ * Confirmation that the guru has done the two things a late cancellation needs
+ * from them. Held by each surface and gated on before the request is sent, so
+ * nobody can tick through the instructions step without reading it.
+ */
+export type LateCancellationAck = { pm: boolean; learners: boolean };
+
+export const EMPTY_LATE_ACK: LateCancellationAck = { pm: false, learners: false };
+
+export const lateAckComplete = (a: LateCancellationAck) => a.pm && a.learners;
 
 /** Inside this window there isn't time for the scheduler to find a replacement. */
 export const DECLINE_CLOSE_THRESHOLD_HOURS = 72;
@@ -153,12 +166,52 @@ function InstructionStep({
   );
 }
 
+/** Confirms one instruction step. Sits at the end of that step's own content. */
+function InstructionCheck({
+  checked,
+  onChange,
+  label,
+  compact,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+  compact: boolean;
+}) {
+  return (
+    <FormControlLabel
+      checked={checked}
+      onChange={(_, next) => onChange(next)}
+      control={<Checkbox size="small" sx={{ py: 0.25, pl: 0 }} />}
+      label={label}
+      sx={{
+        mt: compact ? 0.5 : 1,
+        ml: 0,
+        alignItems: "flex-start",
+        "& .MuiFormControlLabel-label": { fontSize: compact ? 11 : "0.8125rem", pt: compact ? "3px" : "5px" },
+      }}
+    />
+  );
+}
+
 /**
  * What a guru must do themselves when pulling out of sessions inside the threshold:
  * tell the Program Manager, and tell the learners. Shared by the session dialog and
  * both leave flows so the instructions never drift.
  */
-export function LateCancellationInstructions({ sessions, compact = false }: { sessions: Session[]; compact?: boolean }) {
+export function LateCancellationInstructions({
+  sessions,
+  compact = false,
+  ack,
+  onAckChange,
+}: {
+  sessions: Session[];
+  compact?: boolean;
+  /* Required, not optional: a surface that forgets to wire these up would let
+     the guru send the request without confirming they did either thing. */
+  ack: LateCancellationAck;
+  onAckChange: (next: LateCancellationAck) => void;
+}) {
   if (sessions.length === 0) return null;
   const bodySx = { color: MUTED, fontSize: compact ? 11 : undefined };
   const highlightSx = { color: "text.primary", fontWeight: 600, wordBreak: "break-word" } as const;
@@ -209,6 +262,12 @@ export function LateCancellationInstructions({ sessions, compact = false }: { se
             </Link>
           </FlexBox>
         </FlexBox>
+        <InstructionCheck
+          checked={ack.pm}
+          onChange={(next) => onAckChange({ ...ack, pm: next })}
+          label={`I've contacted ${PROGRAM_MANAGER_CONTACT.name}`}
+          compact={compact}
+        />
       </InstructionStep>
 
       <InstructionStep n={2} title="Post a message to your students" compact={compact}>
@@ -222,6 +281,12 @@ export function LateCancellationInstructions({ sessions, compact = false }: { se
           ))}{" "}
           know that you're unable to take {sessions.length === 1 ? "this class" : "these classes"}.
         </Typography>
+        <InstructionCheck
+          checked={ack.learners}
+          onChange={(next) => onAckChange({ ...ack, learners: next })}
+          label={sessions.length === 1 ? "I've posted a message to the batch" : "I've posted a message to each batch"}
+          compact={compact}
+        />
       </InstructionStep>
     </FlexBox>
   );

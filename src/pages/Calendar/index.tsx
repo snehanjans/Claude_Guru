@@ -92,6 +92,9 @@ import {
   DeclineReasonFields,
   LateCancellationWarning,
   LateCancellationInstructions,
+  EMPTY_LATE_ACK,
+  lateAckComplete,
+  type LateCancellationAck,
   CANCELLATION_REQUESTED_TOAST,
   sessionsTooCloseToDecline,
   composeDeclineReason,
@@ -426,6 +429,9 @@ export default function CalendarPage() {
   // Third step, only when some covered sessions start inside the late-cancellation
   // threshold: what the guru must do themselves before the leave is marked.
   const [spotInstructionsStep, setSpotInstructionsStep] = useState(false);
+  // Confirmation that the guru has done both of those things. Survives Back/Next
+  // within one drag, and is cleared with the rest of the pending spot.
+  const [spotLateAck, setSpotLateAck] = useState<LateCancellationAck>(EMPTY_LATE_ACK);
   // The edited group's reason, carried through so editing times doesn't reset a
   // custom reason ("Sick leave", …) back to the generic default.
   const [spotEditReason, setSpotEditReason] = useState<string | null>(null);
@@ -549,6 +555,8 @@ export default function CalendarPage() {
       setSpotInstructionsStep(true);
       return;
     }
+    // Belt and braces: the button is disabled until both are ticked.
+    if (spotKind === "leave" && spotLateConflicts.length > 0 && !lateAckComplete(spotLateAck)) return;
     if (spotKind === "leave") {
       // One block per day, all sharing a groupId so the range deletes as a unit.
       // Editing rewrites the group wholesale: the day count can change, so there is
@@ -589,6 +597,7 @@ export default function CalendarPage() {
     setSpotConflictStep(false);
     setSpotInstructionsStep(false);
     setSpotDeclineReason(EMPTY_DECLINE_REASON);
+    setSpotLateAck(EMPTY_LATE_ACK);
   };
   const cancelSpot = () => {
     setPendingSpot(null);
@@ -598,6 +607,7 @@ export default function CalendarPage() {
     setSpotConflictStep(false);
     setSpotInstructionsStep(false);
     setSpotDeclineReason(EMPTY_DECLINE_REASON);
+    setSpotLateAck(EMPTY_LATE_ACK);
   };
 
   /**
@@ -1899,7 +1909,12 @@ export default function CalendarPage() {
             {pendingSpot && spotConflictStep && spotInstructionsStep && (
               <>
                 <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1 }}>Request cancellation</Typography>
-                <LateCancellationInstructions compact sessions={spotLateConflicts} />
+                <LateCancellationInstructions
+                  compact
+                  sessions={spotLateConflicts}
+                  ack={spotLateAck}
+                  onAckChange={setSpotLateAck}
+                />
                 <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1.75 }}>
                   <Button size="small" color="inherit" onClick={() => setSpotInstructionsStep(false)} sx={{ fontSize: 12 }}>
                     Back
@@ -1910,6 +1925,7 @@ export default function CalendarPage() {
                     color="error"
                     disableElevation
                     onClick={confirmSpot}
+                    disabled={!lateAckComplete(spotLateAck)}
                     sx={{ fontSize: 12 }}
                   >
                     Request cancellation
