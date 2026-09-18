@@ -27,6 +27,9 @@ import {
   LateCancellationWarning,
   LateCancellationInstructions,
   CANCELLATION_REQUESTED_TOAST,
+  EMPTY_LATE_ACK,
+  lateAckComplete,
+  type LateCancellationAck,
 } from "@/components/shared/DeclineReasonFields";
 
 export function DeclineReasonDialog() {
@@ -42,11 +45,14 @@ export function DeclineReasonDialog() {
   const [details, setDetails] = useState("");
   // Late declines take two steps: the reason, then what the guru must do themselves.
   const [step, setStep] = useState<"reason" | "instructions">("reason");
+  // Ticked on the instructions step. Survives Back/Next within one dialog visit.
+  const [ack, setAck] = useState<LateCancellationAck>(EMPTY_LATE_ACK);
   useEffect(() => {
     if (!open) {
       setReason("");
       setDetails("");
       setStep("reason");
+      setAck(EMPTY_LATE_ACK);
     }
   }, [open]);
 
@@ -64,6 +70,8 @@ export function DeclineReasonDialog() {
   const nowMs = Date.now();
   const isLate = !!declineSessionFocus && sessionsTooCloseToDecline([declineSessionFocus], nowMs).length > 0;
   const onInstructions = isLate && step === "instructions";
+  /* The request can only be sent once both instructions are confirmed. */
+  const canAdvance = canSubmit && (!onInstructions || lateAckComplete(ack));
 
   const handleClose = () => {
     dispatch(setOpenDeclineReason(false));
@@ -92,9 +100,27 @@ export function DeclineReasonDialog() {
   };
 
   const handlePrimary = () => {
-    if (!canSubmit) return;
+    if (!canAdvance) return;
     if (isLate && step === "reason") setStep("instructions");
     else handleSubmit();
+  };
+
+  /**
+   * Enter in the reason field advances the dialog, the way it would in any
+   * one-field form. Two inputs have to keep Enter for themselves, so they only
+   * advance with a modifier:
+   *   - the career mentor's "More details" box is multiline, where Enter is a
+   *     newline;
+   *   - its reason Select uses Enter to open the list and choose an option.
+   * Composition keystrokes are ignored so an IME candidate can be committed.
+   */
+  const handleReasonKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+    const el = e.target as HTMLElement;
+    const keepsEnter = el.tagName === "TEXTAREA" || el.getAttribute("role") === "combobox";
+    if (keepsEnter && !(e.metaKey || e.ctrlKey)) return;
+    e.preventDefault();
+    handlePrimary();
   };
 
   return (
@@ -129,7 +155,7 @@ export function DeclineReasonDialog() {
 
             {/* Free-text lives in redux here (`declineReason`); the career-mentor
                 select/details stay local. The shared fields render both shapes. */}
-            <Box onKeyDown={(e) => { if (e.key === "Enter" && e.metaKey) handlePrimary(); }}>
+            <Box onKeyDown={handleReasonKeyDown}>
               <DeclineReasonFields
                 isCareerMentor={isCareerMentor}
                 autoFocus
@@ -144,7 +170,9 @@ export function DeclineReasonDialog() {
           </Box>
         ) : null}
 
-        {declineSessionFocus && onInstructions ? <LateCancellationInstructions sessions={[declineSessionFocus]} /> : null}
+        {declineSessionFocus && onInstructions ? (
+          <LateCancellationInstructions sessions={[declineSessionFocus]} ack={ack} onAckChange={setAck} />
+        ) : null}
       </DialogContent>
       <DialogActions sx={{ flexDirection: { xs: "column", sm: "row" }, gap: { xs: 1, sm: 0 }, "& > :not(:first-of-type)": { ml: { xs: 0, sm: 1 } } }}>
         {onInstructions && (
@@ -155,7 +183,7 @@ export function DeclineReasonDialog() {
         <Button
           variant="soft"
           onClick={handlePrimary}
-          disabled={!canSubmit}
+          disabled={!canAdvance}
           sx={{
             width: { xs: "100%", sm: "auto" },
             fontWeight: 600,
