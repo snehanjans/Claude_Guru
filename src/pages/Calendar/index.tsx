@@ -106,6 +106,8 @@ import { DOW, DOW_LONG, demoNow } from "@/lib/constants";
 import type { NA, RequestSlot, Session, AvailRole } from "@/lib/types";
 import { availRoleVisual, COMBINED_MENTOR_ROLE } from "@/lib/role-config";
 import { AvailRoleSelect } from "@/components/shared/AvailRoleSelect";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
+import FlexBox from "@/components/Utils/FlexBox";
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
@@ -162,6 +164,21 @@ const TIME_STEP = 15;
 const spotTimePickerProps = (ariaLabel: string) =>
   compactTimePickerProps(ariaLabel, { stepMinutes: TIME_STEP });
 const spotDatePickerProps = (ariaLabel: string) => compactDatePickerProps(ariaLabel);
+
+/**
+ * Height floor for the drag-select popover's date/time step, so the popover
+ * stays one size as the Availability/Leave toggle flips.
+ *
+ * Leave is the taller tab by ~70px: it carries a date-range row and the
+ * "you'll show as unavailable" line, neither of which availability has a
+ * counterpart for. Without a floor the popover resizes under the cursor on
+ * every toggle. This clears leave's natural height, so the shorter tab pads
+ * out to meet it instead of the taller one being clamped.
+ *
+ * It is a floor, not a fixed height — states that legitimately need more (a
+ * multi-day leave wraps its helper line to three) still grow past it.
+ */
+const SPOT_STEP_MIN_HEIGHT = 248;
 
 /** Convert minutes-since-midnight to a percentage within the visible grid. */
 function timeToPercent(mins: number) {
@@ -1903,12 +1920,31 @@ export default function CalendarPage() {
             disableEnforceFocus
             // The conflict step carries a session list and the reason fields, so it
             // needs more room than the date/time step.
-            slotProps={{ paper: { sx: { borderRadius: '12px', p: 1.75, width: spotConflictStep ? 340 : 288, maxWidth: 'calc(100vw - 24px)' } } }}
+            slotProps={{
+              paper: {
+                sx: {
+                  borderRadius: '12px',
+                  p: 1.75,
+                  width: spotConflictStep ? 340 : 288,
+                  maxWidth: 'calc(100vw - 24px)',
+                  // Only the date/time step is held to one size; the conflict
+                  // steps are a different width and size to their own content.
+                  ...(spotConflictStep
+                    ? {}
+                    : { minHeight: SPOT_STEP_MIN_HEIGHT, display: 'flex', flexDirection: 'column' }),
+                },
+              },
+            }}
           >
             {/* Step 3 — some covered sessions start inside the threshold. */}
             {pendingSpot && spotConflictStep && spotInstructionsStep && (
               <>
-                <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1 }}>Request cancellation</Typography>
+                {/* The conflict steps lead with Back, which returns rather than
+                    dismisses — so they carry the standard close affordance too. */}
+                <FlexBox alignItems="flex-start" justifyContent="space-between" gap={1} sx={{ mb: 1 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Request cancellation</Typography>
+                  <DialogCloseButton onClick={cancelSpot} />
+                </FlexBox>
                 <LateCancellationInstructions
                   compact
                   sessions={spotLateConflicts}
@@ -1937,11 +1973,25 @@ export default function CalendarPage() {
             {/* Step 2 — leave covers scheduled sessions, so collect a decline reason. */}
             {pendingSpot && spotConflictStep && !spotInstructionsStep && (
               <>
-                <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 0.25 }}>
-                  {spotLeaveConflicts.length === 1 ? 'This overlaps a session' : `This overlaps ${spotLeaveConflicts.length} sessions`}
-                </Typography>
+                <FlexBox alignItems="flex-start" justifyContent="space-between" gap={1} sx={{ mb: 0.25 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+                    {spotLeaveConflicts.length === 1 ? 'This overlaps a session' : `This overlaps ${spotLeaveConflicts.length} sessions`}
+                  </Typography>
+                  <DialogCloseButton onClick={cancelSpot} />
+                </FlexBox>
                 <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1.25 }}>
-                  Marking this leave {spotLateConflicts.length > 0 ? 'cancels' : 'declines'} {spotLeaveConflicts.length === 1 ? 'it' : 'them'}. Please add a reason for the scheduler.
+                  {/* Inside the threshold the leave doesn't cancel anything by itself —
+                      it asks the Program Manager to, which is what the confirm button
+                      goes on to do. Outside it, the decline is immediate. */}
+                  Marking this leave{' '}
+                  {spotLateConflicts.length > 0
+                    ? spotLeaveConflicts.length === 1
+                      ? 'requests a cancellation for it'
+                      : 'requests cancellations for them'
+                    : spotLeaveConflicts.length === 1
+                      ? 'declines it'
+                      : 'declines them'}
+                  . Please add a reason for the scheduler.
                 </Typography>
 
                 <Stack
@@ -2115,7 +2165,10 @@ export default function CalendarPage() {
                   )
                 )}
 
-                <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1.75 }}>
+                {/* `mt: auto` — whichever tab is shorter pads at the bottom, so the
+                    buttons hold the same line on both. `pt` keeps the gap from
+                    closing up when the content does fill the height. */}
+                <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 'auto', pt: 1.75 }}>
                   <Button size="small" color="inherit" onClick={cancelSpot} sx={{ fontSize: 12 }}>
                     Cancel
                   </Button>
