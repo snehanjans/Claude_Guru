@@ -1,7 +1,8 @@
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
+import Autocomplete from "@mui/material/Autocomplete";
 import Typography from "@mui/material/Typography";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
@@ -27,16 +28,33 @@ export const CAREER_MENTOR_REASONS = [
 ];
 
 /**
+ * Quick-pick reasons for every other role. Offered through a `freeSolo`
+ * field, so this is a shortcut rather than a fixed list — the reasons a guru
+ * pulls out of a session are too varied to enumerate, and anything typed
+ * stands on its own. The entries mirror the hints the placeholder used to
+ * carry, in the same voice as `CAREER_MENTOR_REASONS`.
+ */
+export const DECLINE_REASONS = [
+  "Traveling for work",
+  "Personal commitment",
+  "Personal emergency",
+  "Not keeping well",
+  "Clashes with another session",
+  "Session is getting rescheduled",
+];
+
+/**
  * Why a session is being declined. Career Mentors pick from a fixed list and may
- * add detail; every other role types a free-text reason. Both shapes are held at
- * once so switching role mid-edit doesn't drop what was already typed.
+ * add detail; every other role gets a suggested list it can also type past. Both
+ * shapes are held at once so switching role mid-edit doesn't drop what was
+ * already typed.
  */
 export type DeclineReasonValue = {
   /** Career Mentor: the selected reason. */
   reason: string;
   /** Career Mentor: optional extra detail. */
   details: string;
-  /** Every other role: the free-text reason. */
+  /** Every other role: the reason, picked from `DECLINE_REASONS` or typed. */
   freeText: string;
 };
 
@@ -55,15 +73,15 @@ export function canSubmitDeclineReason(v: DeclineReasonValue, isCareerMentor: bo
 }
 
 /**
- * Confirmation that the guru has done the two things a late cancellation needs
- * from them. Held by each surface and gated on before the request is sent, so
- * nobody can tick through the instructions step without reading it.
+ * Confirmation that the guru has done what a late cancellation needs from them.
+ * Held by each surface and gated on before the request is sent, so nobody can
+ * tick through the instructions step without reading it.
  */
-export type LateCancellationAck = { pm: boolean; learners: boolean };
+export type LateCancellationAck = { pm: boolean };
 
-export const EMPTY_LATE_ACK: LateCancellationAck = { pm: false, learners: false };
+export const EMPTY_LATE_ACK: LateCancellationAck = { pm: false };
 
-export const lateAckComplete = (a: LateCancellationAck) => a.pm && a.learners;
+export const lateAckComplete = (a: LateCancellationAck) => a.pm;
 
 /** Inside this window there isn't time for the scheduler to find a replacement. */
 export const DECLINE_CLOSE_THRESHOLD_HOURS = 72;
@@ -195,9 +213,9 @@ function InstructionCheck({
 }
 
 /**
- * What a guru must do themselves when pulling out of sessions inside the threshold:
- * tell the Program Manager, and tell the learners. Shared by the session dialog and
- * both leave flows so the instructions never drift.
+ * What a guru must do themselves when pulling out of sessions inside the
+ * threshold: tell the Program Manager. Shared by the session dialog and both
+ * leave flows so the instructions never drift.
  */
 export function LateCancellationInstructions({
   sessions,
@@ -208,7 +226,7 @@ export function LateCancellationInstructions({
   sessions: Session[];
   compact?: boolean;
   /* Required, not optional: a surface that forgets to wire these up would let
-     the guru send the request without confirming they did either thing. */
+     the guru send the request without confirming they did it. */
   ack: LateCancellationAck;
   onAckChange: (next: LateCancellationAck) => void;
 }) {
@@ -217,7 +235,6 @@ export function LateCancellationInstructions({
   const highlightSx = { color: "text.primary", fontWeight: 600, wordBreak: "break-word" } as const;
   const iconSx = { fontSize: compact ? 12 : 14, color: MUTED };
   const linkSx = { fontSize: compact ? 11 : undefined, wordBreak: "break-all" } as const;
-  const batches = [...new Set(sessions.map((s) => s.batch).filter((b): b is string => !!b))];
   const subject = sessions.length === 1 ? `Unable to take: ${sessions[0].title}` : `Unable to take ${sessions.length} sessions`;
 
   return (
@@ -229,7 +246,7 @@ export function LateCancellationInstructions({
           <Box component="span" sx={highlightSx}>{sessions.length} sessions</Box>
         )}{" "}
         {sessions.length === 1 ? "starts" : "start"} in less than {DECLINE_CLOSE_THRESHOLD_HOURS} hours. Before you step
-        away, please do both of these:
+        away, please do this:
       </Typography>
 
       <InstructionStep n={1} title="Contact your Program Manager" compact={compact}>
@@ -269,25 +286,6 @@ export function LateCancellationInstructions({
           compact={compact}
         />
       </InstructionStep>
-
-      <InstructionStep n={2} title="Post a message to your students" compact={compact}>
-        <Typography variant="body2" sx={bodySx}>
-          Let the learners
-          {batches.map((b, i) => (
-            <Fragment key={b}>
-              {i === 0 ? " in " : i === batches.length - 1 ? " and " : ", "}
-              <Box component="span" sx={highlightSx}>{b}</Box>
-            </Fragment>
-          ))}{" "}
-          know that you're unable to take {sessions.length === 1 ? "this class" : "these classes"}.
-        </Typography>
-        <InstructionCheck
-          checked={ack.learners}
-          onChange={(next) => onAckChange({ ...ack, learners: next })}
-          label={sessions.length === 1 ? "I've posted a message to the batch" : "I've posted a message to each batch"}
-          compact={compact}
-        />
-      </InstructionStep>
     </FlexBox>
   );
 }
@@ -318,16 +316,36 @@ export function DeclineReasonFields({
 
   if (!isCareerMentor) {
     return (
-      <TextField
-        label="Reason"
+      <Autocomplete
+        freeSolo
+        options={DECLINE_REASONS}
+        /* Both are controlled off the same string: `onChange` catches a pick
+           from the list, `onInputChange` catches typing. A picked reason is
+           just text in the field afterwards, so it stays editable. */
         value={value.freeText}
-        onChange={(e) => onChange({ ...value, freeText: e.target.value })}
-        placeholder="E.g., travel / personal commitment / overlap"
-        size={size}
-        fullWidth
-        required
-        autoFocus={autoFocus}
-        sx={fontSx}
+        onChange={(_e, next) => onChange({ ...value, freeText: next ?? "" })}
+        inputValue={value.freeText}
+        onInputChange={(_e, next) => onChange({ ...value, freeText: next })}
+        slotProps={{
+          listbox: {
+            // The app's scrollbar, as the calendar's own scroll areas wear it —
+            // the stock listbox otherwise shows the browser's full-width one.
+            className: "themed-scrollbar",
+            sx: { maxHeight: compact ? 168 : 232, ...(compact && { fontSize: 12 }) },
+          },
+        }}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Reason"
+            placeholder="Pick a reason or type your own"
+            size={size}
+            fullWidth
+            required
+            autoFocus={autoFocus}
+            sx={fontSx}
+          />
+        )}
       />
     );
   }
