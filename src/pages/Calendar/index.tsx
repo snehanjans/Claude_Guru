@@ -99,6 +99,7 @@ import {
   sessionsTooCloseToDecline,
   composeDeclineReason,
   canSubmitDeclineReason,
+  DECLINE_CLOSE_THRESHOLD_HOURS,
   EMPTY_DECLINE_REASON,
   type DeclineReasonValue,
 } from "@/components/shared/DeclineReasonFields";
@@ -259,6 +260,27 @@ function sessionColors(declined: boolean) {
     sub: "var(--gl-cal-session-scheduled-sub)",
   };
 }
+
+/**
+ * A cancellation the Program Manager has not answered yet.
+ *
+ * Amber rather than the error hue on purpose. The session is still scheduled and
+ * still the guru's to teach — nothing has been decided. Red would read as final,
+ * and it is already spoken for: a struck-through red tile means the session is
+ * gone. This says "in progress" instead, and the title and time stay neutral so
+ * the tile is still first and foremost a session.
+ *
+ * Fill and border come from the `warning` group in `colors.ts` (via the `-hsl`
+ * companion `tokens.ts` adds), so both follow the palette into dark mode.
+ */
+const pendingCancelColors = {
+  bg: "hsl(var(--warning-main-hsl) / 0.16)",
+  border: "var(--warning-main)",
+  text: "text.primary",
+  sub: "text.secondary",
+  /** For the status line — darker, so it holds up against the tinted fill. */
+  accent: "var(--warning-dark)",
+};
 
 /** Request status color (§8.5) */
 function requestColors(response: RequestSlot["response"]) {
@@ -443,6 +465,10 @@ export default function CalendarPage() {
    */
   const [spotConflictStep, setSpotConflictStep] = useState(false);
   const [spotDeclineReason, setSpotDeclineReason] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
+  // A leave can cover both kinds at once. The two groups go to different people —
+  // one is the guru's own decision, the other is a request the Program Manager has
+  // to weigh — so they get a reason each rather than sharing one.
+  const [spotLateReason, setSpotLateReason] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
   // Third step, only when some covered sessions start inside the late-cancellation
   // threshold: what the guru must do themselves before the leave is marked.
   const [spotInstructionsStep, setSpotInstructionsStep] = useState(false);
@@ -555,8 +581,40 @@ export default function CalendarPage() {
   /** Covered sessions inside the threshold: these become cancellation requests, not declines. */
   const spotLateConflicts = sessionsTooCloseToDecline(spotLeaveConflicts, realNow.getTime());
 
+  /** The rest: far enough out that the guru's word is final. */
+  const spotDeclinedConflicts = (() => {
+    const lateIds = new Set(spotLateConflicts.map((s) => s.id));
+    return spotLeaveConflicts.filter((s) => !lateIds.has(s.id));
+  })();
+  const spotHasBothGroups = spotDeclinedConflicts.length > 0 && spotLateConflicts.length > 0;
+
+  /* With one group there is one field, exactly as before. The second field only
+     appears when the leave is genuinely mixed, so the common case is untouched. */
   const spotDeclineReasonText = composeDeclineReason(spotDeclineReason, isCareerMentorRole);
-  const canConfirmSpotConflicts = canSubmitDeclineReason(spotDeclineReason, isCareerMentorRole);
+  const spotLateReasonText = composeDeclineReason(
+    spotHasBothGroups ? spotLateReason : spotDeclineReason,
+    isCareerMentorRole,
+  );
+  const canConfirmSpotConflicts =
+    canSubmitDeclineReason(spotDeclineReason, isCareerMentorRole) &&
+    (!spotHasBothGroups || canSubmitDeclineReason(spotLateReason, isCareerMentorRole));
+
+  /** What confirming will do, named in full when it does two different things. */
+  const spotConflictSummary = (() => {
+    const d = spotDeclinedConflicts.length;
+    const l = spotLateConflicts.length;
+    if (d > 0 && l > 0) {
+      return `Marking this leave declines ${d} and requests cancellation for ${l}. Please add a reason for each.`;
+    }
+    if (l > 0) {
+      return l === 1
+        ? "Marking this leave requests a cancellation for it. Please add a reason for the scheduler."
+        : "Marking this leave requests cancellations for them. Please add a reason for the scheduler.";
+    }
+    return d === 1
+      ? "Marking this leave declines it. Please add a reason for the scheduler."
+      : "Marking this leave declines them. Please add a reason for the scheduler.";
+  })();
 
   const confirmSpot = () => {
     if (!pendingSpot) return;
@@ -585,10 +643,9 @@ export default function CalendarPage() {
       });
       // Inside the threshold it is only a request (the PM accepts it later); further
       // out the session is declined straight away.
-      const lateIds = new Set(spotLateConflicts.map((s) => s.id));
-      const declined = spotLeaveConflicts.filter((s) => !lateIds.has(s.id));
+      const declined = spotDeclinedConflicts;
       spotLateConflicts.forEach((s) =>
-        dispatch(requestCancellation({ id: s.id, dateYmd: todayYmd, reason: spotDeclineReasonText })),
+        dispatch(requestCancellation({ id: s.id, dateYmd: todayYmd, reason: spotLateReasonText })),
       );
       declined.forEach((s) =>
         dispatch(declineSession({ id: s.id, dateYmd: todayYmd, reason: spotDeclineReasonText })),
@@ -614,6 +671,7 @@ export default function CalendarPage() {
     setSpotConflictStep(false);
     setSpotInstructionsStep(false);
     setSpotDeclineReason(EMPTY_DECLINE_REASON);
+    setSpotLateReason(EMPTY_DECLINE_REASON);
     setSpotLateAck(EMPTY_LATE_ACK);
   };
   const cancelSpot = () => {
@@ -624,6 +682,7 @@ export default function CalendarPage() {
     setSpotConflictStep(false);
     setSpotInstructionsStep(false);
     setSpotDeclineReason(EMPTY_DECLINE_REASON);
+    setSpotLateReason(EMPTY_DECLINE_REASON);
     setSpotLateAck(EMPTY_LATE_ACK);
   };
 
@@ -1060,8 +1119,8 @@ export default function CalendarPage() {
                   {sessionsThisWeek
                     .filter((s) => s.dateYmd === mobileSelectedDay && !sessionDeclined[s.id])
                     .map((s) => {
-                      const sColors = sessionColors(false);
                       const cancelRequested = !!cancellationRequests[s.id];
+                      const sColors = cancelRequested ? pendingCancelColors : sessionColors(false);
                       const topPct = timeToPercent(s.start);
                       const blockHeight = timeToPercent(s.end) - topPct;
                       const totalPx = HOUR_LABELS.length * GRID_ROW_PX;
@@ -1077,9 +1136,10 @@ export default function CalendarPage() {
                             right: 4,
                             bgcolor: sColors.bg,
                             borderRadius: '8px',
-                            // Pending cancellation: still scheduled, flagged by a red border only.
+                            // Pending cancellation: still scheduled, so it takes the amber
+                            // fill and border rather than the declined treatment.
                             border: cancelRequested ? '1px solid' : 'none',
-                            borderColor: 'error.main',
+                            borderColor: pendingCancelColors.border,
                             cursor: 'pointer',
                             textAlign: 'left',
                             px: 1,
@@ -1730,6 +1790,8 @@ export default function CalendarPage() {
                         const isCompletedSession = isPastSession && !declined;
                         const sColors = isCompletedSession
                           ? { bg: "var(--gl-status-completed-bg)", border: "var(--gl-status-completed-border)", text: "var(--gl-status-completed-text)", sub: "var(--gl-status-completed-text)" }
+                          : cancelRequested
+                            ? pendingCancelColors
                           : sessionColors(declined);
                         const statusLabel = declined
                           ? "Declined"
@@ -1764,10 +1826,11 @@ export default function CalendarPage() {
                               width: `calc(${widthPct}% - ${TILE_INSET_PX * 2}px)`,
                               ...tileBox(s.start, s.end),
                               bgcolor: sColors.bg,
-                              // Pending cancellation: still scheduled, flagged by a red border
-                              // only. The strike-through waits until the PM accepts.
+                              // Pending cancellation: still scheduled, so it takes the amber
+                              // fill and border but keeps upright text. The strike-through
+                              // waits until the PM accepts.
                               border: cancelRequested ? '1px solid' : 'none',
-                              borderColor: 'error.main',
+                              borderColor: pendingCancelColors.border,
                               borderRadius: '8px',
                               zIndex: 5,
                               px: 0.75,
@@ -1814,7 +1877,7 @@ export default function CalendarPage() {
                                   mt: 0.25,
                                   lineHeight: '1.2',
                                   ...(cancelRequested
-                                    ? { color: 'error.main', fontWeight: 600 }
+                                    ? { color: pendingCancelColors.accent, fontWeight: 600 }
                                     : { color: sColors.sub, opacity: 0.8 }),
                                 }}
                                 noWrap
@@ -1980,18 +2043,7 @@ export default function CalendarPage() {
                   <DialogCloseButton onClick={cancelSpot} />
                 </FlexBox>
                 <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1.25 }}>
-                  {/* Inside the threshold the leave doesn't cancel anything by itself —
-                      it asks the Program Manager to, which is what the confirm button
-                      goes on to do. Outside it, the decline is immediate. */}
-                  Marking this leave{' '}
-                  {spotLateConflicts.length > 0
-                    ? spotLeaveConflicts.length === 1
-                      ? 'requests a cancellation for it'
-                      : 'requests cancellations for them'
-                    : spotLeaveConflicts.length === 1
-                      ? 'declines it'
-                      : 'declines them'}
-                  . Please add a reason for the scheduler.
+                  {spotConflictSummary}
                 </Typography>
 
                 <Stack
@@ -2023,13 +2075,43 @@ export default function CalendarPage() {
                   </Box>
                 )}
 
-                <DeclineReasonFields
-                  compact
-                  autoFocus
-                  isCareerMentor={isCareerMentorRole}
-                  value={spotDeclineReason}
-                  onChange={setSpotDeclineReason}
-                />
+                {spotHasBothGroups ? (
+                  <>
+                    <DeclineReasonFields
+                      compact
+                      autoFocus
+                      heading={
+                        spotDeclinedConflicts.length === 1
+                          ? "The session you're declining"
+                          : `The ${spotDeclinedConflicts.length} you're declining`
+                      }
+                      isCareerMentor={isCareerMentorRole}
+                      value={spotDeclineReason}
+                      onChange={setSpotDeclineReason}
+                    />
+                    <Box sx={{ mt: 1.5 }}>
+                      <DeclineReasonFields
+                        compact
+                        heading={
+                          spotLateConflicts.length === 1
+                            ? `The session inside ${DECLINE_CLOSE_THRESHOLD_HOURS} hours`
+                            : `The ${spotLateConflicts.length} inside ${DECLINE_CLOSE_THRESHOLD_HOURS} hours`
+                        }
+                        isCareerMentor={isCareerMentorRole}
+                        value={spotLateReason}
+                        onChange={setSpotLateReason}
+                      />
+                    </Box>
+                  </>
+                ) : (
+                  <DeclineReasonFields
+                    compact
+                    autoFocus
+                    isCareerMentor={isCareerMentorRole}
+                    value={spotDeclineReason}
+                    onChange={setSpotDeclineReason}
+                  />
+                )}
 
                 <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1.75 }}>
                   <Button size="small" color="inherit" onClick={() => setSpotConflictStep(false)} sx={{ fontSize: 12 }}>
@@ -2238,7 +2320,14 @@ export default function CalendarPage() {
                     (s) => s.dateYmd === ymd
                   );
                   const dayRequests = requests.filter((r) => r.dateYmd === ymd);
-                  const dayNA = unavailable.filter((n) => n.dateYmd === ymd);
+                  /* A block created by declining a session carries that session's id.
+                     The session keeps its own chip here whether or not it was declined,
+                     so drawing the block as well would say the same thing twice. The
+                     week grid drops it only while the session is still live, because
+                     there the block is what remains once the session is struck out. */
+                  const dayNA = unavailable.filter(
+                    (n) => n.dateYmd === ymd && !(n.sessionId && daySessions.some((s) => s.id === n.sessionId)),
+                  );
 
                   /* §9.3 Sorting priority: leave first, session/confirmed next, request next, availability last */
                   type EventChip = { key: string; label: string; type: "leave" | "session" | "request" | "availability"; color: string; bg: string; flagged?: boolean };
@@ -2391,7 +2480,7 @@ export default function CalendarPage() {
                             bgcolor: chip.bg,
                             color: chip.color,
                             // Inset ring rather than a border, so a flagged chip keeps the same height.
-                            boxShadow: chip.flagged ? (t) => `inset 0 0 0 1px ${t.palette.error.main}` : undefined,
+                            boxShadow: chip.flagged ? (t) => `inset 0 0 0 1px ${t.palette.warning.main}` : undefined,
                             px: 0.5,
                             fontSize: '0.5625rem',
                             lineHeight: '14px',
