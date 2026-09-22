@@ -14,6 +14,7 @@ import {
   setDeclineReason,
   setSessionFocus,
 } from "@/store/slices/sessionsSlice";
+import { addUnavailable } from "@/store/slices/availabilitySlice";
 import { setOpenDeclineReason, setOpenSession } from "@/store/slices/uiSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { toYmd } from "@/lib/helpers";
@@ -37,6 +38,8 @@ export function DeclineReasonDialog() {
   const open = useAppSelector((s) => s.ui.openDeclineReason);
   const declineSessionFocus = useAppSelector((s) => s.sessions.declineSessionFocus);
   const declineReason = useAppSelector((s) => s.sessions.declineReason);
+  const sessionDeclined = useAppSelector((s) => s.sessions.sessionDeclined);
+  const unavailable = useAppSelector((s) => s.availability.unavailable);
   const selectedRole = useAppSelector((s) => s.devPanel.selectedRole);
   const isCareerMentor = selectedRole === "Career Mentor";
 
@@ -85,8 +88,52 @@ export function DeclineReasonDialog() {
     // Stamp the real day, matching the other decline surfaces. Inside the threshold
     // it is only a request: the session stays scheduled until the PM accepts it.
     const dateYmd = toYmd(new Date());
-    if (isLate) dispatch(requestCancellation({ id: s.id, dateYmd, reason: composedReason }));
-    else dispatch(declineSession({ id: s.id, dateYmd, reason: composedReason }));
+    if (isLate) {
+      dispatch(requestCancellation({ id: s.id, dateYmd, reason: composedReason }));
+    } else {
+      dispatch(declineSession({ id: s.id, dateYmd, reason: composedReason }));
+      /*
+       * Declining also blocks the time. Stepping off a session is a statement
+       * about the guru's availability, not just about that booking — without
+       * this the slot falls straight back into the pool and can be filled with
+       * the very thing they just said they could not do. Marking leave over a
+       * session already works this way; this brings the single-session route
+       * into line with it.
+       *
+       * Only on an outright decline. Inside the threshold the session is still
+       * the guru's until the Program Manager accepts, and the request can be
+       * withdrawn, so blocking the time now would be premature.
+       *
+       * `sessionId` ties the block to its session: the calendar already hides a
+       * block whose session is drawn again, and `removeUnavailableBySessionId`
+       * exists to clear it. `groupId` is what "Cancel leave" removes by.
+       */
+      /*
+       * Only when the time isn't spoken for already. Two cases this rules out:
+       * declining the same session twice, which would otherwise stack a second
+       * block over the first; and declining a session that already sits inside a
+       * wider leave, where the calendar keeps only the newest of two overlapping
+       * blocks and would quietly shrink a whole day of leave to this one hour.
+       */
+      const alreadyBlocked = unavailable.some(
+        (n) => n.dateYmd === s.dateYmd && n.start < s.end && s.start < n.end,
+      );
+      if (!sessionDeclined[s.id] && !alreadyBlocked) {
+        const now = Date.now();
+        dispatch(
+          addUnavailable({
+            id: `na-${now}`,
+            groupId: `leave-${now}`,
+            sessionId: s.id,
+            dateYmd: s.dateYmd,
+            start: s.start,
+            end: s.end,
+            reason: composedReason || "Leave",
+            createdAt: now,
+          }),
+        );
+      }
+    }
     dispatch(setOpenDeclineReason(false));
     dispatch(setOpenSession(false));
     dispatch(setSessionFocus(null));
