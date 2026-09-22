@@ -1,6 +1,7 @@
 # Leave, conflicts and unavailability — how the Guru dashboard behaves
 
-> **Last updated:** 21 Sep 2026
+> **Last updated:** 22 Sep 2026
+> **Version:** 3
 > **Scope:** everything a Guru can do to say "I am not available", and everything the
 > product does in response.
 > **Status:** describes the prototype as built. Numbers, names and copy are taken from
@@ -9,6 +10,10 @@
 This is a description of behaviour, not a specification. Where the prototype stands in
 for a system that does not exist yet (a Program Manager inbox, for example), that is
 said plainly.
+
+An earlier revision of this document claimed several of these behaviours were absent.
+They were present all along, but only visible in particular roles and data stages that
+revision did not exercise. This version has been checked against the implementation.
 
 ---
 
@@ -38,12 +43,16 @@ time at all — is a shortcut through the same machinery.
 | What the Guru does | Where | Effect on their calendar | Effect on booked sessions |
 |---|---|---|---|
 | **Mark leave** over a date range | Calendar, Availability page | A visible leave block | Overlapping sessions are handled through the conflict flow |
-| **Decline one session** | Session details drawer | Nothing blocked | That session only |
+| **Decline one session** | Session details drawer | A leave block over that session's own time | That session only |
 | **Remove an availability slot** | Calendar, click a green slot | Slot disappears | None — cannot be used on a slot that already has a session in it |
 
-Only the first two can affect a booked session. Removing an availability slot is purely
-a correction to the offer, and the app does not let a Guru remove a slot that has
-already been filled, so it can never orphan a learner.
+Only the first two can affect a booked session, and both now leave a mark on the
+calendar when they do — marking leave and declining a session each create a leave
+block. The difference is only how much time is blocked: a mark-leave conflict blocks
+the whole range the Guru asked for, while declining one session blocks just that
+session's own start and end. Removing an availability slot is purely a correction to
+the offer, and the app does not let a Guru remove a slot that has already been filled,
+so it can never orphan a learner.
 
 ---
 
@@ -67,10 +76,14 @@ outline, leave in rose dashed outline with a diagonal hatch, and real sessions a
 tiles. The visual language is deliberate — **dashed means "an intention", solid means "a
 commitment"**.
 
-Two further settings frame the whole thing and are shown on the Availability page:
+Two further numbers appear on the Availability page, and it is worth being precise
+about what they are:
 
-- **Max events per week — 6.** The ceiling the scheduling team works to.
-- **Availability window — 60 days.** How far ahead the Guru's patterns are offered.
+- **Max events per week — 6.** Displayed as a ceiling, but nothing in the app enforces
+  it — a Guru's schedule can and does exceed it. It is a prototype placeholder, not a
+  policy to quote.
+- **Availability window — 60 days.** Displayed as how far ahead the Guru's patterns are
+  offered, but nothing enforces this either. Same caveat: placeholder, not policy.
 
 ---
 
@@ -235,6 +248,11 @@ dropped silently** — someone downstream has to reassign it, and they need to k
 The reason is stored against every affected session and shown back to the Guru later on
 the Declined tab.
 
+When a leave covers both sessions that will be declined outright and sessions inside
+the 72-hour window, the Guru now writes a separate reason for each group, under
+headings naming each group — the sessions being declined, and the sessions being sent
+for cancellation approval. With only one group, there is a single field, as before.
+
 ### Auto-decline can be turned off — in the dialog only
 
 The dialog route carries a checkbox, **on by default**:
@@ -300,9 +318,11 @@ it is ticked. The Guru is asserting they have done it; the product does not veri
 
 A leave covering several sessions is very often mixed — some inside the window, some
 outside. The app splits them automatically: sessions more than 72 hours out are declined
-there and then, and only the near ones become requests. **The Guru writes one reason and
-it is applied to both groups.** The summary afterwards reports both counts, for example
-*"2 sessions auto-declined, 1 cancellation request sent"*.
+there and then, and only the near ones become requests. **The Guru gives a reason for
+each group separately**, because the two go to different people: the declined sessions
+are the Guru's own decision, already final, while the near ones are a request the
+Program Manager still has to weigh. The summary afterwards reports both counts, for
+example *"2 sessions auto-declined, 1 cancellation request sent"*.
 
 ---
 
@@ -331,12 +351,18 @@ happening.**
   is reserved for sessions that are actually gone.
 - Opening the session shows **"Waiting for your Program Manager to accept"** in place of
   the "I'm unavailable" button, so the Guru cannot request twice.
+- The Guru can withdraw the request from the same footer, which returns the session to
+  normal. The **Withdraw request** button sits beside the "Waiting for your Program
+  Manager to accept" caption.
 - Confirmation: a toast that **stays on screen until dismissed**, rather than fading:
   > **Cancellation requested**
   > We've let the Program Manager know about your request. You can reach out to them for
   > more information.
 
-There is no way for the Guru to withdraw a request once sent.
+A decline has no equivalent undo. Once declined, the session has already been acted on
+downstream, and reversal is a conversation with the scheduler, as above. A cancellation
+request is different — it is still the Guru's to take back, right up until the Program
+Manager accepts it.
 
 ### Acceptance
 
@@ -350,15 +376,22 @@ live on the scheduling team's side.
 
 ---
 
-## 11. Declining one session, without leave
+## 11. Declining one session
 
 The shortcut. On any upcoming session, opening the details drawer offers **"I'm
 unavailable"**.
 
-This runs the same machinery as the conflict step — same reason field, same 72-hour test,
-same instructions step, same outcomes — but skips everything about dates and leave
-blocks. **Nothing is blocked off.** The Guru is saying "not this one", not "not this
-week", so the slot stays open and the scheduling team can fill it again.
+This runs the same machinery as the conflict step — same reason field, same 72-hour
+test, same instructions step, same outcomes — but skips everything about dates: there
+is no range to set, no drag, no multi-day span. **Declining a session also writes a
+leave block over that session's own start and end**, so the slot is not re-offered. The
+reasoning is the same as for leave: stepping off a session is a statement about
+availability, not just about that one booking, and without a block the slot could be
+refilled with the very thing the Guru just said they could not do.
+
+This happens only on an outright decline. A **cancellation request** does not block
+anything, because a requested session is still the Guru's until the Program Manager
+accepts it — and, as above (§10), the request can be withdrawn.
 
 The dialog is titled "Mark unavailable" and the flow is one step for a normal decline,
 two when the 72-hour rule applies.
@@ -446,7 +479,7 @@ The words a Guru sees attached to a session, and what each one means.
 | Label | Meaning |
 |---|---|
 | **Scheduled** / **Confirmed** | Normal. On the books. Sessions are confirmed the moment they are scheduled — confirming is not a step the Guru performs |
-| **Cancellation requested** | The Guru has asked to be released from a session inside the 72-hour window. Still scheduled, still happening, awaiting the Program Manager |
+| **Cancellation requested** | The Guru has asked to be released from a session inside the 72-hour window. Still scheduled, still happening, awaiting the Program Manager. Can be withdrawn by the Guru |
 | **Declined** | The Guru is off this session. Struck through on the calendar, filed on the Declined tab with its reason |
 | **Completed** | Delivered |
 | **Missed** | Not delivered |
@@ -485,14 +518,17 @@ communicated to someone downstream, and undoing it is their decision, not the Gu
 ## 16. Confirmations the Guru sees
 
 Every action in this area confirms itself with a toast in the top-right. They are listed
-here because they are the only feedback the product gives — there is no notification, no
-inbox entry and no email generated by any of these flows.
+here because they are the primary feedback the product gives. The notification
+surfaces — a Program Manager inbox entry, a scheduler alert, a learner email — are
+mocked rather than wired: nothing is actually sent to any of them. The Guru's own email
+or phone call remains the only real escalation.
 
 | Action | Confirmation |
 |---|---|
 | Leave marked, no conflicts | "Marked unavailable" with the date range |
 | Leave marked, sessions declined | "Leave marked" / "N sessions declined" |
 | Leave marked, requests sent | "Cancellation requested" — stays until dismissed |
+| Cancellation request withdrawn | "Cancellation request withdrawn" with the session title |
 | Leave edited | "Leave updated" |
 | Leave removed | "Leave cancelled" / "N days of leave removed" |
 | Single session declined | "Marked unavailable" with the session title |
@@ -549,9 +585,13 @@ For anyone who needs the policy without the walkthrough:
 6. Within 72 hours, a Guru may only *request* cancellation, must contact the Program
    Manager themselves, and must confirm they have done so. The session remains theirs
    until the Program Manager accepts.
-7. One reason covers every session affected by a single leave, whether declined or
-   requested.
-8. Removing leave does not undo the declines it caused.
-9. Availability can be split between career and course mentoring; leave cannot.
-10. Nothing in this area sends a notification. The Guru's own email or phone call to the
-    Program Manager is the escalation mechanism.
+7. A leave that mixes both — some sessions declined outright, some sent as requests —
+   takes a separate reason for each group.
+8. Declining a single session also blocks that session's own time as leave, so the slot
+   is not re-offered.
+9. Removing leave does not undo the declines it caused.
+10. A cancellation request can be withdrawn by the Guru; a decline cannot be undone from
+    the dashboard.
+11. Availability can be split between career and course mentoring; leave cannot.
+12. Notification surfaces in this area are mocked, not wired. The Guru's own email or
+    phone call to the Program Manager is the escalation mechanism.
