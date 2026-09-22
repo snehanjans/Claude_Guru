@@ -103,6 +103,10 @@ export function MarkNotAvailableDialog() {
   // Why the overlapping sessions are being declined. Required before confirming
   // while auto-decline is on — a decline without a reason tells the scheduler nothing.
   const [declineReasonValue, setDeclineReasonValue] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
+  // A leave can cover both kinds at once. The two groups go to different people —
+  // one is the guru's own decision, the other is a request the Program Manager has
+  // to weigh — so they get a reason each rather than sharing one.
+  const [lateReasonValue, setLateReasonValue] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
   // Ticked on step 3. Survives Back/Next within one dialog visit.
   const [lateAck, setLateAck] = useState<LateCancellationAck>(EMPTY_LATE_ACK);
   const isCareerMentorRole = useAppSelector((s) => s.devPanel.selectedRole) === "Career Mentor";
@@ -131,6 +135,7 @@ export function MarkNotAvailableDialog() {
       setStep(1);
       setAutoDecline(true);
       setDeclineReasonValue(EMPTY_DECLINE_REASON);
+      setLateReasonValue(EMPTY_DECLINE_REASON);
       setLateAck(EMPTY_LATE_ACK);
     }
   }, [open]);
@@ -180,10 +185,26 @@ export function MarkNotAvailableDialog() {
 
   const totalConflicts = conflictingSessions.length + conflictingRequests.length;
   const willDecline = autoDecline && conflictingSessions.length > 0;
-  const declineReasonText = composeDeclineReason(declineReasonValue, isCareerMentorRole);
-  const canConfirmStep2 = !willDecline || canSubmitDeclineReason(declineReasonValue, isCareerMentorRole);
   /** Covered sessions inside the threshold: these become cancellation requests, not declines. */
   const lateSessions = willDecline ? sessionsTooCloseToDecline(conflictingSessions, Date.now()) : [];
+  /** The rest: far enough out that the guru's word is final. */
+  const declinedSessionsList = (() => {
+    const lateIds = new Set(lateSessions.map((s) => s.id));
+    return conflictingSessions.filter((s) => !lateIds.has(s.id));
+  })();
+  const hasBothGroups = willDecline && declinedSessionsList.length > 0 && lateSessions.length > 0;
+
+  /* With one group there is one field, exactly as before. The second field only
+     appears when the leave is genuinely mixed, so the common case is untouched. */
+  const declineReasonText = composeDeclineReason(declineReasonValue, isCareerMentorRole);
+  const lateReasonText = composeDeclineReason(
+    hasBothGroups ? lateReasonValue : declineReasonValue,
+    isCareerMentorRole,
+  );
+  const canConfirmStep2 =
+    !willDecline ||
+    (canSubmitDeclineReason(declineReasonValue, isCareerMentorRole) &&
+      (!hasBothGroups || canSubmitDeclineReason(lateReasonValue, isCareerMentorRole)));
   const needsInstructions = lateSessions.length > 0;
   /* Step 3 sends the requests, so it also needs both instructions confirmed. */
   const canConfirmStep3 = canConfirmStep2 && lateAckComplete(lateAck);
@@ -222,10 +243,9 @@ export function MarkNotAvailableDialog() {
     if (autoDecline && totalConflicts > 0) {
       // Inside the threshold it is only a request (the PM accepts it later); further
       // out the session is declined straight away.
-      const lateIds = new Set(lateSessions.map((s) => s.id));
-      const declinedSessions = conflictingSessions.filter((s) => !lateIds.has(s.id));
+      const declinedSessions = declinedSessionsList;
       lateSessions.forEach((s) => {
-        dispatch(requestCancellation({ id: s.id, dateYmd: todayYmd, reason: declineReasonText }));
+        dispatch(requestCancellation({ id: s.id, dateYmd: todayYmd, reason: lateReasonText }));
       });
       declinedSessions.forEach((s) => {
         dispatch(declineSession({ id: s.id, dateYmd: todayYmd, reason: declineReasonText }));
@@ -476,11 +496,36 @@ export function MarkNotAvailableDialog() {
             {autoDecline && conflictingSessions.length > 0 && (
               <>
                 <LateCancellationWarning count={lateSessions.length} />
-                <DeclineReasonFields
-                  isCareerMentor={isCareerMentorRole}
-                  value={declineReasonValue}
-                  onChange={setDeclineReasonValue}
-                />
+                {hasBothGroups ? (
+                  <>
+                    <DeclineReasonFields
+                      heading={
+                        declinedSessionsList.length === 1
+                          ? "The session you're declining"
+                          : `The ${declinedSessionsList.length} you're declining`
+                      }
+                      isCareerMentor={isCareerMentorRole}
+                      value={declineReasonValue}
+                      onChange={setDeclineReasonValue}
+                    />
+                    <DeclineReasonFields
+                      heading={
+                        lateSessions.length === 1
+                          ? `The session inside ${DECLINE_CLOSE_THRESHOLD_HOURS} hours`
+                          : `The ${lateSessions.length} inside ${DECLINE_CLOSE_THRESHOLD_HOURS} hours`
+                      }
+                      isCareerMentor={isCareerMentorRole}
+                      value={lateReasonValue}
+                      onChange={setLateReasonValue}
+                    />
+                  </>
+                ) : (
+                  <DeclineReasonFields
+                    isCareerMentor={isCareerMentorRole}
+                    value={declineReasonValue}
+                    onChange={setDeclineReasonValue}
+                  />
+                )}
               </>
             )}
           </Box>

@@ -301,21 +301,35 @@ export function DeclineReasonFields({
   size = "small",
   autoFocus = false,
   compact = false,
+  heading,
 }: {
   value: DeclineReasonValue;
   onChange: (next: DeclineReasonValue) => void;
   isCareerMentor: boolean;
   size?: "small" | "medium";
   autoFocus?: boolean;
+  /** Names the group these fields belong to, for a leave that covers both an
+      outright decline and a cancellation request and so asks for two reasons.
+      Replaces the career-mentor heading rather than stacking on top of it. */
+  heading?: string;
   /** Tightens type sizes for the calendar popover, which is far narrower than a dialog. */
   compact?: boolean;
 }) {
+  const headingEl = heading ? (
+    <Typography
+      variant="body2"
+      sx={{ fontWeight: 600, mb: compact ? 0.75 : 1.5, fontSize: compact ? 12 : { xs: "0.8rem", sm: "0.875rem" } }}
+    >
+      {heading}
+    </Typography>
+  ) : null;
+
   const fontSx = compact
     ? { "& .MuiInputBase-root": { fontSize: 12 }, "& .MuiInputLabel-root": { fontSize: 12 } }
     : undefined;
 
   if (!isCareerMentor) {
-    return (
+    const field = (
       <Autocomplete
         freeSolo
         options={DECLINE_REASONS}
@@ -348,16 +362,26 @@ export function DeclineReasonFields({
         )}
       />
     );
+    return headingEl ? (
+      <Box>
+        {headingEl}
+        {field}
+      </Box>
+    ) : (
+      field
+    );
   }
 
   return (
     <Box>
-      <Typography
-        variant="body2"
-        sx={{ fontWeight: 600, mb: 1.5, fontSize: compact ? 12 : { xs: "0.8rem", sm: "0.875rem" } }}
-      >
-        Why you're cancelling
-      </Typography>
+      {headingEl ?? (
+        <Typography
+          variant="body2"
+          sx={{ fontWeight: 600, mb: 1.5, fontSize: compact ? 12 : { xs: "0.8rem", sm: "0.875rem" } }}
+        >
+          Why you're cancelling
+        </Typography>
+      )}
       <FormControl fullWidth size={size} required sx={fontSx}>
         <InputLabel>Reason</InputLabel>
         <Select
