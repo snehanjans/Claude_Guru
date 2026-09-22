@@ -67,6 +67,15 @@ const sessionsSlice = createSlice({
         reason: action.payload.reason,
       };
     },
+    /**
+     * The guru changed their mind before the Program Manager answered. The session
+     * was never un-scheduled, so dropping the request is all it takes to put things
+     * back — there is no decline to reverse. A decline, once made, has no such
+     * undo: it has already been acted on downstream.
+     */
+    withdrawCancellation(state, action: PayloadAction<string>) {
+      delete state.cancellationRequests[action.payload];
+    },
     /** The Program Manager accepted — only now does the session become declined. */
     approveCancellation(state, action: PayloadAction<{ id: string; dateYmd: string }>) {
       const request = state.cancellationRequests[action.payload.id];
@@ -117,6 +126,7 @@ export const {
   clearRecentlyConfirmed,
   declineSession,
   requestCancellation,
+  withdrawCancellation,
   approveCancellation,
   acceptSession,
   setSessionFocus,

@@ -50,6 +50,7 @@ import {
   setSessionFocus,
   setDeclineSessionFocus,
   setDeclineReason,
+  withdrawCancellation,
 } from "@/store/slices/sessionsSlice";
 import { setOpenSessionDetails, setOpenDeclineReason, setOpenLearnerRatings, setLearnerRatingsSessionId } from "@/store/slices/uiSlice";
 import { addPoll, updatePoll, removePoll } from "@/store/slices/pollsSlice";
@@ -61,6 +62,8 @@ import { dateTimeMs, sortByDateTime } from "@/lib/helpers";
 import type { SessionPrepMaterial, Poll } from "@/lib/types";
 import { getActivityStats } from "@/lib/activity-stats";
 import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
+import { InfoBox } from "@/components/shared/InfoBox";
+import HourglassEmptyOutlinedIcon from "@mui/icons-material/HourglassEmptyOutlined";
 
 const MATERIAL_ICONS: Record<SessionPrepMaterial["type"], React.ReactNode> = {
   slides: <SlideshowOutlinedIcon sx={{ fontSize: 15 }} />,
@@ -1306,63 +1309,102 @@ export function SessionDetailsModal() {
             px: 2,
             py: 1.5,
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            flexDirection: "column",
+            gap: 1.25,
             flexShrink: 0,
           }}
         >
-          <Button variant="text" color="inherit" size="small" onClick={handleClose}>
-            Close
-          </Button>
+          {/* The waiting state is a status, not an action, so it reads as a banner
+              across the footer rather than as a label wedged between two buttons —
+              where it wrapped onto two lines and pushed "Withdraw request" into
+              wrapping as well. */}
           {session && !isCompleted && !isPast && isCancelRequested && (
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem", textAlign: "right" }}>
+            <InfoBox
+              variant="warning"
+              icon={<HourglassEmptyOutlinedIcon sx={{ fontSize: 14 }} />}
+              sx={{
+                /* Full bleed: cancel the footer's own gutter so the strip meets both
+                   edges and sits flush under the divider, then put the inset back
+                   inside it. Square corners and a single bottom border keep it
+                   reading as part of the footer rather than a card floating in it. */
+                mx: -2,
+                mt: -1.5,
+                px: 2,
+                py: 0.75,
+                gap: 0.75,
+                alignItems: "center",
+                borderRadius: 0,
+                borderWidth: "0 0 1px 0",
+                "& .MuiTypography-root": { fontSize: 12, lineHeight: 1.4 },
+              }}
+            >
               Waiting for your Program Manager to accept
-            </Typography>
+            </InfoBox>
           )}
-          {session && !isCompleted && !isPast && !isCancelRequested && (
-            <Stack direction="row" spacing={1}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Button variant="text" color="inherit" size="small" onClick={handleClose}>
+              Close
+            </Button>
+            {/* The session was never un-scheduled, so taking the request back needs no
+                confirmation — it simply returns to where it was. The banner and this
+                button both disappear, which is the clearest confirmation it worked. */}
+            {session && !isCompleted && !isPast && isCancelRequested && (
               <Button
                 variant="soft"
                 size="small"
-                startIcon={<CancelOutlinedIcon sx={{ fontSize: 15 }} />}
                 onClick={() => {
-                  dispatch(setDeclineSessionFocus(session));
-                  dispatch(setDeclineReason(""));
-                  dispatch(setOpenSessionDetails(false));
-                  dispatch(setOpenDeclineReason(true));
+                  dispatch(withdrawCancellation(session.id));
+                  dispatch(pushToast({ title: "Cancellation request withdrawn", description: session.title }));
                 }}
               >
-                I'm unavailable
+                Withdraw request
               </Button>
-              {/* No confirm action \u2014 a scheduled session is already confirmed. */}
-            </Stack>
-          )}
-          {session && isPast && !isCompleted && (
-            <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.75rem" }}>
-              This session has passed
-            </Typography>
-          )}
-          {session && isCompleted && (
-            <Stack direction="row" spacing={1}>
-              {session.recordingUrl && (
+            )}
+            {session && !isCompleted && !isPast && !isCancelRequested && (
+              <Stack direction="row" spacing={1}>
                 <Button
                   variant="soft"
                   size="small"
-                  startIcon={<VideocamOutlinedIcon sx={{ fontSize: 15 }} />}
-                  onClick={() => dispatch(pushToast({ title: "Opening recording" }))}
+                  startIcon={<CancelOutlinedIcon sx={{ fontSize: 15 }} />}
+                  onClick={() => {
+                    dispatch(setDeclineSessionFocus(session));
+                    dispatch(setDeclineReason(""));
+                    dispatch(setOpenSessionDetails(false));
+                    dispatch(setOpenDeclineReason(true));
+                  }}
                 >
-                  Recording
+                  I'm unavailable
                 </Button>
-              )}
-              <Button
-                variant="soft"
-                size="small"
-                onClick={() => { handleClose(); navigate("/payments"); }}
-              >
-                View in payments
-              </Button>
-            </Stack>
-          )}
+                {/* No confirm action \u2014 a scheduled session is already confirmed. */}
+              </Stack>
+            )}
+            {session && isPast && !isCompleted && (
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.75rem" }}>
+                This session has passed
+              </Typography>
+            )}
+            {session && isCompleted && (
+              <Stack direction="row" spacing={1}>
+                {session.recordingUrl && (
+                  <Button
+                    variant="soft"
+                    size="small"
+                    startIcon={<VideocamOutlinedIcon sx={{ fontSize: 15 }} />}
+                    onClick={() => dispatch(pushToast({ title: "Opening recording" }))}
+                  >
+                    Recording
+                  </Button>
+                )}
+                <Button
+                  variant="soft"
+                  size="small"
+                  onClick={() => { handleClose(); navigate("/payments"); }}
+                >
+                  View in payments
+                </Button>
+              </Stack>
+            )}
+          </Box>
         </Box>
       </Box>
     </Drawer>
