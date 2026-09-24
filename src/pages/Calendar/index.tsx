@@ -1397,14 +1397,16 @@ export default function CalendarPage() {
                   // §8.3: For overlapping NA (leave) blocks, keep only the most recent by createdAt
                   // Also hide leave blocks tied to sessionId if the same session is drawn in that day
                   const filteredNaBlocks = (() => {
-                    // Step 1: Remove NA blocks whose sessionId maps to a drawn session
-                    const afterSessionFilter = naBlocks.filter((n) => {
-                      if (n.sessionId) {
-                        // Hide if this session is drawn (not declined)
-                        return !drawnSessions.some((s) => s.id === n.sessionId);
-                      }
-                      return true;
-                    });
+                    /* Step 1: drop the block a session's own cancellation created,
+                       whether or not that session is still live. The tile is already
+                       on the grid saying the same thing — struck through, in the
+                       declined palette — and it already marks the slot occupied, so
+                       the block adds nothing and the two drew over each other: the
+                       block's "Not available" and its reason showed through the
+                       transparent tile, on top of the session's own title and time. */
+                    const afterSessionFilter = naBlocks.filter(
+                      (n) => !(n.sessionId && daySessions.some((s) => s.id === n.sessionId)),
+                    );
                     // Step 2: For overlapping NA blocks, keep only the most recent by createdAt
                     const result: NA[] = [];
                     for (const n of afterSessionFilter) {
