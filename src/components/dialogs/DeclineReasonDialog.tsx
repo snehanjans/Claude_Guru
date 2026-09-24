@@ -8,13 +8,11 @@ import DialogActions from "@mui/material/DialogActions";
 import FlexBox from "@/components/Utils/FlexBox";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
-  declineSession,
   requestCancellation,
   setDeclineSessionFocus,
   setDeclineReason,
   setSessionFocus,
 } from "@/store/slices/sessionsSlice";
-import { addUnavailable } from "@/store/slices/availabilitySlice";
 import { setOpenDeclineReason, setOpenSession } from "@/store/slices/uiSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { toYmd } from "@/lib/helpers";
@@ -38,8 +36,6 @@ export function DeclineReasonDialog() {
   const open = useAppSelector((s) => s.ui.openDeclineReason);
   const declineSessionFocus = useAppSelector((s) => s.sessions.declineSessionFocus);
   const declineReason = useAppSelector((s) => s.sessions.declineReason);
-  const sessionDeclined = useAppSelector((s) => s.sessions.sessionDeclined);
-  const unavailable = useAppSelector((s) => s.availability.unavailable);
   const selectedRole = useAppSelector((s) => s.devPanel.selectedRole);
   const isCareerMentor = selectedRole === "Career Mentor";
 
@@ -77,7 +73,11 @@ export function DeclineReasonDialog() {
    */
   const nowMs = Date.now();
   const isLate = !!declineSessionFocus && sessionsTooCloseToDecline([declineSessionFocus], nowMs).length > 0;
-  const onInstructions = isLate && step === "instructions";
+  /* Both timings end on the instructions step now. Stepping off a session is
+     the same ask of the Program Manager whenever it happens; the 72-hour line
+     changes the urgency and who gets the final say, not whether they need to
+     be told. */
+  const onInstructions = step === "instructions";
   /* The request can only be sent once both instructions are confirmed. */
   const canAdvance = canSubmit && (!onInstructions || lateAckComplete(ack));
 
@@ -90,70 +90,29 @@ export function DeclineReasonDialog() {
   const handleSubmit = () => {
     if (!declineSessionFocus || !canSubmit) return;
     const s = declineSessionFocus;
-    // Stamp the real day, matching the other decline surfaces. Inside the threshold
-    // it is only a request: the session stays scheduled until the PM accepts it.
-    const dateYmd = toYmd(new Date());
-    if (isLate) {
-      dispatch(requestCancellation({ id: s.id, dateYmd, reason: composedReason }));
-    } else {
-      dispatch(declineSession({ id: s.id, dateYmd, reason: composedReason }));
-      /*
-       * Declining also blocks the time. Stepping off a session is a statement
-       * about the guru's availability, not just about that booking — without
-       * this the slot falls straight back into the pool and can be filled with
-       * the very thing they just said they could not do. Marking leave over a
-       * session already works this way; this brings the single-session route
-       * into line with it.
-       *
-       * Only on an outright decline. Inside the threshold the session is still
-       * the guru's until the Program Manager accepts, and the request can be
-       * withdrawn, so blocking the time now would be premature.
-       *
-       * `sessionId` ties the block to its session: the calendar already hides a
-       * block whose session is drawn again, and `removeUnavailableBySessionId`
-       * exists to clear it. `groupId` is what "Cancel leave" removes by.
-       */
-      /*
-       * Only when the time isn't spoken for already. Two cases this rules out:
-       * declining the same session twice, which would otherwise stack a second
-       * block over the first; and declining a session that already sits inside a
-       * wider leave, where the calendar keeps only the newest of two overlapping
-       * blocks and would quietly shrink a whole day of leave to this one hour.
-       */
-      const alreadyBlocked = unavailable.some(
-        (n) => n.dateYmd === s.dateYmd && n.start < s.end && s.start < n.end,
-      );
-      if (!sessionDeclined[s.id] && !alreadyBlocked) {
-        const now = Date.now();
-        dispatch(
-          addUnavailable({
-            id: `na-${now}`,
-            groupId: `leave-${now}`,
-            sessionId: s.id,
-            dateYmd: s.dateYmd,
-            start: s.start,
-            end: s.end,
-            reason: composedReason || "Leave",
-            createdAt: now,
-          }),
-        );
-      }
-    }
+    /*
+     * Always a request, whenever the session is. Stepping off is the guru's
+     * decision to make, but it is not theirs alone to finish: someone has to
+     * cover the session, and until the Program Manager says how, nothing about
+     * the booking has actually changed. Committing it here made a far-out
+     * cancellation look settled when it was not.
+     *
+     * Nothing else changes yet — not the schedule, not the calendar. The
+     * session stays the guru's, and the time is only blocked once the request
+     * is accepted.
+     */
+    dispatch(requestCancellation({ id: s.id, dateYmd: toYmd(new Date()), reason: composedReason }));
     dispatch(setOpenDeclineReason(false));
     dispatch(setOpenSession(false));
     dispatch(setSessionFocus(null));
     dispatch(setDeclineSessionFocus(null));
     dispatch(setDeclineReason(""));
-    dispatch(
-      pushToast(
-        isLate ? CANCELLATION_REQUESTED_TOAST : { title: "Marked unavailable", description: `${s.title}` },
-      ),
-    );
+    dispatch(pushToast(CANCELLATION_REQUESTED_TOAST));
   };
 
   const handlePrimary = () => {
     if (!canAdvance) return;
-    if (isLate && step === "reason") setStep("instructions");
+    if (step === "reason") setStep("instructions");
     else handleSubmit();
   };
 
@@ -224,6 +183,7 @@ export function DeclineReasonDialog() {
 
         {declineSessionFocus && onInstructions ? (
           <LateCancellationInstructions
+            late={isLate}
             sessions={[declineSessionFocus]}
             ack={ack}
             onAckChange={(next) => {
@@ -260,7 +220,7 @@ export function DeclineReasonDialog() {
               "&.Mui-disabled": { bgcolor: "rgba(211,47,47,0.05)", color: "rgba(211,47,47,0.4)" },
             }}
           >
-            {!isLate ? "I'm unavailable" : onInstructions ? "Request cancellation" : "Next"}
+            {onInstructions ? "Request cancellation" : "Next"}
           </Button>
         </Box>
       </DialogActions>

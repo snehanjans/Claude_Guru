@@ -51,7 +51,9 @@ import {
   setDeclineSessionFocus,
   setDeclineReason,
   withdrawCancellation,
+  acceptSession,
 } from "@/store/slices/sessionsSlice";
+import { removeUnavailableBySessionId } from "@/store/slices/availabilitySlice";
 import { setOpenSessionDetails, setOpenDeclineReason, setOpenLearnerRatings, setLearnerRatingsSessionId } from "@/store/slices/uiSlice";
 import { addPoll, updatePoll, removePoll } from "@/store/slices/pollsSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
@@ -1345,10 +1347,48 @@ export function SessionDetailsModal() {
               Waiting for your Program Manager to accept
             </InfoBox>
           )}
+          {/* Declined outright, but the session has not happened yet — so this is
+              still reversible, and the footer says so rather than going silent. */}
+          {session && !isCompleted && !isPast && isDeclined && (
+            <InfoBox
+              variant="error"
+              icon={<CancelOutlinedIcon sx={{ fontSize: 14 }} />}
+              sx={{
+                mx: -2,
+                mt: -1.5,
+                px: 2,
+                py: 0.75,
+                gap: 0.75,
+                alignItems: "center",
+                borderRadius: 0,
+                borderWidth: "0 0 1px 0",
+                "& .MuiTypography-root": { fontSize: 12, lineHeight: 1.4 },
+              }}
+            >
+              You're marked unavailable for this session
+            </InfoBox>
+          )}
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Button variant="text" color="inherit" size="small" onClick={handleClose}>
               Close
             </Button>
+            {/* Same shape as withdrawing a cancellation request: while the session is
+                still ahead, stepping back on is one press and needs no confirmation.
+                The block the decline put on the calendar goes with it, otherwise the
+                guru would be back on the session and still showing as away. */}
+            {session && !isCompleted && !isPast && isDeclined && (
+              <Button
+                variant="soft"
+                size="small"
+                onClick={() => {
+                  dispatch(acceptSession(session.id));
+                  dispatch(removeUnavailableBySessionId(session.id));
+                  dispatch(pushToast({ title: "You're available again", description: session.title }));
+                }}
+              >
+                Undo
+              </Button>
+            )}
             {/* The session was never un-scheduled, so taking the request back needs no
                 confirmation — it simply returns to where it was. The banner and this
                 button both disappear, which is the clearest confirmation it worked. */}

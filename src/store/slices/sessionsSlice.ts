@@ -91,10 +91,15 @@ const sessionsSlice = createSlice({
       state.sessionDeclinedAtYmd[action.payload.id] = action.payload.dateYmd;
       if (request.reason) state.sessionDeclinedReasons[action.payload.id] = request.reason;
     },
-    /** §8.3 Accept from Declined - undecline + re-confirm */
+    /**
+     * The guru takes back an outright decline while the session is still ahead.
+     * The reason goes with it — leaving it behind would resurface the old excuse
+     * if they ever stepped off the same session again.
+     */
     acceptSession(state, action: PayloadAction<string>) {
       delete state.sessionDeclined[action.payload];
       delete state.sessionDeclinedAtYmd[action.payload];
+      delete state.sessionDeclinedReasons[action.payload];
       state.confirmations[action.payload] = true;
     },
     setSessionFocus(state, action: PayloadAction<Session | null>) {

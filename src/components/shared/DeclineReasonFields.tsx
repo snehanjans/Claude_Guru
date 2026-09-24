@@ -253,6 +253,7 @@ export function LateCancellationInstructions({
   ack,
   onAckChange,
   ackMissing = false,
+  late = true,
 }: {
   sessions: Session[];
   compact?: boolean;
@@ -264,6 +265,11 @@ export function LateCancellationInstructions({
       disabled button says nothing back, so pressing it looks like the product
       is broken rather than like something is still owed. */
   ackMissing?: boolean;
+  /** Inside the 72-hour window. Changes why the guru is being asked, not what
+      they are being asked to do: close in there is no time to find a
+      replacement without them, further out there is — but either way the
+      Program Manager is the one who has to arrange it. */
+  late?: boolean;
 }) {
   if (sessions.length === 0) return null;
   const bodySx = { color: MUTED, fontSize: compact ? 11 : undefined };
@@ -280,8 +286,9 @@ export function LateCancellationInstructions({
         ) : (
           <Box component="span" sx={highlightSx}>{sessions.length} sessions</Box>
         )}{" "}
-        {sessions.length === 1 ? "starts" : "start"} in less than {DECLINE_CLOSE_THRESHOLD_HOURS} hours. Before you step
-        away, please do this:
+        {late
+          ? `${sessions.length === 1 ? "starts" : "start"} in less than ${DECLINE_CLOSE_THRESHOLD_HOURS} hours. Before you step away, please do this:`
+          : `${sessions.length === 1 ? "still needs" : "still need"} a replacement. Before you step away, please do this:`}
       </Typography>
 
       <InstructionStep title="Contact your Program Manager" compact={compact}>
@@ -338,7 +345,7 @@ export function LateCancellationInstructions({
           "& .MuiTypography-root": { fontSize: compact ? 11 : undefined },
         }}
       >
-        Repeated late cancellations can affect how often you're offered sessions.
+        Repeated {late ? "late " : ""}cancellations can affect how often you're offered sessions.
       </InfoBox>
     </FlexBox>
   );
