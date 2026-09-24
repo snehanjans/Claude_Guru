@@ -245,8 +245,8 @@ or, when any of the sessions falls inside the 72-hour window:
 
 The Guru cannot continue without one. The design position is that **a session is never
 dropped silently** — someone downstream has to reassign it, and they need to know why.
-The reason is stored against every affected session and shown back to the Guru later on
-the Declined tab.
+The reason is stored against every affected session and shown back to the Guru on the
+card itself, wherever that session sits.
 
 When a leave covers both sessions that will be declined outright and sessions inside
 the 72-hour window, the Guru now writes a separate reason for each group, under
@@ -328,17 +328,24 @@ example *"2 sessions auto-declined, 1 cancellation request sent"*.
 
 ## 10. What each outcome looks like afterwards
 
-### A declined session
+### A session marked unavailable
 
-- Leaves the Upcoming list and the course cards.
-- Appears on the Home page's **Declined** tab, with the reason shown in italics beneath
-  it and a line telling the Guru how to reverse it: *"To re-accept this session, contact
-  {scheduler name} at {email}."*
+Home has two tabs, Upcoming and Completed, and they split by **date, not status**. A
+session the Guru marks unavailable keeps its place in the diary:
+
+- **Still ahead** — it stays in **Upcoming**, in date order, carrying a **"Marked
+  unavailable"** chip and the reason beneath it. It offers no actions: nothing to join,
+  nothing to prepare, and no second chance to decline it.
+- **Once the date has passed** — it moves to **Completed** with the same chip and reason,
+  and none of the payment, rating or recording furniture that belongs to a session that
+  actually ran.
+- It leaves the course cards either way.
 - On the calendar, the tile is struck through and recoloured.
 - Confirmation: a toast reading **"Marked unavailable"**.
 
 The Guru cannot un-decline a session from within the dashboard. Reversal is a
-conversation with the scheduler.
+conversation with the scheduler, whose contact details are in the session's own details
+drawer.
 
 ### A session with a cancellation request
 
@@ -367,7 +374,7 @@ Manager accepts it.
 ### Acceptance
 
 When the Program Manager accepts, the session becomes a normal decline — struck through,
-moved to the Declined tab, reason carried across.
+marked unavailable, reason carried across.
 
 **In the prototype there is no Program Manager.** Acceptance is performed from the Dev
 Panel, under a section headed "Cancellation requests — accept as the Program Manager to
@@ -480,7 +487,7 @@ The words a Guru sees attached to a session, and what each one means.
 |---|---|
 | **Scheduled** / **Confirmed** | Normal. On the books. Sessions are confirmed the moment they are scheduled — confirming is not a step the Guru performs |
 | **Cancellation requested** | The Guru has asked to be released from a session inside the 72-hour window. Still scheduled, still happening, awaiting the Program Manager. Can be withdrawn by the Guru |
-| **Declined** | The Guru is off this session. Struck through on the calendar, filed on the Declined tab with its reason |
+| **Marked unavailable** | The Guru is off this session. Struck through on the calendar; stays in Upcoming with its reason until the date passes, then sits in Completed |
 | **Completed** | Delivered |
 | **Missed** | Not delivered |
 
@@ -556,7 +563,8 @@ A short walkthrough for anyone demoing it.
 6. The session keeps its place on the grid with a red border. Open it — the footer reads
    "Waiting for your Program Manager to accept".
 7. Return to the **Dev Panel**, find the request under **Cancellation requests**, and
-   press **Accept**. The session is now struck through and appears on Home's Declined tab.
+   press **Accept**. The session is now struck through and reads "Marked unavailable" on
+   Home, in whichever tab its date puts it.
 
 Two notes on the demo environment:
 

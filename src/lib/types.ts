@@ -224,6 +224,9 @@ export type ToastMsg = {
   titleTone?: "default" | "danger";
   /** Stays up until the user dismisses it — for messages they need to act on. */
   persistent?: boolean;
+  /** How long before it fades, in ms. Defaults to the viewport's own 3.5s.
+      Raise it for a message carrying something to read or act on. */
+  durationMs?: number;
 };
 
 // ─── Notification Types ─────────────────────────────────────────────────────
@@ -282,21 +285,6 @@ export type MonthlyEarning = {
   key: string;
   label: string;
   amount: number;
-};
-
-export type DeclinedSession = {
-  id: string;
-  title: string;
-  topic?: string;
-  batch?: string;
-  program: string;
-  cohort: string;
-  sessionType: SessionType;
-  dateYmd: string;
-  start: number;
-  end: number;
-  declinedOnYmd: string;
-  declineReason?: string;
 };
 
 // ─── GL Ambassador (Referral) Types ────────────────────────────────────────

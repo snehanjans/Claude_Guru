@@ -595,9 +595,13 @@ export function SessionDetailsModal() {
   /* Polls: hidden for Secondary Gurus per spec (no create / no view). */
   const showPolls = session && isConfirmed && !isCompleted && !isSecondaryGuru;
 
+  /* The guru has stepped off this one. It outranks every other state: whether
+     the date has passed says nothing about whether they were on it. */
+  const isDeclined = session ? !!sessionDeclined[session.id] : false;
+
   /* Status chip config */
-  const statusLabel = isCompleted ? "Completed" : isMissed ? "Missed" : isCancelRequested ? "Cancellation requested" : isConfirmed ? "Confirmed" : isPast ? "Past" : "Scheduled";
-  const statusSx = isCancelRequested && !isCompleted
+  const statusLabel = isDeclined ? "Marked unavailable" : isCompleted ? "Completed" : isMissed ? "Missed" : isCancelRequested ? "Cancellation requested" : isConfirmed ? "Confirmed" : isPast ? "Past" : "Scheduled";
+  const statusSx = isDeclined || (isCancelRequested && !isCompleted)
     ? { bgcolor: "var(--gl-status-declined-bg)", color: "var(--gl-status-declined-text)", border: "1px solid var(--gl-status-declined-border)" }
     : isCompleted
     ? { bgcolor: "var(--gl-status-completed-bg)", color: "var(--gl-status-completed-text)", border: "1px solid var(--gl-status-completed-border)" }
@@ -1360,7 +1364,7 @@ export function SessionDetailsModal() {
                 Withdraw request
               </Button>
             )}
-            {session && !isCompleted && !isPast && !isCancelRequested && (
+            {session && !isDeclined && !isCompleted && !isPast && !isCancelRequested && (
               <Stack direction="row" spacing={1}>
                 <Button
                   variant="soft"
@@ -1383,7 +1387,7 @@ export function SessionDetailsModal() {
                 This session has passed
               </Typography>
             )}
-            {session && isCompleted && (
+            {session && isCompleted && !isDeclined && (
               <Stack direction="row" spacing={1}>
                 {session.recordingUrl && (
                   <Button

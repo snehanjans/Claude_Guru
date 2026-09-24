@@ -72,8 +72,8 @@ import {
   getLocaleFromTimezone,
 } from "@/lib/helpers";
 import { demoNow } from "@/lib/constants";
-import { demoRatingHistory, demoLearnerRatingsBySessionId, demoPreviouslyDeclinedSessions, demoPlannedEvents } from "@/data/demo-sessions";
-import { SessionCard, STATUS_SCHEDULED, STATUS_CONFIRMED, STATUS_DECLINED } from "@/components/shared/SessionCard";
+import { demoRatingHistory, demoLearnerRatingsBySessionId, demoPlannedEvents } from "@/data/demo-sessions";
+import { SessionCard, STATUS_SCHEDULED, STATUS_CONFIRMED, STATUS_UNAVAILABLE, STATUS_CANCEL_REQUESTED } from "@/components/shared/SessionCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import DateRangeOutlinedIcon from "@mui/icons-material/DateRangeOutlined";
@@ -110,6 +110,21 @@ const SESSION_TYPES: Array<"All" | SessionType> = [
   "CV Review",
   "Others",
 ];
+
+/**
+ * Still ahead of us. Range activities (Evaluation, Moderation, Residency) stay
+ * open until their end date closes; single-day sessions until they actually
+ * finish, not when they start — a session running right now is still the guru's
+ * next thing, and dropping it at its start time left it in neither tab.
+ *
+ * The exact complement of `isSessionCompleted`, so the two tabs between them
+ * account for every session.
+ */
+function isStillOpen(s: Session, nowMs: number) {
+  return s.endDateYmd
+    ? dateTimeMs(s.endDateYmd, 24 * 60 - 1) >= nowMs
+    : dateTimeMs(s.dateYmd, s.end) >= nowMs;
+}
 
 /* ── Task card used in sidebar ── */
 function TaskCard({
@@ -176,6 +191,12 @@ export default function DashboardPage() {
   const confirmations = useAppSelector((s) => s.sessions.confirmations);
   const sessionDeclined = useAppSelector((s) => s.sessions.sessionDeclined);
   const sessionDeclinedReasons = useAppSelector((s) => s.sessions.sessionDeclinedReasons);
+  const cancellationRequests = useAppSelector((s) => s.sessions.cancellationRequests);
+  /* The reason reads the same in both tabs. A decline can carry no reason — the
+     reducer only stores one when it is non-empty — in which case the chip says
+     enough on its own. */
+  const unavailableNote = (s: Session) =>
+    sessionDeclinedReasons[s.id] ? `Reason: ${sessionDeclinedReasons[s.id]}` : undefined;
   const homeSessionsView = useAppSelector((s) => s.sessions.homeSessionsView);
   const hasUserConfiguredAvailability = useAppSelector((s) => s.availability.hasUserConfiguredAvailability);
   const maxPerWeek = useAppSelector((s) => s.availability.maxPerWeek);
@@ -236,17 +257,19 @@ export default function DashboardPage() {
 
   const nowMs = demoNow.getTime();
 
+  /* Everything still ahead of us, whatever the guru has decided about it.
+     A session they marked unavailable keeps its place in the diary until the
+     date passes — the tab says when, the chip says what. */
+  const openSessions = useMemo(
+    () => sortByDateTime(sessions).filter((s) => isStillOpen(s, nowMs)),
+    [sessions, nowMs]
+  );
+  /* The subset still on the guru. Drives the confirmation counts, "Up next"
+     and every workload figure, none of which should count a session they have
+     stepped off. */
   const upcomingSessions = useMemo(
-    () => sortByDateTime(sessions).filter((s) => {
-      /* Range activities (Evaluation, Moderation, Residency) stay in
-         Upcoming while their window is still open — until endDateYmd
-         passes. Single-day sessions use the original start-time check. */
-      const stillOpen = s.endDateYmd
-        ? dateTimeMs(s.endDateYmd, 24 * 60 - 1) >= nowMs
-        : dateTimeMs(s.dateYmd, s.start) >= nowMs;
-      return stillOpen && !sessionDeclined[s.id];
-    }),
-    [sessions, sessionDeclined, nowMs]
+    () => openSessions.filter((s) => !sessionDeclined[s.id]),
+    [openSessions, sessionDeclined]
   );
   const completedSessions = useMemo(
     () => sortByDateTime(sessions).filter((s) => isSessionCompleted(s, nowMs)).reverse(),
@@ -273,12 +296,12 @@ export default function DashboardPage() {
      Pulled out of the normal month groups and pinned to the top so the Guru
      can still find and finish them. */
   const overdueCompletedSessions = useMemo(
-    () => filteredCompletedSessions.filter(isOverdueActivity),
-    [filteredCompletedSessions],
+    () => filteredCompletedSessions.filter((s) => isOverdueActivity(s) && !sessionDeclined[s.id]),
+    [filteredCompletedSessions, sessionDeclined],
   );
   const settledCompletedSessions = useMemo(
-    () => filteredCompletedSessions.filter((s) => !isOverdueActivity(s)),
-    [filteredCompletedSessions],
+    () => filteredCompletedSessions.filter((s) => !isOverdueActivity(s) || sessionDeclined[s.id]),
+    [filteredCompletedSessions, sessionDeclined],
   );
 
   /* Group completed sessions by month for accordion rendering. Order is
@@ -314,11 +337,6 @@ export default function DashboardPage() {
     for (const g of completedMonthGroups) seed[g.key] = g.key === defaultOpenKey;
     setExpandedCompletedMonths(seed);
   }, [completedMonthGroups, currentMonthKey]);
-  const declinedSessions = useMemo(
-    () => sessions.filter((s) => sessionDeclined[s.id]),
-    [sessions, sessionDeclined]
-  );
-
   // Career Mentor: learners self-schedule from the guru's calendar, so there are no tentative/planned events
   const rolePlannedEvents = useMemo(
     () => (isEmpty || selectedRole === "Career Mentor")
@@ -326,7 +344,6 @@ export default function DashboardPage() {
       : filterSessionsByRole(demoPlannedEvents, selectedRole),
     [selectedRole, isEmpty],
   );
-  const rolePreviouslyDeclined = useMemo(() => isEmpty ? [] : filterSessionsByRole(demoPreviouslyDeclinedSessions, selectedRole), [selectedRole, isEmpty]);
 
   const todayYmd = demoNow.toISOString().slice(0, 10);
   const todaySessions = upcomingSessions.filter((s) => s.dateYmd === todayYmd);
@@ -341,17 +358,6 @@ export default function DashboardPage() {
       if (aCombined !== bCombined) return bCombined - aCombined;
       return dateTimeMs(a.dateYmd, a.start) - dateTimeMs(b.dateYmd, b.start);
     });
-  const confirmedUpcoming = upcomingSessions.filter((s) => confirmations[s.id]);
-
-  // Display lists that account for the exit animation window:
-  // Keep the exiting card in the scheduled list until its animation finishes,
-  // and hide it from confirmedUpcoming until exitingId is cleared.
-  const scheduledDisplay = exitingId
-    ? upcomingSessions.filter((s) => !confirmations[s.id] || s.id === exitingId)
-    : scheduled;
-  const confirmedDisplay = exitingId
-    ? confirmedUpcoming.filter((s) => s.id !== exitingId)
-    : confirmedUpcoming;
 
   const needsWednesdayConfirm = scheduled.length > 0;
   const pendingRequestsCount = requests.filter((r) => r.response === "pending").length;
@@ -412,7 +418,7 @@ export default function DashboardPage() {
               <Skeleton variant="text" width={90} height={22} sx={{ mb: 1.5 }} />
               {/* Tabs skeleton */}
               <Stack direction="row" spacing={3} sx={{ mb: 2, borderBottom: 1, borderColor: "divider", pb: 1 }}>
-                {[130, 130, 110].map((w, i) => (
+                {[130, 130].map((w, i) => (
                   <Skeleton key={i} variant="text" width={w} height={22} />
                 ))}
               </Stack>
@@ -906,9 +912,8 @@ export default function DashboardPage() {
                   },
                   }}
                 >
-                  <Tab icon={<EventNoteOutlinedIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />} iconPosition="start" label={`Upcoming (${upcomingSessions.length})`} value="next" sx={{ "& .MuiTab-iconWrapper": { display: { xs: "none", sm: "flex" } } }} />
-                  <Tab icon={<TaskAltOutlinedIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />} iconPosition="start" label={`Completed (${completedSessions.length})`} value="completed" sx={{ "& .MuiTab-iconWrapper": { display: { xs: "none", sm: "flex" } } }} />
-                  <Tab icon={<DoNotDisturbOnOutlinedIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />} iconPosition="start" label={`Declined (${declinedSessions.length})`} value="declined" sx={{ "& .MuiTab-iconWrapper": { display: { xs: "none", sm: "flex" } } }} />
+                  <Tab icon={<EventNoteOutlinedIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />} iconPosition="start" label={`Upcoming (${openSessions.length})`} value="next" sx={{ "& .MuiTab-iconWrapper": { display: { xs: "none", sm: "flex" } } }} />
+                  <Tab icon={<TaskAltOutlinedIcon sx={{ fontSize: { xs: 14, sm: 18 } }} />} iconPosition="start" label={`Completed (${filteredCompletedSessions.length})`} value="completed" sx={{ "& .MuiTab-iconWrapper": { display: { xs: "none", sm: "flex" } } }} />
                 </Tabs>
 
                 {/* ── Tab loading skeleton ── */}
@@ -940,9 +945,17 @@ export default function DashboardPage() {
                       <Typography variant="caption" color="text.secondary">{confirmedCount}/{upcomingSessions.length} confirmed</Typography>
                     </Stack>
                     <Stack spacing={1.5}>
-                      {upcomingSessions.filter((s) => !todaySessionIds.has(s.id)).length ? (
-                        upcomingSessions.filter((s) => !todaySessionIds.has(s.id)).map((s) => {
+                      {openSessions.filter((s) => !todaySessionIds.has(s.id)).length ? (
+                        openSessions.filter((s) => !todaySessionIds.has(s.id)).map((s) => {
                           const isConfirmed = !!confirmations[s.id];
+                          /* Stepped off, but still ahead — it keeps its place in the
+                             diary and states why. */
+                          const isUnavailable = !!sessionDeclined[s.id];
+                          /* Asked for, not yet granted: the session is still the
+                             guru's, so it stays put, but offering "I'm unavailable"
+                             again would only overwrite the request. */
+                          const isCancelRequested = !isUnavailable && !!cancellationRequests[s.id];
+                          const isSettled = isUnavailable || isCancelRequested;
                           const isExiting = s.id === exitingId && isConfirmed;
                           const isEvaluation = s.sessionType === "Evaluation";
                           const isModeration = s.sessionType === "Moderation";
@@ -957,7 +970,7 @@ export default function DashboardPage() {
                               p: 0,
                               overflow: "hidden",
                               transition: "box-shadow 0.3s ease, border-color 0.3s ease",
-                              ...(highlightUnconfirmed && !isConfirmed && {
+                              ...(highlightUnconfirmed && !isConfirmed && !isSettled && {
                                 borderColor: "primary.main",
                                 boxShadow: (theme) =>
                                   `0 0 0 2px ${alpha(theme.palette.primary.main, 0.25)}`,
@@ -980,9 +993,9 @@ export default function DashboardPage() {
                                 start={s.start}
                                 end={s.end}
                                 hideTime={isEvalOrMod}
-                                stats={upcomingStats}
+                                stats={isSettled ? undefined : upcomingStats}
                                 onCourseClick={isEvalOrMod ? undefined : getOnCourseClick(s)}
-                                eyebrowExtra={hasLateSubmissions ? (
+                                eyebrowExtra={hasLateSubmissions && !isSettled ? (
                                   <Chip
                                     label="Late submission"
                                     size="small"
@@ -998,12 +1011,17 @@ export default function DashboardPage() {
                                     }}
                                   />
                                 ) : undefined}
-                                status={isConfirmed
-                                  ? STATUS_CONFIRMED()
-                                  : STATUS_SCHEDULED
+                                status={isUnavailable
+                                  ? STATUS_UNAVAILABLE
+                                  : isCancelRequested
+                                    ? STATUS_CANCEL_REQUESTED
+                                    : isConfirmed
+                                      ? STATUS_CONFIRMED()
+                                      : STATUS_SCHEDULED
                                 }
+                                note={isUnavailable ? unavailableNote(s) : undefined}
                                 chips={undefined}
-                                actions={isConfirmed ? (
+                                actions={isSettled ? undefined : isConfirmed ? (
                                   isEvalOrMod ? (
                                     <>
                                       <Button
@@ -1552,6 +1570,44 @@ export default function DashboardPage() {
                             <AccordionDetails sx={{ p: { xs: 1.25, sm: 1.5 } }}>
                               <Stack spacing={1.5}>
                                 {group.sessions.map((s) => {
+                          const st = s.sessionType;
+                          const isResidency = st === "Residency";
+                          const isEvaluation = st === "Evaluation";
+                          const isModeration = st === "Moderation";
+                          const isCapstone = st === "Capstone project mentoring session";
+                          const isCVReview = st === "CV Review";
+                          const isDateOnly = isEvaluation || isModeration || isCapstone || isCVReview;
+                          const handleViewDetails = () => {
+                            dispatch(setSessionFocus(s));
+                            dispatch(setOpenSessionDetails(true));
+                          };
+
+                          /* A session the guru stepped off. Ratings, payment and
+                             recordings all describe a session that happened, so the
+                             card carries none of them — just what it was, that it was
+                             marked unavailable, and why. View details still opens the
+                             drawer, which is now where the scheduler's contact lives. */
+                          if (sessionDeclined[s.id]) {
+                            return (
+                              <Card key={s.id} variant="outlined" sx={{ p: 0, overflow: "hidden" }}>
+                                <SessionCard
+                                  title={s.title}
+                                  sessionType={s.sessionType}
+                                  topic={s.topic}
+                                  batch={s.batch}
+                                  dateYmd={s.dateYmd}
+                                  endDateYmd={s.endDateYmd}
+                                  start={s.start}
+                                  end={s.end}
+                                  hideTime={isDateOnly}
+                                  status={STATUS_UNAVAILABLE}
+                                  note={unavailableNote(s)}
+                                  onViewDetails={handleViewDetails}
+                                />
+                              </Card>
+                            );
+                          }
+
                           const ratings = demoLearnerRatingsBySessionId[s.id];
                           const hasRatings = ratings && ratings.length > 0;
                           const avg = hasRatings
@@ -1564,13 +1620,6 @@ export default function DashboardPage() {
                           const isMockInterview = s.title.toLowerCase().includes("mock");
                           const isPaid = s.paymentStatus === "paid";
                           const hasPaymentStatus = !!s.paymentStatus;
-                          const st = s.sessionType;
-                          const isResidency = st === "Residency";
-                          const isEvaluation = st === "Evaluation";
-                          const isModeration = st === "Moderation";
-                          const isCapstone = st === "Capstone project mentoring session";
-                          const isCVReview = st === "CV Review";
-
                           // Payment chip helper
                           const paymentChip = isPaid
                             ? <Chip label="Payment Processed" size="small" sx={{ bgcolor: "var(--gl-status-confirmed-bg)", color: "var(--gl-status-confirmed-text)", border: "1px solid var(--gl-status-confirmed-border)", fontWeight: 500, fontSize: { xs: "0.65rem", sm: "0.75rem" } }} />
@@ -1623,11 +1672,6 @@ export default function DashboardPage() {
                           }
 
                           // Build actions per activity type
-                          const handleViewDetails = () => {
-                            dispatch(setSessionFocus(s));
-                            dispatch(setOpenSessionDetails(true));
-                          };
-
                           let cardActions: React.ReactNode;
                           if (isCapstone) {
                             cardActions = (
@@ -1688,7 +1732,6 @@ export default function DashboardPage() {
                           }
 
                           // Date-only activity types (no time component)
-                          const isDateOnly = isEvaluation || isModeration || isCapstone || isCVReview;
                           // Progress stats for Evaluation / Moderation — completed, so fully graded.
                           // Sourced from getActivityStats so the card matches the Activity Details drawer.
                           const cardStats = getActivityStats(s, { completed: true });
@@ -1726,83 +1769,6 @@ export default function DashboardPage() {
                         icon={<CheckCircleOutlinedIcon />}
                         title="No activities completed yet"
                         subtitle="Once you complete your first activity, it'll appear here with feedback and payment info"
-                        compact
-                      />
-                    )}
-                  </>
-                )}
-
-                {/* ── Declined tab ── */}
-                {!tabLoading && homeSessionsView === "declined" && (
-                  <>
-                    {declinedSessions.length > 0 && (
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>Active declined</Typography>
-                        <Stack spacing={1.5}>
-                          {declinedSessions.map((s) => (
-                            <Card key={s.id} variant="outlined" sx={{ p: 0, overflow: "hidden" }}>
-                              <SessionCard
-                                title={s.title}
-                                sessionType={s.sessionType}
-                                topic={s.topic}
-                                batch={s.batch}
-                                dateYmd={s.dateYmd}
-                                start={s.start}
-                                end={s.end}
-                                onCourseClick={getOnCourseClick(s)}
-                                status={STATUS_DECLINED}
-                              />
-                              {(sessionDeclinedReasons[s.id] || s.scheduledByName) && (
-                                <Box sx={{ px: 2, pb: 2, pt: 0 }}>
-                                  {sessionDeclinedReasons[s.id] && (
-                                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontStyle: "italic" }}>
-                                      Reason: {sessionDeclinedReasons[s.id]}
-                                    </Typography>
-                                  )}
-                                  <Typography variant="caption" color="text.secondary" sx={{ mt: sessionDeclinedReasons[s.id] ? 0.5 : 0, display: "block" }}>
-                                    To re-accept this session, contact {s.scheduledByName || "the scheduler"}{s.scheduledByEmail ? ` at ${s.scheduledByEmail}` : ""}.
-                                  </Typography>
-                                </Box>
-                              )}
-                            </Card>
-                          ))}
-                        </Stack>
-                      </Box>
-                    )}
-
-                    {rolePreviouslyDeclined.length > 0 && (
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>Previously declined</Typography>
-                        <Stack spacing={1.5}>
-                          {rolePreviouslyDeclined.map((s) => (
-                            <Card key={s.id} variant="outlined" sx={{ p: 0, overflow: "hidden" }}>
-                              <SessionCard
-                                title={s.title}
-                                topic={s.topic}
-                                batch={s.batch}
-                                dateYmd={s.dateYmd}
-                                start={s.start}
-                                end={s.end}
-                                status={{ label: "Declined", bg: "action.hover", color: "text.secondary", border: "transparent" }}
-                              />
-                              {s.declineReason && (
-                                <Box sx={{ px: 2, pb: 2 }}>
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontStyle: "italic" }}>
-                                    Reason: {s.declineReason}
-                                  </Typography>
-                                </Box>
-                              )}
-                            </Card>
-                          ))}
-                        </Stack>
-                      </Box>
-                    )}
-
-                    {declinedSessions.length === 0 && rolePreviouslyDeclined.length === 0 && (
-                      <EmptyState
-                        icon={<DoNotDisturbOnOutlinedIcon />}
-                        title="No declined events"
-                        subtitle="Any events you choose to decline will be kept here for your reference"
                         compact
                       />
                     )}

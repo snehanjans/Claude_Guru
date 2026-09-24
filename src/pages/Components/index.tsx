@@ -46,7 +46,7 @@ import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreOutlinedIcon from "@mui/icons-material/ExpandMoreOutlined";
-import { SessionCard, STATUS_SCHEDULED, STATUS_CONFIRMED, STATUS_DECLINED } from "@/components/shared/SessionCard";
+import { SessionCard, STATUS_SCHEDULED, STATUS_CONFIRMED } from "@/components/shared/SessionCard";
 import { minutes, fmtDateNice, fmtTime12 } from "@/lib/helpers";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { setSessionFocus } from "@/store/slices/sessionsSlice";

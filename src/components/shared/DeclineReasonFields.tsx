@@ -15,6 +15,7 @@ import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import { dateTimeMs } from "@/lib/helpers";
 import FlexBox from "@/components/Utils/FlexBox";
+import { InfoBox } from "@/components/shared/InfoBox";
 import type { Session } from "@/lib/types";
 
 /** Career Mentor cancellation reasons (single-select), per production flow. */
@@ -99,7 +100,10 @@ export function sessionsTooCloseToDecline(sessions: Session[], nowMs: number) {
 export const CANCELLATION_REQUESTED_TOAST = {
   title: "Cancellation requested",
   description: "We've let the Program Manager know about your request. You can reach out to them for more information.",
-  persistent: true,
+  /* Longer than the usual 3.5s — it names who now has the request and invites
+     the guru to follow up, which is more than a glance. It still clears itself,
+     so it cannot sit over the page indefinitely. */
+  durationMs: 15000,
 };
 
 const MUTED = "hsl(var(--md-on-surface-variant))";
@@ -143,44 +147,30 @@ export function LateCancellationWarning({ count, compact = false }: { count: num
   );
 }
 
-/** One numbered instruction on the late-cancellation step. */
+/**
+ * The one thing the guru has to do themselves on the late-cancellation step.
+ *
+ * No number: a list of one does not need counting, and the badge was a leftover
+ * from when there was a second instruction. A rule above does the same work —
+ * setting the ask apart from the sentence that introduces it — without implying
+ * there is more to come.
+ */
 function InstructionStep({
-  n,
   title,
   compact,
   children,
 }: {
-  n: number;
   title: string;
   compact: boolean;
   children: ReactNode;
 }) {
-  const badge = compact ? 20 : 24;
   return (
-    <FlexBox gap={compact ? 1 : 1.5} alignItems="flex-start">
-      <FlexBox
-        alignItems="center"
-        justifyContent="center"
-        sx={{
-          width: badge,
-          height: badge,
-          borderRadius: "50%",
-          flexShrink: 0,
-          bgcolor: "var(--gl-status-declined-bg)",
-          color: "var(--gl-status-declined-text)",
-          fontSize: compact ? "0.68rem" : "0.75rem",
-          fontWeight: 600,
-        }}
-      >
-        {n}
-      </FlexBox>
-      <Box sx={{ minWidth: 0, pt: "2px" }}>
-        <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5, fontSize: compact ? 12 : undefined }}>
-          {title}
-        </Typography>
-        {children}
-      </Box>
-    </FlexBox>
+    <Box sx={{ minWidth: 0, borderTop: 1, borderColor: "divider", pt: compact ? 1.5 : 2 }}>
+      <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5, fontSize: compact ? 12 : undefined }}>
+        {title}
+      </Typography>
+      {children}
+    </Box>
   );
 }
 
@@ -190,25 +180,65 @@ function InstructionCheck({
   onChange,
   label,
   compact,
+  warn = false,
 }: {
   checked: boolean;
   onChange: (next: boolean) => void;
   label: string;
   compact: boolean;
+  /** The guru pressed the disabled confirm button without ticking this. */
+  warn?: boolean;
 }) {
   return (
-    <FormControlLabel
-      checked={checked}
-      onChange={(_, next) => onChange(next)}
-      control={<Checkbox size="small" sx={{ py: 0.25, pl: 0 }} />}
-      label={label}
-      sx={{
-        mt: compact ? 0.5 : 1,
-        ml: 0,
-        alignItems: "flex-start",
-        "& .MuiFormControlLabel-label": { fontSize: compact ? 11 : "0.8125rem", pt: compact ? "3px" : "5px" },
-      }}
-    />
+    /* Unanswered, the row gets a tint rather than red type. Recolouring the
+       label made it read as an error in the copy itself; the highlight points
+       at the row while leaving the words alone. */
+    <Box
+      sx={
+        warn
+          ? {
+              mt: compact ? 0.5 : 1,
+              px: compact ? 1 : 1.25,
+              py: compact ? 0.5 : 0.75,
+              borderRadius: "8px",
+              border: 1,
+              borderColor: "var(--gl-status-declined-border)",
+              bgcolor: "var(--gl-status-declined-bg)",
+            }
+          : undefined
+      }
+    >
+      <FormControlLabel
+        checked={checked}
+        onChange={(_, next) => onChange(next)}
+        /* Even padding on all four sides. The previous `py: 0.25, pl: 0` made the
+           hover and focus ring — which covers the whole padded control — both
+           off-centre and oval. Four equal sides put a circle back on the glyph;
+           the row is pulled left by that same padding so the glyph still lines up
+           with the text above it. */
+        control={<Checkbox size="small" sx={{ p: 0.5 }} />}
+        label={label}
+        sx={{
+          mt: warn ? 0 : compact ? 0.5 : 1,
+          ml: warn ? 0 : "-4px",
+          /* Centred, not top-aligned. The label is a single line at both sizes, and
+             the flex-start-plus-padding pairing this replaced was nudging the text
+             below the box rather than onto its centre line. */
+          alignItems: "center",
+          "& .MuiFormControlLabel-label": { fontSize: compact ? 11 : "0.8125rem" },
+        }}
+      />
+      {warn && (
+        <Typography
+          variant="caption"
+          /* Indented onto the checkbox's own left edge rather than the panel's,
+             so the two lines share an edge. */
+          sx={{ display: "block", pl: "4px", fontSize: compact ? 11 : "0.75rem", color: "text.secondary" }}
+        >
+          Please confirm this before requesting cancellation.
+        </Typography>
+      )}
+    </Box>
   );
 }
 
@@ -222,6 +252,7 @@ export function LateCancellationInstructions({
   compact = false,
   ack,
   onAckChange,
+  ackMissing = false,
 }: {
   sessions: Session[];
   compact?: boolean;
@@ -229,6 +260,10 @@ export function LateCancellationInstructions({
      the guru send the request without confirming they did it. */
   ack: LateCancellationAck;
   onAckChange: (next: LateCancellationAck) => void;
+  /** Set by a surface when the guru pressed its disabled confirm button. A
+      disabled button says nothing back, so pressing it looks like the product
+      is broken rather than like something is still owed. */
+  ackMissing?: boolean;
 }) {
   if (sessions.length === 0) return null;
   const bodySx = { color: MUTED, fontSize: compact ? 11 : undefined };
@@ -249,7 +284,7 @@ export function LateCancellationInstructions({
         away, please do this:
       </Typography>
 
-      <InstructionStep n={1} title="Contact your Program Manager" compact={compact}>
+      <InstructionStep title="Contact your Program Manager" compact={compact}>
         <Typography variant="body2" sx={{ ...bodySx, mb: 0.75 }}>
           Let {PROGRAM_MANAGER_CONTACT.name} know so they can arrange a replacement.
         </Typography>
@@ -284,8 +319,27 @@ export function LateCancellationInstructions({
           onChange={(next) => onAckChange({ ...ack, pm: next })}
           label={`I've contacted ${PROGRAM_MANAGER_CONTACT.name}`}
           compact={compact}
+          warn={ackMissing && !ack.pm}
         />
       </InstructionStep>
+
+      {/* The cost of doing this often, said once. Amber rather than the declined
+          red the step above uses: this is a note about the guru's standing, not
+          another alarm about the session, and pinning it to a pattern
+          ("repeated") keeps it off the decision in front of them. Icon and gap
+          are sized to match the red banner on the previous step, so the two
+          read as the same kind of aside at different temperatures. */}
+      <InfoBox
+        variant="warning"
+        icon={<WarningAmberOutlinedIcon sx={{ fontSize: compact ? 14 : 18 }} />}
+        sx={{
+          p: compact ? 1.25 : 1.5,
+          gap: compact ? 1 : 1.5,
+          "& .MuiTypography-root": { fontSize: compact ? 11 : undefined },
+        }}
+      >
+        Repeated late cancellations can affect how often you're offered sessions.
+      </InfoBox>
     </FlexBox>
   );
 }

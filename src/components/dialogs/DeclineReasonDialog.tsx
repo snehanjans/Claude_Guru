@@ -50,12 +50,17 @@ export function DeclineReasonDialog() {
   const [step, setStep] = useState<"reason" | "instructions">("reason");
   // Ticked on the instructions step. Survives Back/Next within one dialog visit.
   const [ack, setAck] = useState<LateCancellationAck>(EMPTY_LATE_ACK);
+  /* Pressing the disabled confirm button is a dead click — the browser swallows
+     it and the guru gets no answer. Catching it on a wrapper lets the one thing
+     still owed point at itself. */
+  const [ackMissing, setAckMissing] = useState(false);
   useEffect(() => {
     if (!open) {
       setReason("");
       setDetails("");
       setStep("reason");
       setAck(EMPTY_LATE_ACK);
+      setAckMissing(false);
     }
   }, [open]);
 
@@ -218,7 +223,15 @@ export function DeclineReasonDialog() {
         ) : null}
 
         {declineSessionFocus && onInstructions ? (
-          <LateCancellationInstructions sessions={[declineSessionFocus]} ack={ack} onAckChange={setAck} />
+          <LateCancellationInstructions
+            sessions={[declineSessionFocus]}
+            ack={ack}
+            onAckChange={(next) => {
+              setAck(next);
+              if (next.pm) setAckMissing(false);
+            }}
+            ackMissing={ackMissing}
+          />
         ) : null}
       </DialogContent>
       <DialogActions sx={{ flexDirection: { xs: "column", sm: "row" }, gap: { xs: 1, sm: 0 }, "& > :not(:first-of-type)": { ml: { xs: 0, sm: 1 } } }}>
@@ -227,21 +240,29 @@ export function DeclineReasonDialog() {
             Back
           </Button>
         )}
-        <Button
-          variant="soft"
-          onClick={handlePrimary}
-          disabled={!canAdvance}
-          sx={{
-            width: { xs: "100%", sm: "auto" },
-            fontWeight: 600,
-            bgcolor: "rgba(211,47,47,0.08)",
-            color: "error.main",
-            "&:hover": { bgcolor: "rgba(211,47,47,0.16)" },
-            "&.Mui-disabled": { bgcolor: "rgba(211,47,47,0.05)", color: "rgba(211,47,47,0.4)" },
-          }}
+        {/* The wrapper, not the button, takes the click: a disabled button fires
+            no event of its own. MUI already sets `pointer-events: none` on it,
+            so the press lands here. */}
+        <Box
+          onClick={() => { if (onInstructions && !canAdvance) setAckMissing(true); }}
+          sx={{ width: { xs: "100%", sm: "auto" } }}
         >
-          {!isLate ? "I'm unavailable" : onInstructions ? "Request cancellation" : "Next"}
-        </Button>
+          <Button
+            variant="soft"
+            onClick={handlePrimary}
+            disabled={!canAdvance}
+            sx={{
+              width: "100%",
+              fontWeight: 600,
+              bgcolor: "rgba(211,47,47,0.08)",
+              color: "error.main",
+              "&:hover": { bgcolor: "rgba(211,47,47,0.16)" },
+              "&.Mui-disabled": { bgcolor: "rgba(211,47,47,0.05)", color: "rgba(211,47,47,0.4)" },
+            }}
+          >
+            {!isLate ? "I'm unavailable" : onInstructions ? "Request cancellation" : "Next"}
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

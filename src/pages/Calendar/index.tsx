@@ -475,6 +475,10 @@ export default function CalendarPage() {
   // Confirmation that the guru has done both of those things. Survives Back/Next
   // within one drag, and is cleared with the rest of the pending spot.
   const [spotLateAck, setSpotLateAck] = useState<LateCancellationAck>(EMPTY_LATE_ACK);
+  /* Pressing the disabled confirm button is a dead click — the browser swallows
+     it and the guru gets no answer. Catching it on a wrapper lets the one thing
+     still owed point at itself. */
+  const [spotAckMissing, setSpotAckMissing] = useState(false);
   // The edited group's reason, carried through so editing times doesn't reset a
   // custom reason ("Sick leave", …) back to the generic default.
   const [spotEditReason, setSpotEditReason] = useState<string | null>(null);
@@ -673,6 +677,7 @@ export default function CalendarPage() {
     setSpotDeclineReason(EMPTY_DECLINE_REASON);
     setSpotLateReason(EMPTY_DECLINE_REASON);
     setSpotLateAck(EMPTY_LATE_ACK);
+    setSpotAckMissing(false);
   };
   const cancelSpot = () => {
     setPendingSpot(null);
@@ -684,6 +689,7 @@ export default function CalendarPage() {
     setSpotDeclineReason(EMPTY_DECLINE_REASON);
     setSpotLateReason(EMPTY_DECLINE_REASON);
     setSpotLateAck(EMPTY_LATE_ACK);
+    setSpotAckMissing(false);
   };
 
   /**
@@ -2012,23 +2018,32 @@ export default function CalendarPage() {
                   compact
                   sessions={spotLateConflicts}
                   ack={spotLateAck}
-                  onAckChange={setSpotLateAck}
+                  onAckChange={(next) => {
+                    setSpotLateAck(next);
+                    if (next.pm) setSpotAckMissing(false);
+                  }}
+                  ackMissing={spotAckMissing}
                 />
                 <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1.75 }}>
                   <Button size="small" color="inherit" onClick={() => setSpotInstructionsStep(false)} sx={{ fontSize: 12 }}>
                     Back
                   </Button>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    color="error"
-                    disableElevation
-                    onClick={confirmSpot}
-                    disabled={!lateAckComplete(spotLateAck)}
-                    sx={{ fontSize: 12 }}
-                  >
-                    Request cancellation
-                  </Button>
+                  {/* The wrapper, not the button, takes the click: a disabled button
+                      fires no event of its own. MUI already sets `pointer-events: none`
+                      on it, so the press lands here. */}
+                  <Box onClick={() => { if (!lateAckComplete(spotLateAck)) setSpotAckMissing(true); }}>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="error"
+                      disableElevation
+                      onClick={confirmSpot}
+                      disabled={!lateAckComplete(spotLateAck)}
+                      sx={{ fontSize: 12 }}
+                    >
+                      Request cancellation
+                    </Button>
+                  </Box>
                 </Stack>
               </>
             )}

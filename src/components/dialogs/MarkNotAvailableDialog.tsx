@@ -109,6 +109,10 @@ export function MarkNotAvailableDialog() {
   const [lateReasonValue, setLateReasonValue] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
   // Ticked on step 3. Survives Back/Next within one dialog visit.
   const [lateAck, setLateAck] = useState<LateCancellationAck>(EMPTY_LATE_ACK);
+  /* Pressing the disabled confirm button is a dead click — the browser swallows
+     it and the guru gets no answer. Catching it on a wrapper lets the one thing
+     still owed point at itself. */
+  const [ackMissing, setAckMissing] = useState(false);
   const isCareerMentorRole = useAppSelector((s) => s.devPanel.selectedRole) === "Career Mentor";
 
   /* ── Pre-fill when editing existing leave ───────────────────────── */
@@ -137,6 +141,7 @@ export function MarkNotAvailableDialog() {
       setDeclineReasonValue(EMPTY_DECLINE_REASON);
       setLateReasonValue(EMPTY_DECLINE_REASON);
       setLateAck(EMPTY_LATE_ACK);
+      setAckMissing(false);
     }
   }, [open]);
 
@@ -531,7 +536,15 @@ export function MarkNotAvailableDialog() {
           </Box>
         )}
         {step === 3 && (
-          <LateCancellationInstructions sessions={lateSessions} ack={lateAck} onAckChange={setLateAck} />
+          <LateCancellationInstructions
+            sessions={lateSessions}
+            ack={lateAck}
+            onAckChange={(next) => {
+              setLateAck(next);
+              if (next.pm) setAckMissing(false);
+            }}
+            ackMissing={ackMissing}
+          />
         )}
       </DialogContent>
 
@@ -548,26 +561,31 @@ export function MarkNotAvailableDialog() {
         >
           {step === 1 ? "Cancel" : "Back"}
         </Button>
-        <Button
-          variant="contained"
-          size="small"
-          color={step === 3 ? "error" : "primary"}
-          onClick={
-            step === 1
-              ? handleMarkLeave
-              : step === 2 && needsInstructions
-                ? () => setStep(3)
-                : handleConfirm
-          }
-          disabled={step === 1 ? !isValid : step === 3 ? !canConfirmStep3 : !canConfirmStep2}
-          sx={{ px: 2, minWidth: DIALOG_ACTION_MIN_WIDTH }}
-        >
-          {step === 3
-            ? "Request cancellation"
-            : step === 2
-              ? needsInstructions ? "Next" : "Confirm leave"
-              : editingLeaveGroupId ? "Update" : "Mark leave"}
-        </Button>
+        {/* The wrapper, not the button, takes the click: a disabled button fires
+            no event of its own. MUI already sets `pointer-events: none` on it,
+            so the press lands here. */}
+        <Box onClick={() => { if (step === 3 && !canConfirmStep3) setAckMissing(true); }}>
+          <Button
+            variant="contained"
+            size="small"
+            color={step === 3 ? "error" : "primary"}
+            onClick={
+              step === 1
+                ? handleMarkLeave
+                : step === 2 && needsInstructions
+                  ? () => setStep(3)
+                  : handleConfirm
+            }
+            disabled={step === 1 ? !isValid : step === 3 ? !canConfirmStep3 : !canConfirmStep2}
+            sx={{ px: 2, minWidth: DIALOG_ACTION_MIN_WIDTH }}
+          >
+            {step === 3
+              ? "Request cancellation"
+              : step === 2
+                ? needsInstructions ? "Next" : "Confirm leave"
+                : editingLeaveGroupId ? "Update" : "Mark leave"}
+          </Button>
+        </Box>
       </Box>
     </Dialog>
   );

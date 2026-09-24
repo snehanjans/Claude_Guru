@@ -11,7 +11,7 @@ interface SessionsState {
   /** Late cancellations awaiting the Program Manager. Still scheduled until approved. */
   cancellationRequests: Record<string, { requestedAtYmd: string; reason: string }>;
   sessionFocus: Session | null;
-  homeSessionsView: "next" | "completed" | "declined";
+  homeSessionsView: "next" | "completed";
   selectedSessionType: "All" | SessionType;
   selectedTimePeriod: "All" | "Last 6 months" | "2025" | "2024" | "2023" | "2022";
   confirmMoveSessionId: string | null;
@@ -28,9 +28,15 @@ const initialState: SessionsState = {
   // the Guru performs. Every session is seeded rather than a hand-picked subset, so
   // nothing ever renders as "awaiting confirmation". Declining is the only response.
   confirmations: Object.fromEntries(demoSessions.map((s) => [s.id, true])),
-  sessionDeclined: {},
-  sessionDeclinedAtYmd: {},
-  sessionDeclinedReasons: {},
+  /* One worked example, so the "Marked unavailable" treatment is visible on a
+     first load rather than only after someone declines something by hand.
+     `cx1` started inside the 72-hour window, so it went to the Program Manager
+     as a request on the 16th and was accepted on the 17th — which is what an
+     accepted cancellation leaves behind: declined, stamped with the approval
+     date, carrying the reason from the request, and no request outstanding. */
+  sessionDeclined: { cx1: true },
+  sessionDeclinedAtYmd: { cx1: "2026-03-17" },
+  sessionDeclinedReasons: { cx1: "Personal emergency" },
   cancellationRequests: {},
   sessionFocus: null,
   homeSessionsView: "next",
@@ -94,7 +100,7 @@ const sessionsSlice = createSlice({
     setSessionFocus(state, action: PayloadAction<Session | null>) {
       state.sessionFocus = action.payload;
     },
-    setHomeSessionsView(state, action: PayloadAction<"next" | "completed" | "declined">) {
+    setHomeSessionsView(state, action: PayloadAction<"next" | "completed">) {
       state.homeSessionsView = action.payload;
     },
     setSelectedSessionType(state, action: PayloadAction<"All" | SessionType>) {

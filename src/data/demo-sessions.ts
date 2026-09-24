@@ -1,7 +1,7 @@
 import { minutes } from "@/lib/helpers";
 import { demoNow } from "@/lib/constants";
 import { demoPatterns } from "@/data/demo-availability";
-import type { Session, SessionType, LearnerRating, SessionFeedbackSummary, RatingHistoryEntry, MonthlyEarning, DeclinedSession, Busy, CohortStart, CourseCatalogItem, CourseModuleData, PlannedEvent, QualitativeFeedback } from "@/lib/types";
+import type { Session, SessionType, LearnerRating, SessionFeedbackSummary, RatingHistoryEntry, MonthlyEarning, Busy, CohortStart, CourseCatalogItem, CourseModuleData, PlannedEvent, QualitativeFeedback } from "@/lib/types";
 
 /** Reusable demo group member pools */
 const GROUP_MEMBERS_A = [
@@ -29,6 +29,31 @@ const GROUP_MEMBERS_B = [
  * generated backbone; import that, not this.
  */
 const authoredSessions: Session[] = [
+  /* The guru asked to be released from this one inside the 72-hour window and
+     the Program Manager accepted, so it reads "Marked unavailable" in Completed.
+     The decline itself is seeded in `sessionsSlice` — the session record only
+     says what was scheduled. No payment, no recording: it never ran. */
+  {
+    id: "cx1",
+    title: "Ensemble Methods Clinic",
+    topic: "M5 W3 | Bagging, Boosting & Stacking",
+    batch: "PGPDS Online January 26 A",
+    program: "PGP-DS",
+    cohort: "PGPDS Online January 26 A",
+    group: "Group 06",
+    groupMembers: GROUP_MEMBERS_A,
+    dateYmd: "2026-03-18",
+    start: minutes(18),
+    end: minutes(20),
+    location: "Online",
+    sessionType: "Mentored Learning session",
+    contentReady: true,
+    scheduledByName: "Bhargavi CS",
+    scheduledByEmail: "bhargavi.cs@greatlearning.in",
+    scheduledOnYmd: "2026-03-09",
+    paymentModel: "fixed",
+    linkedCourseId: "c1",
+  },
   // ── Completed sessions (before demoNow = 2026-02-16) ──
   {
     id: "c1",
@@ -3551,37 +3576,6 @@ export const demoMonthlyEarnings: MonthlyEarning[] = (() => {
   }
   return out;
 })();
-
-export const demoPreviouslyDeclinedSessions: DeclinedSession[] = [
-  {
-    id: "pd1",
-    title: "Introduction to SQL",
-    topic: "M8 W2 | SQL Revision & Practice",
-    batch: "PGPDS.O.FEB26.A",
-    program: "PGP-DS",
-    cohort: "PGPDS.O.FEB26.A",
-    sessionType: "Mentored Learning session",
-    dateYmd: "2026-03-05",
-    start: minutes(10),
-    end: minutes(12),
-    declinedOnYmd: "2026-03-01",
-    declineReason: "Travel  - attending a conference in Bangalore",
-  },
-  {
-    id: "pd2",
-    title: "Python for Data Science",
-    topic: "M3 W4 | Practice Lab: Data Wrangling",
-    batch: "PGPDS.O.FEB26.A",
-    program: "PGP-DS",
-    cohort: "PGPDS.O.FEB26.A",
-    sessionType: "Mentored Learning session",
-    dateYmd: "2026-03-12",
-    start: minutes(18),
-    end: minutes(20),
-    declinedOnYmd: "2026-03-08",
-    declineReason: "Personal commitment  - family event",
-  },
-];
 
 export const demoCourseModules: Record<string, CourseModuleData> = {
   c1: {
