@@ -5,11 +5,17 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import Avatar from "@mui/material/Avatar";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
 
-import MarkAvailabilityDialog from "./MarkAvailabilityDialog";
-import AvailabilityCalendar, { type AvailSlot } from "./AvailabilityCalendar";
+import { SessionsPanel, EngagementsPanel, NotesPanel, StubPanel } from "./NinjaTabPanels";
+import NinjaRail from "./NinjaRail";
+import { RAIL_ITEMS } from "./railItems";
+import CalendarPage from "@/pages/Calendar";
+/* The Guru calendar opens dialogs through the store, and GlobalDialogs is mounted
+   by AppLayout — which this full-bleed route sits outside of. Without this the
+   calendar would render but every session click would do nothing. */
+import { GlobalDialogs } from "@/components/dialogs";
+import { ThemeProvider } from "@mui/material/styles";
+import { lightTheme } from "@/theme/theme";
 
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
@@ -33,7 +39,6 @@ import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNone
 import CloseIcon from "@mui/icons-material/Close";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
-import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 
 /**
  * Pixel-static recreation of Great Learning's internal admin console screen:
@@ -45,24 +50,9 @@ import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined
 
 // ---- Static data ----------------------------------------------------------
 
-const RAIL_ITEMS = [
-  { label: "Programs", Icon: GroupsOutlinedIcon },
-  { label: "Batches", Icon: GridViewOutlinedIcon },
-  { label: "Learners", Icon: PersonOutlineIcon },
-  { label: "Content", Icon: DescriptionOutlinedIcon },
-  { label: "Gurus", Icon: VideocamOutlinedIcon, active: true },
-  { label: "Payments", Icon: CreditCardOutlinedIcon },
-  { label: "Labs", Icon: CodeOutlinedIcon },
-  { label: "Administration", Icon: ShieldOutlinedIcon },
-  { label: "Excelerate", Icon: WorkOutlineIcon },
-  { label: "Support", Icon: HelpOutlineIcon },
-  { label: "Reports", Icon: AssessmentOutlinedIcon },
-  { label: "GLA", Icon: SchoolOutlinedIcon },
-  { label: "Communication", Icon: ChatOutlinedIcon },
-  { label: "Others", Icon: SettingsOutlinedIcon },
-];
 
-const SUB_TABS = ["Engagements", "Sessions", "Notes", "Roles", "Availability", "Contracts"];
+const SUB_TABS = ["Engagements", "Sessions", "Notes", "Roles", "Contracts", "Calendar"] as const;
+type SubTab = (typeof SUB_TABS)[number];
 
 const PERSONAL_DETAILS: Array<{ label: string; value?: string }> = [
   { label: "Industry", value: "-" },
@@ -157,89 +147,13 @@ function OutlinedPill({ children }: { children: React.ReactNode }) {
 // ---- Page -----------------------------------------------------------------
 
 export default function NinjaAvailability() {
-  const [availOpen, setAvailOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-
-  // Interactive calendar state (static mock — local only, no backend).
-  const [view, setView] = useState({ year: 2026, monthIndex: 5 }); // June 2026
-  const [slots, setSlots] = useState<AvailSlot[]>([]);
-
-  const addSlots = (raw: Array<{ dateYmd: string; start: string; end: string }>) => {
-    setSlots((prev) => {
-      const next = [...prev];
-      raw.forEach((r, i) => {
-        // Skip exact duplicates (same date + time window).
-        if (next.some((s) => s.dateYmd === r.dateYmd && s.start === r.start && s.end === r.end)) return;
-        next.push({ id: `slot-${Date.now()}-${i}-${Math.round(Math.random() * 1e6)}`, ...r });
-      });
-      return next;
-    });
-  };
-
-  const shiftMonth = (delta: number) =>
-    setView((v) => {
-      const m = v.monthIndex + delta;
-      return { year: v.year + Math.floor(m / 12), monthIndex: ((m % 12) + 12) % 12 };
-    });
+  const [tab, setTab] = useState<SubTab>("Calendar");
 
   return (
+    <ThemeProvider theme={lightTheme}>
     <Box sx={{ display: "flex", height: "100vh", bgcolor: "#fff", color: TEXT, overflow: "hidden" }}>
-      {/* A. Left icon rail */}
-      <Box
-        sx={{
-          width: 96,
-          flexShrink: 0,
-          borderRight: `1px solid ${BORDER}`,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          py: 1.75,
-          px: 0.25,
-          gap: 1.9,
-          overflowY: "auto",
-          ...THIN_SCROLL,
-        }}
-      >
-        <Box
-          sx={{
-            fontWeight: 800,
-            fontSize: 26,
-            color: BLUE,
-            fontFamily: "Inter, sans-serif",
-            mb: 0.75,
-          }}
-        >
-          G
-        </Box>
-        {RAIL_ITEMS.map(({ label, Icon, active }) => (
-          <Stack key={label} alignItems="center" spacing={0.35} sx={{ width: "100%" }}>
-            <Box
-              sx={{
-                width: 40,
-                height: 28,
-                borderRadius: 999,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: active ? "#e7f0ff" : "transparent",
-              }}
-            >
-              <Icon sx={{ fontSize: 19, color: active ? BLUE : "#454e5a" }} />
-            </Box>
-            <Typography
-              sx={{
-                fontSize: 11,
-                fontWeight: active ? 600 : 400,
-                color: active ? BLUE : TEXT,
-                textAlign: "center",
-                lineHeight: 1.1,
-              }}
-            >
-              {label}
-            </Typography>
-          </Stack>
-        ))}
-      </Box>
+      {/* A. Left icon rail + its flyout (measured; see docs/ninja-manage-guru-requests.md) */}
+      <NinjaRail items={RAIL_ITEMS} activeSubItem="GL Gurus Catalog" />
 
       {/* Right of rail: header + workspace */}
       <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
@@ -425,86 +339,50 @@ export default function NinjaAvailability() {
               spacing={3}
               sx={{ px: 2.5, pt: 1.25, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}
             >
-              {SUB_TABS.map((tab) => {
-                const active = tab === "Availability";
+              {SUB_TABS.map((t) => {
+                const active = t === tab;
                 return (
                   <Box
-                    key={tab}
+                    key={t}
+                    onClick={() => setTab(t)}
                     sx={{
                       pb: 1,
                       fontSize: 14,
                       color: active ? BLUE : MUTED,
                       fontWeight: active ? 600 : 400,
                       borderBottom: active ? `2px solid ${BLUE}` : "2px solid transparent",
-                      cursor: "default",
+                      cursor: "pointer",
+                      userSelect: "none",
                     }}
                   >
-                    {tab}
+                    {t}
                   </Box>
                 );
               })}
             </Stack>
 
             <Box sx={{ p: 2.5, flex: 1, overflowY: "auto", ...THIN_SCROLL }}>
-              {/* Heading + AVAILABILITY button */}
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                <Typography sx={{ fontSize: 18, fontWeight: 700 }}>Guru Availability</Typography>
-                <Button
-                  startIcon={<CalendarMonthOutlinedIcon sx={{ fontSize: 16 }} />}
-                  onClick={() => setAvailOpen(true)}
-                  sx={{
-                    color: BLUE,
-                    border: `1px solid ${BLUE}`,
-                    borderRadius: "4px",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    px: 1.5,
-                    "&:hover": { bgcolor: "#e7f0ff" },
-                  }}
-                >
-                  AVAILABILITY
-                </Button>
-              </Stack>
+              {tab === "Engagements" && <EngagementsPanel />}
+              {tab === "Sessions" && <SessionsPanel />}
+              {tab === "Notes" && <NotesPanel />}
+              {(tab === "Roles" || tab === "Contracts") && <StubPanel name={tab} />}
 
-              <AvailabilityCalendar
-                year={view.year}
-                monthIndex={view.monthIndex}
-                slots={slots}
-                onPrev={() => shiftMonth(-1)}
-                onNext={() => shiftMonth(1)}
-                onAddSlot={(dateYmd, start, end) => addSlots([{ dateYmd, start, end }])}
-                onRemoveSlot={(id) => setSlots((prev) => prev.filter((s) => s.id !== id))}
-              />
+              {tab === "Calendar" && (
+                /* The Guru calendar itself, not a lookalike: the manager gets the
+                   same week/day/month views, drag-to-mark, leave editing and
+                   session drawers the Guru has. It sizes itself to the viewport,
+                   so the tab gives it a height to fill instead. */
+                <Box sx={{ height: "100%", minHeight: 620, "& > *": { height: "100%" } }}>
+                  <CalendarPage managerView />
+                </Box>
+              )}
             </Box>
           </Box>
         </Box>
       </Box>
 
-      <MarkAvailabilityDialog
-        open={availOpen}
-        onClose={() => setAvailOpen(false)}
-        guruName="Aashish Chauhan"
-        viewYear={view.year}
-        viewMonthIndex={view.monthIndex}
-        onAddSlots={(raw) => addSlots(raw)}
-        onSaved={(msg) => setToast(msg)}
-      />
-
-      <Snackbar
-        open={!!toast}
-        autoHideDuration={3500}
-        onClose={() => setToast(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setToast(null)}
-          severity="success"
-          variant="filled"
-          sx={{ borderRadius: "4px" }}
-        >
-          {toast}
-        </Alert>
-      </Snackbar>
+      <GlobalDialogs />
     </Box>
+    </ThemeProvider>
   );
 }

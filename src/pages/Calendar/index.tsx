@@ -315,7 +315,16 @@ const confirmPulse = keyframes`
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-export default function CalendarPage() {
+/**
+ * `managerView` is the Program Manager looking at a Guru's calendar from the
+ * internal console, rather than the Guru looking at their own.
+ *
+ * It only suppresses the onboarding gate. "Set your availability to get started"
+ * is an instruction to the Guru — a manager cannot act on it, and showing it
+ * would hide the grid they came to read. A Guru who has marked nothing simply
+ * has an empty week, which is itself the answer the manager is after.
+ */
+export default function CalendarPage({ managerView = false }: { managerView?: boolean } = {}) {
   const dispatch = useAppDispatch();
 
   /* ── real current date/time (local) ───────────────────────────────────── */
@@ -336,6 +345,9 @@ export default function CalendarPage() {
   const unavailable = useAppSelector((s) => s.availability.unavailable);
   const removedAvailabilityIds = useAppSelector((s) => s.availability.removedAvailabilityIds);
   const hasUserConfiguredAvailability = useAppSelector((s) => s.availability.hasUserConfiguredAvailability);
+  /* The grid is always drawn for a manager; only the Guru gets the gate. */
+  const showGrid = hasUserConfiguredAvailability || managerView;
+  const showAvailabilityGate = !hasUserConfiguredAvailability && !managerView;
   const guruStage = useAppSelector((s) => s.devPanel.guruStage);
   const selectedRole = useAppSelector((s) => s.devPanel.selectedRole);
   const isComboRole = selectedRole === COMBINED_MENTOR_ROLE;
@@ -947,7 +959,7 @@ export default function CalendarPage() {
       </Menu>
 
       {/* ── Availability gate ─────────────────────────────────────────── */}
-      {!hasUserConfiguredAvailability && (
+      {showAvailabilityGate && (
         <Box
           sx={{
             mt: 3,
@@ -1001,7 +1013,7 @@ export default function CalendarPage() {
       {/* ══════════════════════════════════════════════════════════════════ */}
       {/* ── WEEK VIEW ─────────────────────────────────────────────────── */}
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {hasUserConfiguredAvailability && isWeekLike && (
+      {showGrid && isWeekLike && (
         <Box sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
           {/* ── Nudge: encourage drag-to-add availability (desktop only) ── */}
           {!spotNudgeDismissed && (
@@ -2289,7 +2301,7 @@ export default function CalendarPage() {
       {/* ══════════════════════════════════════════════════════════════════ */}
       {/* ── MONTH VIEW ────────────────────────────────────────────────── */}
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {hasUserConfiguredAvailability && calendarViewMode === "month" && (
+      {showGrid && calendarViewMode === "month" && (
         <Box sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
           <Card variant="outlined" sx={{ p: { xs: 1, md: 2 }, overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', borderRadius: "16px", bgcolor: 'background.paper', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)' }}>
             {/* §9.1 Sunday-first visual month grid - but we use Monday-first to match week view DOW header */}
