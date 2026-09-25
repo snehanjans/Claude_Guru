@@ -31,7 +31,7 @@ import Button from "@mui/material/Button";
 import StarOutlinedIcon from "@mui/icons-material/StarOutlined";
 import CampaignOutlinedIcon from "@mui/icons-material/CampaignOutlined";
 import { useAppSelector, useAppDispatch } from "@/store";
-import { resetAvailability } from "@/store/slices/availabilitySlice";
+import { resetAvailability, addUnavailable } from "@/store/slices/availabilitySlice";
 import { approveCancellation } from "@/store/slices/sessionsSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { toYmd } from "@/lib/helpers";
@@ -86,6 +86,7 @@ const RECOMMEND_STAGES: { value: RecommendStage; label: string }[] = [
 
 export function DevPanel() {
   const dispatch = useAppDispatch();
+  const unavailable = useAppSelector((s) => s.availability.unavailable);
   const navigate = useNavigate();
   const isOpen = useAppSelector((s) => s.devPanel.isOpen);
   const selectedRole = useAppSelector((s) => s.devPanel.selectedRole);
@@ -461,6 +462,31 @@ export function DevPanel() {
                     color="primary"
                     onClick={() => {
                       dispatch(approveCancellation({ id: s.id, dateYmd: toYmd(new Date()) }));
+                      /* Accepting is the moment the session actually leaves the
+                         guru, so it is also the moment their time frees up — and
+                         the moment to block it, or the slot falls straight back
+                         into the pool it was just taken out of. Skipped when a
+                         leave already covers the time: the calendar keeps only the
+                         newest of two overlapping blocks, so adding one here would
+                         quietly shrink a wider leave to this session's hour. */
+                      const alreadyBlocked = unavailable.some(
+                        (n) => n.dateYmd === s.dateYmd && n.start < s.end && s.start < n.end,
+                      );
+                      if (!alreadyBlocked) {
+                        const now = Date.now();
+                        dispatch(
+                          addUnavailable({
+                            id: `na-${now}`,
+                            groupId: `leave-${now}`,
+                            sessionId: s.id,
+                            dateYmd: s.dateYmd,
+                            start: s.start,
+                            end: s.end,
+                            reason: "Cancellation accepted",
+                            createdAt: now,
+                          }),
+                        );
+                      }
                       dispatch(pushToast({ title: "Cancellation accepted", description: s.title }));
                     }}
                     sx={{ textTransform: "none", fontSize: "0.75rem", flexShrink: 0 }}

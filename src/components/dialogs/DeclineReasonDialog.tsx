@@ -8,13 +8,11 @@ import DialogActions from "@mui/material/DialogActions";
 import FlexBox from "@/components/Utils/FlexBox";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
-  declineSession,
   requestCancellation,
   setDeclineSessionFocus,
   setDeclineReason,
   setSessionFocus,
 } from "@/store/slices/sessionsSlice";
-import { addUnavailable } from "@/store/slices/availabilitySlice";
 import { setOpenDeclineReason, setOpenSession } from "@/store/slices/uiSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { toYmd } from "@/lib/helpers";
@@ -26,6 +24,7 @@ import {
   canSubmitDeclineReason,
   sessionsTooCloseToDecline,
   LateCancellationWarning,
+  LateCancellationConfirm,
   LateCancellationInstructions,
   CANCELLATION_REQUESTED_TOAST,
   EMPTY_LATE_ACK,
@@ -38,8 +37,6 @@ export function DeclineReasonDialog() {
   const open = useAppSelector((s) => s.ui.openDeclineReason);
   const declineSessionFocus = useAppSelector((s) => s.sessions.declineSessionFocus);
   const declineReason = useAppSelector((s) => s.sessions.declineReason);
-  const sessionDeclined = useAppSelector((s) => s.sessions.sessionDeclined);
-  const unavailable = useAppSelector((s) => s.availability.unavailable);
   const selectedRole = useAppSelector((s) => s.devPanel.selectedRole);
   const isCareerMentor = selectedRole === "Career Mentor";
 
@@ -47,7 +44,7 @@ export function DeclineReasonDialog() {
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   // Late declines take two steps: the reason, then what the guru must do themselves.
-  const [step, setStep] = useState<"reason" | "instructions">("reason");
+  const [step, setStep] = useState<"reason" | "confirm" | "sent">("reason");
   // Ticked on the instructions step. Survives Back/Next within one dialog visit.
   const [ack, setAck] = useState<LateCancellationAck>(EMPTY_LATE_ACK);
   /* Pressing the disabled confirm button is a dead click — the browser swallows
@@ -77,9 +74,14 @@ export function DeclineReasonDialog() {
    */
   const nowMs = Date.now();
   const isLate = !!declineSessionFocus && sessionsTooCloseToDecline([declineSessionFocus], nowMs).length > 0;
-  const onInstructions = isLate && step === "instructions";
-  /* The request can only be sent once both instructions are confirmed. */
-  const canAdvance = canSubmit && (!onInstructions || lateAckComplete(ack));
+  /* Three steps, whatever the timing: say why, be asked outright, then go and
+     tell the Program Manager. The 72-hour line changes the wording and who has
+     the final say, not whether any of it happens. */
+  const onConfirm = step === "confirm";
+  const onSent = step === "sent";
+  /* Nothing to gate past the reason: the confirmation step *is* the question,
+     and by the last step the request has already gone. */
+  const canAdvance = canSubmit;
 
   const handleClose = () => {
     dispatch(setOpenDeclineReason(false));
@@ -90,71 +92,29 @@ export function DeclineReasonDialog() {
   const handleSubmit = () => {
     if (!declineSessionFocus || !canSubmit) return;
     const s = declineSessionFocus;
-    // Stamp the real day, matching the other decline surfaces. Inside the threshold
-    // it is only a request: the session stays scheduled until the PM accepts it.
-    const dateYmd = toYmd(new Date());
-    if (isLate) {
-      dispatch(requestCancellation({ id: s.id, dateYmd, reason: composedReason }));
-    } else {
-      dispatch(declineSession({ id: s.id, dateYmd, reason: composedReason }));
-      /*
-       * Declining also blocks the time. Stepping off a session is a statement
-       * about the guru's availability, not just about that booking — without
-       * this the slot falls straight back into the pool and can be filled with
-       * the very thing they just said they could not do. Marking leave over a
-       * session already works this way; this brings the single-session route
-       * into line with it.
-       *
-       * Only on an outright decline. Inside the threshold the session is still
-       * the guru's until the Program Manager accepts, and the request can be
-       * withdrawn, so blocking the time now would be premature.
-       *
-       * `sessionId` ties the block to its session: the calendar already hides a
-       * block whose session is drawn again, and `removeUnavailableBySessionId`
-       * exists to clear it. `groupId` is what "Cancel leave" removes by.
-       */
-      /*
-       * Only when the time isn't spoken for already. Two cases this rules out:
-       * declining the same session twice, which would otherwise stack a second
-       * block over the first; and declining a session that already sits inside a
-       * wider leave, where the calendar keeps only the newest of two overlapping
-       * blocks and would quietly shrink a whole day of leave to this one hour.
-       */
-      const alreadyBlocked = unavailable.some(
-        (n) => n.dateYmd === s.dateYmd && n.start < s.end && s.start < n.end,
-      );
-      if (!sessionDeclined[s.id] && !alreadyBlocked) {
-        const now = Date.now();
-        dispatch(
-          addUnavailable({
-            id: `na-${now}`,
-            groupId: `leave-${now}`,
-            sessionId: s.id,
-            dateYmd: s.dateYmd,
-            start: s.start,
-            end: s.end,
-            reason: composedReason || "Leave",
-            createdAt: now,
-          }),
-        );
-      }
-    }
-    dispatch(setOpenDeclineReason(false));
-    dispatch(setOpenSession(false));
-    dispatch(setSessionFocus(null));
-    dispatch(setDeclineSessionFocus(null));
-    dispatch(setDeclineReason(""));
-    dispatch(
-      pushToast(
-        isLate ? CANCELLATION_REQUESTED_TOAST : { title: "Marked unavailable", description: `${s.title}` },
-      ),
-    );
+    /*
+     * Always a request, whenever the session is. Stepping off is the guru's
+     * decision to make, but it is not theirs alone to finish: someone has to
+     * cover the session, and until the Program Manager says how, nothing about
+     * the booking has actually changed. Committing it here made a far-out
+     * cancellation look settled when it was not.
+     *
+     * Nothing else changes yet — not the schedule, not the calendar. The
+     * session stays the guru's, and the time is only blocked once the request
+     * is accepted.
+     */
+    dispatch(requestCancellation({ id: s.id, dateYmd: toYmd(new Date()), reason: composedReason }));
+    dispatch(pushToast(CANCELLATION_REQUESTED_TOAST));
+    /* Stay open. Sending is not the end of this — the next step is the only
+       place the guru is told the request still has to be accepted. */
+    setStep("sent");
   };
 
   const handlePrimary = () => {
     if (!canAdvance) return;
-    if (isLate && step === "reason") setStep("instructions");
-    else handleSubmit();
+    if (step === "reason") setStep("confirm");
+    else if (step === "confirm") handleSubmit();
+    else handleClose();
   };
 
   /**
@@ -176,13 +136,23 @@ export function DeclineReasonDialog() {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} disableRestoreFocus maxWidth="xs" fullWidth>
+    /* The request has gone and this is the only place the guru is told it still
+       has to be accepted, and by whom. Closing it by accident — a stray click on
+       the backdrop, Escape, an X in the corner — loses that with nothing to bring
+       it back. One way out, and it is the one that says "Done". */
+    <Dialog
+      open={open}
+      onClose={() => { if (!onSent) handleClose(); }}
+      disableRestoreFocus
+      maxWidth="xs"
+      fullWidth
+    >
       <DialogTitle component={FlexBox} alignItems="center" justifyContent="space-between" gap={1}>
-        Mark unavailable
-        <DialogCloseButton onClick={handleClose} />
+        {onSent ? "Cancellation requested" : onConfirm ? "Are you sure?" : "Mark unavailable"}
+        {!onSent && <DialogCloseButton onClick={handleClose} />}
       </DialogTitle>
       <DialogContent>
-        {declineSessionFocus && !onInstructions ? (
+        {declineSessionFocus && step === "reason" ? (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <SessionCard
               title={declineSessionFocus.title}
@@ -222,21 +192,22 @@ export function DeclineReasonDialog() {
           </Box>
         ) : null}
 
-        {declineSessionFocus && onInstructions ? (
-          <LateCancellationInstructions
-            sessions={[declineSessionFocus]}
-            ack={ack}
-            onAckChange={(next) => {
-              setAck(next);
-              if (next.pm) setAckMissing(false);
-            }}
-            ackMissing={ackMissing}
-          />
+        {declineSessionFocus && onConfirm ? (
+          <LateCancellationConfirm late={isLate} sessions={[declineSessionFocus]} />
+        ) : null}
+
+        {declineSessionFocus && onSent ? (
+          <LateCancellationInstructions sessions={[declineSessionFocus]} />
         ) : null}
       </DialogContent>
       <DialogActions sx={{ flexDirection: { xs: "column", sm: "row" }, gap: { xs: 1, sm: 0 }, "& > :not(:first-of-type)": { ml: { xs: 0, sm: 1 } } }}>
-        {onInstructions && (
-          <Button variant="text" color="inherit" onClick={() => setStep("reason")} sx={{ width: { xs: "100%", sm: "auto" } }}>
+        {onConfirm && (
+          <Button
+            variant="text"
+            color="inherit"
+            onClick={() => setStep("reason")}
+            sx={{ width: { xs: "100%", sm: "auto" } }}
+          >
             Back
           </Button>
         )}
@@ -244,7 +215,7 @@ export function DeclineReasonDialog() {
             no event of its own. MUI already sets `pointer-events: none` on it,
             so the press lands here. */}
         <Box
-          onClick={() => { if (onInstructions && !canAdvance) setAckMissing(true); }}
+          onClick={() => {}}
           sx={{ width: { xs: "100%", sm: "auto" } }}
         >
           <Button
@@ -260,7 +231,7 @@ export function DeclineReasonDialog() {
               "&.Mui-disabled": { bgcolor: "rgba(211,47,47,0.05)", color: "rgba(211,47,47,0.4)" },
             }}
           >
-            {!isLate ? "I'm unavailable" : onInstructions ? "Request cancellation" : "Next"}
+            {onSent ? "Done" : onConfirm ? "Request cancellation" : "Next"}
           </Button>
         </Box>
       </DialogActions>

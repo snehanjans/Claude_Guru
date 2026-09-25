@@ -2504,6 +2504,23 @@ const FILLER_TOPICS: { title: string; topic: string }[] = [
 const ymd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+/**
+ * Who books for each programme. Real programmes have their own manager, and the
+ * generator previously stamped one name on everything — which made a leave
+ * spanning two programmes look like one person's problem when it is two.
+ */
+const PROGRAM_MANAGERS: Record<string, { name: string; email: string }> = {
+  "PGP-AIML": { name: "Bhargavi CS", email: "bhargavi.cs@greatlearning.in" },
+  "PGP-DS": { name: "Rukmini Devi", email: "rukmini.devi@greatlearning.in" },
+  AIML: { name: "Ravi Kumar", email: "ravi.kumar@greatlearning.in" },
+  "PGP-BA": { name: "Priya Sharma", email: "priya.sharma@greatlearning.in" },
+  PGPDS: { name: "Rukmini Devi", email: "rukmini.devi@greatlearning.in" },
+  "PGP-SE": { name: "Ashish Saroh", email: "ashish.saroh@greatlearning.in" },
+};
+
+const programManager = (program: string) =>
+  PROGRAM_MANAGERS[program] ?? { name: "Bhargavi CS", email: "bhargavi.cs@greatlearning.in" };
+
 function buildScheduleFiller(authored: Session[]): Session[] {
   const anchor = new Date(demoNow);
   anchor.setHours(0, 0, 0, 0);
@@ -2577,8 +2594,8 @@ function buildScheduleFiller(authored: Session[]): Session[] {
         contentReady: true,
         paymentAmountInr: Math.round(hours * 3000),
         paymentStatus: "invoice_not_raised",
-        scheduledByName: "Bhargavi CS",
-        scheduledByEmail: "bhargavi.cs@greatlearning.in",
+        scheduledByName: programManager(cohort.program).name,
+        scheduledByEmail: programManager(cohort.program).email,
         audienceType: "Group",
         timeZone: "Asia/Kolkata",
         paymentModel: "hourly",
@@ -2596,9 +2613,79 @@ function buildScheduleFiller(authored: Session[]): Session[] {
 }
 
 /** Authored detail first, then the generated backbone that fills the diary. */
+/**
+ * A second session on each of the next seven days, an hour after the one
+ * already there.
+ *
+ * Built from the REAL clock rather than `demoNow`: the calendar draws its grid
+ * from the real date, so anything anchored to the demo date lands weeks away
+ * from what is on screen. The visible week held exactly one session a day,
+ * which is too thin to exercise anything that acts on more than one at a time —
+ * a leave across an evening, a cancellation covering a pair, the hand-off from
+ * the drag popover to the leave dialog.
+ *
+ * The pair is deliberately booked by different program managers, so a leave
+ * drawn over both gives the grouped contact step something to group.
+ */
+function buildSecondSessionOfDay(existing: Session[]): Session[] {
+  const out: Session[] = [];
+  const midnight = new Date();
+  midnight.setHours(0, 0, 0, 0);
+
+  for (let day = 0; day < 7; day += 1) {
+    const d = new Date(midnight);
+    d.setDate(d.getDate() + day);
+    const dateYmd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+    const sameDay = existing.filter((s) => s.dateYmd === dateYmd);
+    if (sameDay.length === 0) continue;
+
+    /* An hour clear of whatever already runs that day, so the two never
+       overlap each other — only a leave drawn across them does. */
+    const start = Math.max(...sameDay.map((s) => s.end)) + 60;
+    if (start + 60 > 24 * 60) continue;
+
+    /* A different programme from the session it follows, so the day's two
+       sessions answer to two different managers. */
+    const taken = new Set(sameDay.map((s) => s.program));
+    const cohort = FILLER_COHORTS.find((c) => !taken.has(c.program)) ?? FILLER_COHORTS[day % FILLER_COHORTS.length];
+    const topic = FILLER_TOPICS[(day + 4) % FILLER_TOPICS.length];
+    const pm = programManager(cohort.program);
+
+    out.push({
+      id: `snd-${dateYmd}`,
+      title: topic.title,
+      topic: topic.topic,
+      batch: cohort.cohort,
+      program: cohort.program,
+      cohort: cohort.cohort,
+      group: cohort.group,
+      groupMembers: day % 2 === 0 ? GROUP_MEMBERS_A : GROUP_MEMBERS_B,
+      dateYmd,
+      start,
+      end: start + 60,
+      location: "Online",
+      sessionType: day % 2 === 0 ? "Mentored Learning session" : "Online session",
+      contentReady: true,
+      paymentAmountInr: 3000,
+      paymentStatus: "invoice_not_raised",
+      scheduledByName: pm.name,
+      scheduledByEmail: pm.email,
+      audienceType: "Group",
+      timeZone: "Asia/Kolkata",
+      paymentModel: "hourly",
+      hourlyRateInr: 3000,
+      totalEarningsInr: 3000,
+    });
+  }
+  return out;
+}
+
+const scheduledSessions: Session[] = [...authoredSessions, ...buildScheduleFiller(authoredSessions)];
+
 export const demoSessions: Session[] = [
-  ...authoredSessions,
-  ...buildScheduleFiller(authoredSessions),
+  ...scheduledSessions,
+  ...buildSecondSessionOfDay(scheduledSessions),
 ];
 
 export const demoLearnerRatingsBySessionId: Record<string, LearnerRating[]> = {

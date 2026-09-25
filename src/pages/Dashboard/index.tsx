@@ -815,6 +815,12 @@ export default function DashboardPage() {
                         const joinEnabled = nowMs >= sessionStartMs - 30 * 60 * 1000;
                         /* Secondary Guru: no Join button, show a "Secondary" badge on the card. */
                         const isSecondaryGuru = selectedRole === "Secondary Guru";
+                        /* Asked for, not yet granted. The session is still the guru's —
+                           it keeps its place here — but it should say so plainly, and
+                           the tag replaces "Starting soon" rather than sitting beside
+                           it: what matters most about this session now is that it is
+                           waiting on someone. */
+                        const isCancelRequested = !sessionDeclined[s.id] && !!cancellationRequests[s.id];
                         return (
                           <Card
                             key={s.id}
@@ -837,23 +843,31 @@ export default function DashboardPage() {
                               start={s.start}
                               end={s.end}
                               onCourseClick={getOnCourseClick(s)}
-                              topRight={startsWithin30 ? (
+                              topRight={isCancelRequested || startsWithin30 ? (
                                 <Chip
-                                  label="Starting soon"
+                                  label={isCancelRequested ? "Cancellation requested" : "Starting soon"}
                                   size="small"
                                   sx={{
                                     fontWeight: 500,
                                     fontSize: "0.7rem",
                                     height: 22,
                                     borderRadius: "4px",
-                                    bgcolor: "var(--gl-status-declined-bg)",
-                                    color: "var(--gl-status-declined-text)",
-                                    border: "1px solid var(--gl-status-declined-border)",
+                                    ...(isCancelRequested
+                                      ? {
+                                          bgcolor: "var(--gl-status-pending-bg)",
+                                          color: "var(--gl-status-pending-text)",
+                                          border: "1px solid var(--gl-status-pending-border)",
+                                        }
+                                      : {
+                                          bgcolor: "var(--gl-status-declined-bg)",
+                                          color: "var(--gl-status-declined-text)",
+                                          border: "1px solid var(--gl-status-declined-border)",
+                                        }),
                                     "& .MuiChip-label": { px: 1 },
                                   }}
                                 />
                               ) : undefined}
-                              actions={
+                              actions={isCancelRequested ? undefined : (
                                 <>
                                   {!isSecondaryGuru && (
                                     <Button
@@ -878,7 +892,7 @@ export default function DashboardPage() {
                                     Material
                                   </Button>
                                 </>
-                              }
+                              )}
                               onViewDetails={() => {
                                 dispatch(setSessionFocus(s));
                                 dispatch(setOpenSessionDetails(true));
