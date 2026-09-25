@@ -11,8 +11,11 @@ import MenuItem from "@mui/material/MenuItem";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
-import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
-import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
+/* A handset mid-call rather than a resting one, and WhatsApp's own mark rather
+   than a generic speech bubble — the step asks for a call and names the app, so
+   the icons should say the same. */
+import PhoneInTalkOutlinedIcon from "@mui/icons-material/PhoneInTalkOutlined";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import { dateTimeMs } from "@/lib/helpers";
 import FlexBox from "@/components/Utils/FlexBox";
 import { InfoBox } from "@/components/shared/InfoBox";
@@ -88,8 +91,51 @@ export const lateAckComplete = (a: LateCancellationAck) => a.pm;
 export const DECLINE_CLOSE_THRESHOLD_HOURS = 72;
 export const DECLINE_CLOSE_THRESHOLD_MS = DECLINE_CLOSE_THRESHOLD_HOURS * 60 * 60 * 1000;
 
-/** Who a guru contacts when pulling out of a session inside the threshold. */
+/** Who a guru contacts when a session names nobody. */
 export const PROGRAM_MANAGER_CONTACT = { name: "Bhargavi CS", email: "bhargavi.cs@greatlearning.in", phone: "+91 98765 43210" };
+
+/**
+ * Numbers for the managers the diary names. Sessions carry `scheduledByName`
+ * but only a handful carry `scheduledByPhone`, and borrowing one manager's
+ * number for another would send the guru to the wrong person — so the rest are
+ * filled from here.
+ */
+const PROGRAM_MANAGER_PHONES: Record<string, string> = {
+  "Bhargavi CS": "+91 98765 43210",
+  "Gurus Support": "+91 91234 56789",
+  "Rukmini Devi": "+91 98450 22187",
+  "Learners Success": "+91 80471 33902",
+  "Ravi Kumar": "+91 99001 45528",
+  "Ashish Saroh": "+91 97411 60833",
+  "Priya Sharma": "+91 90080 71264",
+};
+
+export type ProgramManager = { name: string; phone: string };
+
+/** The manager who scheduled a session, and how to reach them. */
+export function programManagerFor(s: Session): ProgramManager {
+  const name = s.scheduledByName || PROGRAM_MANAGER_CONTACT.name;
+  return {
+    name,
+    phone: s.scheduledByPhone || PROGRAM_MANAGER_PHONES[name] || PROGRAM_MANAGER_CONTACT.phone,
+  };
+}
+
+/**
+ * The sessions being given up, gathered under whoever has to release each one.
+ * A leave can span programmes with different managers, and telling the guru to
+ * ring one of them would leave the rest of their sessions un-covered.
+ */
+export function groupByProgramManager(sessions: Session[]): Array<ProgramManager & { sessions: Session[] }> {
+  const byName = new Map<string, ProgramManager & { sessions: Session[] }>();
+  for (const s of sessions) {
+    const pm = programManagerFor(s);
+    const existing = byName.get(pm.name);
+    if (existing) existing.sessions.push(s);
+    else byName.set(pm.name, { ...pm, sessions: [s] });
+  }
+  return [...byName.values()];
+}
 
 /** Sessions starting within the threshold — those the scheduler must be told about. */
 export function sessionsTooCloseToDecline(sessions: Session[], nowMs: number) {
@@ -247,95 +293,42 @@ function InstructionCheck({
  * threshold: tell the Program Manager. Shared by the session dialog and both
  * leave flows so the instructions never drift.
  */
-export function LateCancellationInstructions({
+/**
+ * Step two: the question itself.
+ *
+ * Separated from the instructions because they ask different things. This asks
+ * whether to go ahead at all; the next step asks the guru to go and do
+ * something. Running them together let someone tick a box and press send
+ * without ever being asked outright.
+ */
+export function LateCancellationConfirm({
   sessions,
   compact = false,
-  ack,
-  onAckChange,
-  ackMissing = false,
   late = true,
 }: {
   sessions: Session[];
   compact?: boolean;
-  /* Required, not optional: a surface that forgets to wire these up would let
-     the guru send the request without confirming they did it. */
-  ack: LateCancellationAck;
-  onAckChange: (next: LateCancellationAck) => void;
-  /** Set by a surface when the guru pressed its disabled confirm button. A
-      disabled button says nothing back, so pressing it looks like the product
-      is broken rather than like something is still owed. */
-  ackMissing?: boolean;
-  /** Inside the 72-hour window. Changes why the guru is being asked, not what
-      they are being asked to do: close in there is no time to find a
-      replacement without them, further out there is — but either way the
-      Program Manager is the one who has to arrange it. */
+  /** Inside the 72-hour window — there is no time to find a replacement. */
   late?: boolean;
 }) {
   if (sessions.length === 0) return null;
   const bodySx = { color: MUTED, fontSize: compact ? 11 : undefined };
   const highlightSx = { color: "text.primary", fontWeight: 600, wordBreak: "break-word" } as const;
-  const iconSx = { fontSize: compact ? 12 : 14, color: MUTED };
-  const linkSx = { fontSize: compact ? 11 : undefined, wordBreak: "break-all" } as const;
-  const subject = sessions.length === 1 ? `Unable to take: ${sessions[0].title}` : `Unable to take ${sessions.length} sessions`;
+  const one = sessions.length === 1;
 
   return (
-    <FlexBox flexDirection="column" gap={compact ? 1.75 : 2.5}>
+    <FlexBox flexDirection="column" gap={compact ? 1.25 : 2}>
       <Typography variant="body2" sx={bodySx}>
-        {sessions.length === 1 ? (
+        {one ? (
           <Box component="span" sx={highlightSx}>{sessions[0].title}</Box>
         ) : (
           <Box component="span" sx={highlightSx}>{sessions.length} sessions</Box>
         )}{" "}
         {late
-          ? `${sessions.length === 1 ? "starts" : "start"} in less than ${DECLINE_CLOSE_THRESHOLD_HOURS} hours. Before you step away, please do this:`
-          : `${sessions.length === 1 ? "still needs" : "still need"} a replacement. Before you step away, please do this:`}
+          ? `${one ? "starts" : "start"} in less than ${DECLINE_CLOSE_THRESHOLD_HOURS} hours.`
+          : `${one ? "still needs" : "still need"} a replacement.`}
       </Typography>
 
-      <InstructionStep title="Contact your Program Manager" compact={compact}>
-        <Typography variant="body2" sx={{ ...bodySx, mb: 0.75 }}>
-          Let {PROGRAM_MANAGER_CONTACT.name} know so they can arrange a replacement.
-        </Typography>
-        <FlexBox flexDirection="column" gap={0.5}>
-          <FlexBox alignItems="center" gap={0.75}>
-            <EmailOutlinedIcon sx={iconSx} />
-            <Link
-              href={`mailto:${PROGRAM_MANAGER_CONTACT.email}?subject=${encodeURIComponent(subject)}`}
-              variant="body2"
-              fontWeight={500}
-              underline="hover"
-              sx={linkSx}
-            >
-              {PROGRAM_MANAGER_CONTACT.email}
-            </Link>
-          </FlexBox>
-          <FlexBox alignItems="center" gap={0.75}>
-            <PhoneOutlinedIcon sx={iconSx} />
-            <Link
-              href={`tel:${PROGRAM_MANAGER_CONTACT.phone.replace(/\s/g, "")}`}
-              variant="body2"
-              fontWeight={500}
-              underline="hover"
-              sx={linkSx}
-            >
-              {PROGRAM_MANAGER_CONTACT.phone}
-            </Link>
-          </FlexBox>
-        </FlexBox>
-        <InstructionCheck
-          checked={ack.pm}
-          onChange={(next) => onAckChange({ ...ack, pm: next })}
-          label={`I've contacted ${PROGRAM_MANAGER_CONTACT.name}`}
-          compact={compact}
-          warn={ackMissing && !ack.pm}
-        />
-      </InstructionStep>
-
-      {/* The cost of doing this often, said once. Amber rather than the declined
-          red the step above uses: this is a note about the guru's standing, not
-          another alarm about the session, and pinning it to a pattern
-          ("repeated") keeps it off the decision in front of them. Icon and gap
-          are sized to match the red banner on the previous step, so the two
-          read as the same kind of aside at different temperatures. */}
       <InfoBox
         variant="warning"
         icon={<WarningAmberOutlinedIcon sx={{ fontSize: compact ? 14 : 18 }} />}
@@ -345,8 +338,111 @@ export function LateCancellationInstructions({
           "& .MuiTypography-root": { fontSize: compact ? 11 : undefined },
         }}
       >
+        {/* The question is the step's own heading — asking it again here made the
+            card the loudest thing on a screen whose job is to be answered. What is
+            left is what answering costs. */}
+        {late && (
+          <Box component="span" sx={{ display: "block", fontWeight: 600, mb: 0.5 }}>
+            There isn't time to find {one ? "a replacement for this session" : "replacements for these sessions"}.
+          </Box>
+        )}
         Repeated {late ? "late " : ""}cancellations can affect how often you're offered sessions.
       </InfoBox>
+    </FlexBox>
+  );
+}
+
+/**
+ * Step three, once the request is in: what still has to happen for it to count.
+ *
+ * Sending it is not the end. A cancellation is only real when the manager who
+ * scheduled it accepts, and until then the session is still the guru's — so
+ * this step says that and hands over the number.
+ *
+ * One block per manager. A leave can run across programmes booked by different
+ * people, and a single number would leave the rest of the sessions with nobody
+ * chasing them; each block names the sessions it covers so the guru knows what
+ * each call is about. Nothing is gated here — the request has already gone.
+ */
+export function LateCancellationInstructions({
+  sessions,
+  compact = false,
+}: {
+  sessions: Session[];
+  compact?: boolean;
+}) {
+  if (sessions.length === 0) return null;
+  const bodySx = { color: MUTED, fontSize: compact ? 11 : undefined };
+  const iconSx = { fontSize: compact ? 12 : 14, color: MUTED };
+  const linkSx = { fontSize: compact ? 11 : undefined, wordBreak: "break-all" } as const;
+  const groups = groupByProgramManager(sessions);
+  const one = sessions.length === 1;
+
+  return (
+    <FlexBox flexDirection="column" gap={compact ? 1.75 : 2.5}>
+      <Typography variant="body2" sx={bodySx}>
+        {groups.length === 1
+          ? `Your request is with ${groups[0].name}.`
+          : `Your requests are with ${groups.length} program managers.`}{" "}
+        A cancellation isn't final until they accept it, so {one ? "the session stays" : "the sessions stay"}{" "}
+        yours until then.
+      </Typography>
+
+      {groups.map((pm) => {
+        /* Digits only: both the dialler and wa.me want them, and wa.me will not
+           take a leading +. */
+        const digits = pm.phone.replace(/\D/g, "");
+        const subject =
+          pm.sessions.length === 1
+            ? `Unable to take: ${pm.sessions[0].title}`
+            : `Unable to take ${pm.sessions.length} sessions`;
+        return (
+          <InstructionStep key={pm.name} title={`Call ${pm.name}`} compact={compact}>
+            {/* What this particular call is about. Only when there is more than one
+                call to make — with a single manager the guru already knows.
+                Titles repeat across weeks, so they are deduped and capped: a
+                fortnight's leave can cover two dozen sessions, and a wall of
+                repeated names tells nobody anything. */}
+            {groups.length > 1 && (
+              <Typography variant="body2" sx={{ ...bodySx, mb: 0.75, fontStyle: "italic" }}>
+                {(() => {
+                  const titles = [...new Set(pm.sessions.map((s) => s.title))];
+                  const shown = titles.slice(0, 3).join(" · ");
+                  const rest = titles.length - 3;
+                  const named = rest > 0 ? `${shown} +${rest} more` : shown;
+                  return pm.sessions.length === 1 ? named : `${pm.sessions.length} sessions — ${named}`;
+                })()}
+              </Typography>
+            )}
+            <Typography variant="body2" sx={{ ...bodySx, mb: 0.75 }}>
+              Calling is what gets it accepted and a replacement found. Message them on WhatsApp if you
+              can't get through.
+            </Typography>
+            <FlexBox flexDirection="column" gap={0.5}>
+              <FlexBox alignItems="center" gap={0.75}>
+                <PhoneInTalkOutlinedIcon sx={iconSx} />
+                <Link href={`tel:${digits}`} variant="body2" fontWeight={500} underline="hover" sx={linkSx}>
+                  {pm.phone}
+                </Link>
+              </FlexBox>
+              <FlexBox alignItems="center" gap={0.75}>
+                <WhatsAppIcon sx={iconSx} />
+                <Link
+                  href={`https://wa.me/${digits}?text=${encodeURIComponent(subject)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="body2"
+                  fontWeight={500}
+                  underline="hover"
+                  sx={linkSx}
+                >
+                  WhatsApp
+                </Link>
+              </FlexBox>
+            </FlexBox>
+          </InstructionStep>
+        );
+      })}
     </FlexBox>
   );
 }
@@ -362,29 +458,15 @@ export function DeclineReasonFields({
   size = "small",
   autoFocus = false,
   compact = false,
-  heading,
 }: {
   value: DeclineReasonValue;
   onChange: (next: DeclineReasonValue) => void;
   isCareerMentor: boolean;
   size?: "small" | "medium";
   autoFocus?: boolean;
-  /** Names the group these fields belong to, for a leave that covers both an
-      outright decline and a cancellation request and so asks for two reasons.
-      Replaces the career-mentor heading rather than stacking on top of it. */
-  heading?: string;
   /** Tightens type sizes for the calendar popover, which is far narrower than a dialog. */
   compact?: boolean;
 }) {
-  const headingEl = heading ? (
-    <Typography
-      variant="body2"
-      sx={{ fontWeight: 600, mb: compact ? 0.75 : 1.5, fontSize: compact ? 12 : { xs: "0.8rem", sm: "0.875rem" } }}
-    >
-      {heading}
-    </Typography>
-  ) : null;
-
   const fontSx = compact
     ? { "& .MuiInputBase-root": { fontSize: 12 }, "& .MuiInputLabel-root": { fontSize: 12 } }
     : undefined;
@@ -423,26 +505,17 @@ export function DeclineReasonFields({
         )}
       />
     );
-    return headingEl ? (
-      <Box>
-        {headingEl}
-        {field}
-      </Box>
-    ) : (
-      field
-    );
+    return field;
   }
 
   return (
     <Box>
-      {headingEl ?? (
-        <Typography
-          variant="body2"
-          sx={{ fontWeight: 600, mb: 1.5, fontSize: compact ? 12 : { xs: "0.8rem", sm: "0.875rem" } }}
-        >
-          Why you're cancelling
-        </Typography>
-      )}
+      <Typography
+        variant="body2"
+        sx={{ fontWeight: 600, mb: 1.5, fontSize: compact ? 12 : { xs: "0.8rem", sm: "0.875rem" } }}
+      >
+        Why you're cancelling
+      </Typography>
       <FormControl fullWidth size={size} required sx={fontSx}>
         <InputLabel>Reason</InputLabel>
         <Select
