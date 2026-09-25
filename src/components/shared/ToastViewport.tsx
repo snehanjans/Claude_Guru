@@ -10,15 +10,18 @@ export function ToastViewport() {
 
   const MAX_VISIBLE = 2;
 
-  // Auto-dismiss after 3.5 seconds, unless the toast is persistent
+  const DEFAULT_DURATION_MS = 3500;
+
+  /* Each toast runs its own clock. Timing only the newest meant a slow toast
+     held every one beneath it on screen, and a longer duration on one message
+     could not be expressed at all. */
   useEffect(() => {
-    if (!toasts.length) return;
-    const latest = toasts[toasts.length - 1];
-    if (latest.persistent) return;
-    const timer = window.setTimeout(() => {
-      dispatch(dismissToast(latest.id));
-    }, 3500);
-    return () => clearTimeout(timer);
+    const timers = toasts
+      .filter((t) => !t.persistent)
+      .map((t) =>
+        window.setTimeout(() => dispatch(dismissToast(t.id)), t.durationMs ?? DEFAULT_DURATION_MS),
+      );
+    return () => timers.forEach((id) => clearTimeout(id));
   }, [toasts, dispatch]);
 
   // Auto-dismiss overflow toasts, oldest first, never a persistent one

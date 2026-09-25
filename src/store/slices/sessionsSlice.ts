@@ -11,7 +11,7 @@ interface SessionsState {
   /** Late cancellations awaiting the Program Manager. Still scheduled until approved. */
   cancellationRequests: Record<string, { requestedAtYmd: string; reason: string }>;
   sessionFocus: Session | null;
-  homeSessionsView: "next" | "completed" | "declined";
+  homeSessionsView: "next" | "completed";
   selectedSessionType: "All" | SessionType;
   selectedTimePeriod: "All" | "Last 6 months" | "2025" | "2024" | "2023" | "2022";
   confirmMoveSessionId: string | null;
@@ -28,9 +28,15 @@ const initialState: SessionsState = {
   // the Guru performs. Every session is seeded rather than a hand-picked subset, so
   // nothing ever renders as "awaiting confirmation". Declining is the only response.
   confirmations: Object.fromEntries(demoSessions.map((s) => [s.id, true])),
-  sessionDeclined: {},
-  sessionDeclinedAtYmd: {},
-  sessionDeclinedReasons: {},
+  /* One worked example, so the "Marked unavailable" treatment is visible on a
+     first load rather than only after someone declines something by hand.
+     `cx1` started inside the 72-hour window, so it went to the Program Manager
+     as a request on the 16th and was accepted on the 17th — which is what an
+     accepted cancellation leaves behind: declined, stamped with the approval
+     date, carrying the reason from the request, and no request outstanding. */
+  sessionDeclined: { cx1: true },
+  sessionDeclinedAtYmd: { cx1: "2026-03-17" },
+  sessionDeclinedReasons: { cx1: "Personal emergency" },
   cancellationRequests: {},
   sessionFocus: null,
   homeSessionsView: "next",
@@ -67,6 +73,15 @@ const sessionsSlice = createSlice({
         reason: action.payload.reason,
       };
     },
+    /**
+     * The guru changed their mind before the Program Manager answered. The session
+     * was never un-scheduled, so dropping the request is all it takes to put things
+     * back — there is no decline to reverse. A decline, once made, has no such
+     * undo: it has already been acted on downstream.
+     */
+    withdrawCancellation(state, action: PayloadAction<string>) {
+      delete state.cancellationRequests[action.payload];
+    },
     /** The Program Manager accepted — only now does the session become declined. */
     approveCancellation(state, action: PayloadAction<{ id: string; dateYmd: string }>) {
       const request = state.cancellationRequests[action.payload.id];
@@ -76,16 +91,21 @@ const sessionsSlice = createSlice({
       state.sessionDeclinedAtYmd[action.payload.id] = action.payload.dateYmd;
       if (request.reason) state.sessionDeclinedReasons[action.payload.id] = request.reason;
     },
-    /** §8.3 Accept from Declined - undecline + re-confirm */
+    /**
+     * The guru takes back an outright decline while the session is still ahead.
+     * The reason goes with it — leaving it behind would resurface the old excuse
+     * if they ever stepped off the same session again.
+     */
     acceptSession(state, action: PayloadAction<string>) {
       delete state.sessionDeclined[action.payload];
       delete state.sessionDeclinedAtYmd[action.payload];
+      delete state.sessionDeclinedReasons[action.payload];
       state.confirmations[action.payload] = true;
     },
     setSessionFocus(state, action: PayloadAction<Session | null>) {
       state.sessionFocus = action.payload;
     },
-    setHomeSessionsView(state, action: PayloadAction<"next" | "completed" | "declined">) {
+    setHomeSessionsView(state, action: PayloadAction<"next" | "completed">) {
       state.homeSessionsView = action.payload;
     },
     setSelectedSessionType(state, action: PayloadAction<"All" | SessionType>) {
@@ -117,6 +137,7 @@ export const {
   clearRecentlyConfirmed,
   declineSession,
   requestCancellation,
+  withdrawCancellation,
   approveCancellation,
   acceptSession,
   setSessionFocus,

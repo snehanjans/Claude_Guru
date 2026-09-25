@@ -50,7 +50,10 @@ import {
   setSessionFocus,
   setDeclineSessionFocus,
   setDeclineReason,
+  withdrawCancellation,
+  acceptSession,
 } from "@/store/slices/sessionsSlice";
+import { removeUnavailableBySessionId } from "@/store/slices/availabilitySlice";
 import { setOpenSessionDetails, setOpenDeclineReason, setOpenLearnerRatings, setLearnerRatingsSessionId } from "@/store/slices/uiSlice";
 import { addPoll, updatePoll, removePoll } from "@/store/slices/pollsSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
@@ -61,6 +64,8 @@ import { dateTimeMs, sortByDateTime } from "@/lib/helpers";
 import type { SessionPrepMaterial, Poll } from "@/lib/types";
 import { getActivityStats } from "@/lib/activity-stats";
 import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
+import { InfoBox } from "@/components/shared/InfoBox";
+import HourglassEmptyOutlinedIcon from "@mui/icons-material/HourglassEmptyOutlined";
 
 const MATERIAL_ICONS: Record<SessionPrepMaterial["type"], React.ReactNode> = {
   slides: <SlideshowOutlinedIcon sx={{ fontSize: 15 }} />,
@@ -592,9 +597,13 @@ export function SessionDetailsModal() {
   /* Polls: hidden for Secondary Gurus per spec (no create / no view). */
   const showPolls = session && isConfirmed && !isCompleted && !isSecondaryGuru;
 
+  /* The guru has stepped off this one. It outranks every other state: whether
+     the date has passed says nothing about whether they were on it. */
+  const isDeclined = session ? !!sessionDeclined[session.id] : false;
+
   /* Status chip config */
-  const statusLabel = isCompleted ? "Completed" : isMissed ? "Missed" : isCancelRequested ? "Cancellation requested" : isConfirmed ? "Confirmed" : isPast ? "Past" : "Scheduled";
-  const statusSx = isCancelRequested && !isCompleted
+  const statusLabel = isDeclined ? "Marked unavailable" : isCompleted ? "Completed" : isMissed ? "Missed" : isCancelRequested ? "Cancellation requested" : isConfirmed ? "Confirmed" : isPast ? "Past" : "Scheduled";
+  const statusSx = isDeclined || (isCancelRequested && !isCompleted)
     ? { bgcolor: "var(--gl-status-declined-bg)", color: "var(--gl-status-declined-text)", border: "1px solid var(--gl-status-declined-border)" }
     : isCompleted
     ? { bgcolor: "var(--gl-status-completed-bg)", color: "var(--gl-status-completed-text)", border: "1px solid var(--gl-status-completed-border)" }
@@ -1306,63 +1315,140 @@ export function SessionDetailsModal() {
             px: 2,
             py: 1.5,
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            flexDirection: "column",
+            gap: 1.25,
             flexShrink: 0,
           }}
         >
-          <Button variant="text" color="inherit" size="small" onClick={handleClose}>
-            Close
-          </Button>
+          {/* The waiting state is a status, not an action, so it reads as a banner
+              across the footer rather than as a label wedged between two buttons —
+              where it wrapped onto two lines and pushed "Withdraw request" into
+              wrapping as well. */}
           {session && !isCompleted && !isPast && isCancelRequested && (
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem", textAlign: "right" }}>
+            <InfoBox
+              variant="warning"
+              icon={<HourglassEmptyOutlinedIcon sx={{ fontSize: 14 }} />}
+              sx={{
+                /* Full bleed: cancel the footer's own gutter so the strip meets both
+                   edges and sits flush under the divider, then put the inset back
+                   inside it. Square corners and a single bottom border keep it
+                   reading as part of the footer rather than a card floating in it. */
+                mx: -2,
+                mt: -1.5,
+                px: 2,
+                py: 0.75,
+                gap: 0.75,
+                alignItems: "center",
+                borderRadius: 0,
+                borderWidth: "0 0 1px 0",
+                "& .MuiTypography-root": { fontSize: 12, lineHeight: 1.4 },
+              }}
+            >
               Waiting for your Program Manager to accept
-            </Typography>
+            </InfoBox>
           )}
-          {session && !isCompleted && !isPast && !isCancelRequested && (
-            <Stack direction="row" spacing={1}>
+          {/* Declined outright, but the session has not happened yet — so this is
+              still reversible, and the footer says so rather than going silent. */}
+          {session && !isCompleted && !isPast && isDeclined && (
+            <InfoBox
+              variant="error"
+              icon={<CancelOutlinedIcon sx={{ fontSize: 14 }} />}
+              sx={{
+                mx: -2,
+                mt: -1.5,
+                px: 2,
+                py: 0.75,
+                gap: 0.75,
+                alignItems: "center",
+                borderRadius: 0,
+                borderWidth: "0 0 1px 0",
+                "& .MuiTypography-root": { fontSize: 12, lineHeight: 1.4 },
+              }}
+            >
+              You're marked unavailable for this session
+            </InfoBox>
+          )}
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Button variant="text" color="inherit" size="small" onClick={handleClose}>
+              Close
+            </Button>
+            {/* Same shape as withdrawing a cancellation request: while the session is
+                still ahead, stepping back on is one press and needs no confirmation.
+                The block the decline put on the calendar goes with it, otherwise the
+                guru would be back on the session and still showing as away. */}
+            {session && !isCompleted && !isPast && isDeclined && (
               <Button
                 variant="soft"
                 size="small"
-                startIcon={<CancelOutlinedIcon sx={{ fontSize: 15 }} />}
                 onClick={() => {
-                  dispatch(setDeclineSessionFocus(session));
-                  dispatch(setDeclineReason(""));
-                  dispatch(setOpenSessionDetails(false));
-                  dispatch(setOpenDeclineReason(true));
+                  dispatch(acceptSession(session.id));
+                  dispatch(removeUnavailableBySessionId(session.id));
+                  dispatch(pushToast({ title: "You're available again", description: session.title }));
                 }}
               >
-                I'm unavailable
+                Undo
               </Button>
-              {/* No confirm action \u2014 a scheduled session is already confirmed. */}
-            </Stack>
-          )}
-          {session && isPast && !isCompleted && (
-            <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.75rem" }}>
-              This session has passed
-            </Typography>
-          )}
-          {session && isCompleted && (
-            <Stack direction="row" spacing={1}>
-              {session.recordingUrl && (
+            )}
+            {/* The session was never un-scheduled, so taking the request back needs no
+                confirmation — it simply returns to where it was. The banner and this
+                button both disappear, which is the clearest confirmation it worked. */}
+            {session && !isCompleted && !isPast && isCancelRequested && (
+              <Button
+                variant="soft"
+                size="small"
+                onClick={() => {
+                  dispatch(withdrawCancellation(session.id));
+                  dispatch(pushToast({ title: "Cancellation request withdrawn", description: session.title }));
+                }}
+              >
+                Withdraw request
+              </Button>
+            )}
+            {session && !isDeclined && !isCompleted && !isPast && !isCancelRequested && (
+              <Stack direction="row" spacing={1}>
                 <Button
                   variant="soft"
                   size="small"
-                  startIcon={<VideocamOutlinedIcon sx={{ fontSize: 15 }} />}
-                  onClick={() => dispatch(pushToast({ title: "Opening recording" }))}
+                  startIcon={<CancelOutlinedIcon sx={{ fontSize: 15 }} />}
+                  onClick={() => {
+                    dispatch(setDeclineSessionFocus(session));
+                    dispatch(setDeclineReason(""));
+                    dispatch(setOpenSessionDetails(false));
+                    dispatch(setOpenDeclineReason(true));
+                  }}
                 >
-                  Recording
+                  I'm unavailable
                 </Button>
-              )}
-              <Button
-                variant="soft"
-                size="small"
-                onClick={() => { handleClose(); navigate("/payments"); }}
-              >
-                View in payments
-              </Button>
-            </Stack>
-          )}
+                {/* No confirm action \u2014 a scheduled session is already confirmed. */}
+              </Stack>
+            )}
+            {session && isPast && !isCompleted && (
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.75rem" }}>
+                This session has passed
+              </Typography>
+            )}
+            {session && isCompleted && !isDeclined && (
+              <Stack direction="row" spacing={1}>
+                {session.recordingUrl && (
+                  <Button
+                    variant="soft"
+                    size="small"
+                    startIcon={<VideocamOutlinedIcon sx={{ fontSize: 15 }} />}
+                    onClick={() => dispatch(pushToast({ title: "Opening recording" }))}
+                  >
+                    Recording
+                  </Button>
+                )}
+                <Button
+                  variant="soft"
+                  size="small"
+                  onClick={() => { handleClose(); navigate("/payments"); }}
+                >
+                  View in payments
+                </Button>
+              </Stack>
+            )}
+          </Box>
         </Box>
       </Box>
     </Drawer>

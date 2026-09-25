@@ -44,7 +44,16 @@ import { setCalendarViewMode, setAnchorDate, type CalendarViewMode } from "@/sto
 import { setSessionFocus, clearRecentlyConfirmed, declineSession, requestCancellation } from "@/store/slices/sessionsSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
 import { setRequestFocus } from "@/store/slices/requestsSlice";
-import { addOneOffAvail, addUnavailable, removeUnavailableByGroupId } from "@/store/slices/availabilitySlice";
+import {
+  addOneOffAvail,
+  addUnavailable,
+  removeUnavailableByGroupId,
+  setNaStartDate,
+  setNaEndDate,
+  setNaStart,
+  setNaEnd,
+  setNaOpenAtOverlaps,
+} from "@/store/slices/availabilitySlice";
 import {
   setOpenSession,
   setOpenSessionDetails,
@@ -91,6 +100,7 @@ import { compactDatePickerProps, compactTimePickerProps } from "@/lib/pickerProp
 import {
   DeclineReasonFields,
   LateCancellationWarning,
+  LateCancellationConfirm,
   LateCancellationInstructions,
   EMPTY_LATE_ACK,
   lateAckComplete,
@@ -99,6 +109,7 @@ import {
   sessionsTooCloseToDecline,
   composeDeclineReason,
   canSubmitDeclineReason,
+  DECLINE_CLOSE_THRESHOLD_HOURS,
   EMPTY_DECLINE_REASON,
   type DeclineReasonValue,
 } from "@/components/shared/DeclineReasonFields";
@@ -106,6 +117,8 @@ import { DOW, DOW_LONG, demoNow } from "@/lib/constants";
 import type { NA, RequestSlot, Session, AvailRole } from "@/lib/types";
 import { availRoleVisual, COMBINED_MENTOR_ROLE } from "@/lib/role-config";
 import { AvailRoleSelect } from "@/components/shared/AvailRoleSelect";
+import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
+import FlexBox from "@/components/Utils/FlexBox";
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
@@ -163,9 +176,54 @@ const spotTimePickerProps = (ariaLabel: string) =>
   compactTimePickerProps(ariaLabel, { stepMinutes: TIME_STEP });
 const spotDatePickerProps = (ariaLabel: string) => compactDatePickerProps(ariaLabel);
 
+/**
+ * Height floor for the drag-select popover's date/time step, so the popover
+ * stays one size as the Availability/Leave toggle flips.
+ *
+ * Leave is the taller tab by ~70px: it carries a date-range row and the
+ * "you'll show as unavailable" line, neither of which availability has a
+ * counterpart for. Without a floor the popover resizes under the cursor on
+ * every toggle. This clears leave's natural height, so the shorter tab pads
+ * out to meet it instead of the taller one being clamped.
+ *
+ * It is a floor, not a fixed height — states that legitimately need more (a
+ * multi-day leave wraps its helper line to three) still grow past it.
+ */
+const SPOT_STEP_MIN_HEIGHT = 248;
+
 /** Convert minutes-since-midnight to a percentage within the visible grid. */
 function timeToPercent(mins: number) {
   return ((mins - CAL_START) / (CAL_END - CAL_START)) * 100;
+}
+
+/**
+ * What is left of `[start, end)` once every interval in `cuts` is taken out of it.
+ *
+ * Leave is drawn around the sessions inside it rather than behind them. A tile
+ * sitting under a session reads through it — the dashed border, the hatch and
+ * its own label land on top of the session's title — and it cannot be clicked
+ * there either, because the session takes the pointer. Cutting the block into
+ * the gaps keeps both readable and both reachable, and the leave still says
+ * what it covers by surrounding the session.
+ *
+ * Cuts need not be sorted or disjoint. Zero-length remainders are dropped.
+ */
+function subtractIntervals(
+  start: number,
+  end: number,
+  cuts: Array<{ start: number; end: number }>,
+): Array<{ start: number; end: number }> {
+  let pieces = [{ start, end }];
+  for (const cut of cuts) {
+    const next: Array<{ start: number; end: number }> = [];
+    for (const p of pieces) {
+      if (cut.end <= p.start || cut.start >= p.end) { next.push(p); continue; }
+      if (cut.start > p.start) next.push({ start: p.start, end: cut.start });
+      if (cut.end < p.end) next.push({ start: cut.end, end: p.end });
+    }
+    pieces = next;
+  }
+  return pieces.filter((p) => p.end > p.start);
 }
 
 /** 2px on every edge so neighbouring tiles never share a border. */
@@ -242,6 +300,27 @@ function sessionColors(declined: boolean) {
     sub: "var(--gl-cal-session-scheduled-sub)",
   };
 }
+
+/**
+ * A cancellation the Program Manager has not answered yet.
+ *
+ * Amber rather than the error hue on purpose. The session is still scheduled and
+ * still the guru's to teach — nothing has been decided. Red would read as final,
+ * and it is already spoken for: a struck-through red tile means the session is
+ * gone. This says "in progress" instead, and the title and time stay neutral so
+ * the tile is still first and foremost a session.
+ *
+ * Fill and border come from the `warning` group in `colors.ts` (via the `-hsl`
+ * companion `tokens.ts` adds), so both follow the palette into dark mode.
+ */
+const pendingCancelColors = {
+  bg: "hsl(var(--warning-main-hsl) / 0.16)",
+  border: "var(--warning-main)",
+  text: "text.primary",
+  sub: "text.secondary",
+  /** For the status line — darker, so it holds up against the tinted fill. */
+  accent: "var(--warning-dark)",
+};
 
 /** Request status color (§8.5) */
 function requestColors(response: RequestSlot["response"]) {
@@ -420,18 +499,32 @@ export default function CalendarPage() {
   // Set when the popover is editing an existing leave group rather than creating one.
   const [spotEditGroupId, setSpotEditGroupId] = useState<string | null>(null);
   /**
-   * Leave that covers a scheduled session declines it, and a decline always needs a
-   * reason — the same one the session-detail flow asks for. When conflicts exist,
-   * confirming moves the popover to this second step instead of committing.
+   * Leave that covers a scheduled session asks the Program Manager to release the
+   * guru from it, and that ask always needs a reason — the same one the
+   * session-detail flow collects. When conflicts exist, confirming moves the
+   * popover to this second step instead of committing.
    */
   const [spotConflictStep, setSpotConflictStep] = useState(false);
   const [spotDeclineReason, setSpotDeclineReason] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
+  // A leave can cover both kinds at once. The two groups go to different people —
+  // one is the guru's own decision, the other is a request the Program Manager has
+  // to weigh — so they get a reason each rather than sharing one.
   // Third step, only when some covered sessions start inside the late-cancellation
   // threshold: what the guru must do themselves before the leave is marked.
   const [spotInstructionsStep, setSpotInstructionsStep] = useState(false);
+  /** Between the reason and the contact step: the question asked outright. */
+  const [spotConfirmStep, setSpotConfirmStep] = useState(false);
+  /* What was just requested. Held separately because the live conflict list
+     excludes anything already waiting on the Program Manager — the moment the
+     requests go out it empties, and the step reporting them would go blank. */
+  const [spotSentSessions, setSpotSentSessions] = useState<Session[]>([]);
   // Confirmation that the guru has done both of those things. Survives Back/Next
   // within one drag, and is cleared with the rest of the pending spot.
   const [spotLateAck, setSpotLateAck] = useState<LateCancellationAck>(EMPTY_LATE_ACK);
+  /* Pressing the disabled confirm button is a dead click — the browser swallows
+     it and the guru gets no answer. Catching it on a wrapper lets the one thing
+     still owed point at itself. */
+  const [spotAckMissing, setSpotAckMissing] = useState(false);
   // The edited group's reason, carried through so editing times doesn't reset a
   // custom reason ("Sick leave", …) back to the generic default.
   const [spotEditReason, setSpotEditReason] = useState<string | null>(null);
@@ -535,28 +628,56 @@ export default function CalendarPage() {
     );
   }, [pendingSpot, spotKind, leaveFromYmd, leaveToYmd, sessions, sessionDeclined, cancellationRequests, todayYmd]);
 
-  /** Covered sessions inside the threshold: these become cancellation requests, not declines. */
+  /* Every covered session becomes a request now, whenever it is. The threshold
+     no longer decides the outcome — it decides the urgency, and whether the guru
+     has to chase the Program Manager rather than simply tell them. */
   const spotLateConflicts = sessionsTooCloseToDecline(spotLeaveConflicts, realNow.getTime());
 
-  const spotDeclineReasonText = composeDeclineReason(spotDeclineReason, isCareerMentorRole);
+  /* One reason for the whole leave. The 72-hour split still decides how urgent
+     the wording is, but it no longer changes what happens to a session — every
+     one becomes a request — so asking twice was asking the same thing twice. */
+  const spotReasonText = composeDeclineReason(spotDeclineReason, isCareerMentorRole);
   const canConfirmSpotConflicts = canSubmitDeclineReason(spotDeclineReason, isCareerMentorRole);
+
+  /** What confirming will do. Nothing is settled by it — it starts the asking. */
+  const spotConflictSummary = (() => {
+    const n = spotLeaveConflicts.length;
+    return n === 1
+      ? "Marking this leave asks your Program Manager to release you from it. Please add a reason for the scheduler."
+      : `Marking this leave asks your Program Manager to release you from all ${n}. Please add a reason for the scheduler.`;
+  })();
 
   const confirmSpot = () => {
     if (!pendingSpot) return;
     const { ymd, start, end } = pendingSpot;
-    // Leave over a scheduled session declines it — collect a reason first, exactly
-    // as the session-detail flow does, rather than cancelling silently.
+    /* More than one session under the leave, and the popover is the wrong room
+       for it: 340px cannot hold a list of sessions, their times and which of
+       them are inside the window. Hand the dragged range to the leave dialog,
+       which is built for exactly that, and open it on the overlaps rather than
+       back on the dates the guru has just drawn. */
+    if (spotKind === "leave" && spotLeaveConflicts.length > 1 && !spotConflictStep) {
+      dispatch(setNaStartDate(leaveFromYmd));
+      dispatch(setNaEndDate(leaveToYmd));
+      dispatch(setNaStart(hhmmFromMinutes(start)));
+      dispatch(setNaEnd(hhmmFromMinutes(end)));
+      dispatch(setNaOpenAtOverlaps(true));
+      dispatch(setOpenNotAvailable(true));
+      cancelSpot();
+      return;
+    }
+    // A single session fits here — collect a reason without leaving the grid.
     if (spotKind === "leave" && spotLeaveConflicts.length > 0 && !spotConflictStep) {
       setSpotConflictStep(true);
       return;
     }
-    // Late sessions need the guru to act themselves — show that before committing.
-    if (spotKind === "leave" && spotLateConflicts.length > 0 && !spotInstructionsStep) {
-      setSpotInstructionsStep(true);
+    // Asked outright before anything is sent.
+    if (spotKind === "leave" && spotLeaveConflicts.length > 0 && !spotConfirmStep) {
+      setSpotConfirmStep(true);
       return;
     }
-    // Belt and braces: the button is disabled until both are ticked.
-    if (spotKind === "leave" && spotLateConflicts.length > 0 && !lateAckComplete(spotLateAck)) return;
+    /* Past the question, so this press is the one that sends. Nothing gates it:
+       the last step reports what happened rather than asking for anything. */
+    const willRequest = spotKind === "leave" && spotLeaveConflicts.length > 0;
     if (spotKind === "leave") {
       // One block per day, all sharing a groupId so the range deletes as a unit.
       // Editing rewrites the group wholesale: the day count can change, so there is
@@ -566,23 +687,18 @@ export default function CalendarPage() {
       generateLeaveSegments(leaveFromYmd, leaveToYmd, start, end, spotEditReason ?? "Leave").forEach((seg, i) => {
         dispatch(addUnavailable({ id: `na-${Date.now()}-${i}`, groupId, ...seg }));
       });
-      // Inside the threshold it is only a request (the PM accepts it later); further
-      // out the session is declined straight away.
-      const lateIds = new Set(spotLateConflicts.map((s) => s.id));
-      const declined = spotLeaveConflicts.filter((s) => !lateIds.has(s.id));
-      spotLateConflicts.forEach((s) =>
-        dispatch(requestCancellation({ id: s.id, dateYmd: todayYmd, reason: spotDeclineReasonText })),
+      /* Never a decline from here. The leave is the guru's own statement and
+         takes effect at once; the sessions inside it are someone else's to
+         reassign, so each one becomes a request the Program Manager answers.
+         The two groups carry their own reason — what they are asking for
+         differs even though the action does not. */
+      spotLeaveConflicts.forEach((s) =>
+        dispatch(requestCancellation({ id: s.id, dateYmd: todayYmd, reason: spotReasonText })),
       );
-      declined.forEach((s) =>
-        dispatch(declineSession({ id: s.id, dateYmd: todayYmd, reason: spotDeclineReasonText })),
-      );
-      if (declined.length > 0) {
-        dispatch(pushToast({
-          title: "Leave marked",
-          description: `${declined.length} session${declined.length > 1 ? "s" : ""} declined`,
-        }));
+      if (spotLeaveConflicts.length > 0) {
+        setSpotSentSessions(spotLeaveConflicts);
+        dispatch(pushToast(CANCELLATION_REQUESTED_TOAST));
       }
-      if (spotLateConflicts.length > 0) dispatch(pushToast(CANCELLATION_REQUESTED_TOAST));
     } else {
       dispatch(addOneOffAvail({
         id: `oneoff-${ymd}-${start}-${end}-${Date.now()}`,
@@ -590,14 +706,24 @@ export default function CalendarPage() {
         ...(isComboRole ? { availFor: spotRole } : {}),
       }));
     }
+    /* Sending is not the end of it — the last step is the only place the guru
+       is told the request still has to be accepted. Everything above has
+       already been dispatched, so this only holds the popover open. */
+    if (willRequest && !spotInstructionsStep) {
+      setSpotInstructionsStep(true);
+      return;
+    }
     setPendingSpot(null);
     setSpotConfirmPos(null);
     setSpotEditGroupId(null);
     setSpotEditReason(null);
     setSpotConflictStep(false);
+    setSpotConfirmStep(false);
     setSpotInstructionsStep(false);
     setSpotDeclineReason(EMPTY_DECLINE_REASON);
     setSpotLateAck(EMPTY_LATE_ACK);
+    setSpotAckMissing(false);
+    setSpotSentSessions([]);
   };
   const cancelSpot = () => {
     setPendingSpot(null);
@@ -605,9 +731,12 @@ export default function CalendarPage() {
     setSpotEditGroupId(null);
     setSpotEditReason(null);
     setSpotConflictStep(false);
+    setSpotConfirmStep(false);
     setSpotInstructionsStep(false);
     setSpotDeclineReason(EMPTY_DECLINE_REASON);
     setSpotLateAck(EMPTY_LATE_ACK);
+    setSpotAckMissing(false);
+    setSpotSentSessions([]);
   };
 
   /**
@@ -1043,8 +1172,8 @@ export default function CalendarPage() {
                   {sessionsThisWeek
                     .filter((s) => s.dateYmd === mobileSelectedDay && !sessionDeclined[s.id])
                     .map((s) => {
-                      const sColors = sessionColors(false);
                       const cancelRequested = !!cancellationRequests[s.id];
+                      const sColors = cancelRequested ? pendingCancelColors : sessionColors(false);
                       const topPct = timeToPercent(s.start);
                       const blockHeight = timeToPercent(s.end) - topPct;
                       const totalPx = HOUR_LABELS.length * GRID_ROW_PX;
@@ -1060,9 +1189,10 @@ export default function CalendarPage() {
                             right: 4,
                             bgcolor: sColors.bg,
                             borderRadius: '8px',
-                            // Pending cancellation: still scheduled, flagged by a red border only.
+                            // Pending cancellation: still scheduled, so it takes the amber
+                            // fill and border rather than the declined treatment.
                             border: cancelRequested ? '1px solid' : 'none',
-                            borderColor: 'error.main',
+                            borderColor: pendingCancelColors.border,
                             cursor: 'pointer',
                             textAlign: 'left',
                             px: 1,
@@ -1314,14 +1444,16 @@ export default function CalendarPage() {
                   // §8.3: For overlapping NA (leave) blocks, keep only the most recent by createdAt
                   // Also hide leave blocks tied to sessionId if the same session is drawn in that day
                   const filteredNaBlocks = (() => {
-                    // Step 1: Remove NA blocks whose sessionId maps to a drawn session
-                    const afterSessionFilter = naBlocks.filter((n) => {
-                      if (n.sessionId) {
-                        // Hide if this session is drawn (not declined)
-                        return !drawnSessions.some((s) => s.id === n.sessionId);
-                      }
-                      return true;
-                    });
+                    /* Step 1: drop the block a session's own cancellation created,
+                       whether or not that session is still live. The tile is already
+                       on the grid saying the same thing — struck through, in the
+                       declined palette — and it already marks the slot occupied, so
+                       the block adds nothing and the two drew over each other: the
+                       block's "Not available" and its reason showed through the
+                       transparent tile, on top of the session's own title and time. */
+                    const afterSessionFilter = naBlocks.filter(
+                      (n) => !(n.sessionId && daySessions.some((s) => s.id === n.sessionId)),
+                    );
                     // Step 2: For overlapping NA blocks, keep only the most recent by createdAt
                     const result: NA[] = [];
                     for (const n of afterSessionFilter) {
@@ -1528,9 +1660,12 @@ export default function CalendarPage() {
                       ))}
 
                       {/* §8.2 Draw order: 2. Leave (unavailable) - dashed border */}
-                      {filteredNaBlocks.map((n) => (
+                      {filteredNaBlocks.flatMap((n) =>
+                        /* Drawn in the gaps between the sessions it covers. The
+                           sessions themselves say what is happening to them. */
+                        subtractIntervals(n.start, n.end, daySessions).map((piece, i) => (
                         <Box
-                          key={`na-${n.id}`}
+                          key={`na-${n.id}-${i}`}
                           component="button"
                           onClick={(e: React.MouseEvent<HTMLElement>) => {
                             setLeaveAnchorEl(e.currentTarget);
@@ -1540,7 +1675,7 @@ export default function CalendarPage() {
                             position: 'absolute',
                             left: TILE_INSET_PX,
                             right: TILE_INSET_PX,
-                            ...tileBox(n.start, n.end),
+                            ...tileBox(piece.start, piece.end),
                             bgcolor: 'var(--gl-cal-leave-bg)',
                             border: '1.5px dashed',
                             borderColor: 'error.main',
@@ -1556,16 +1691,23 @@ export default function CalendarPage() {
                             textAlign: 'left',
                           }}
                         >
-                          <Typography sx={{ fontSize: 10, fontWeight: 600, color: 'error.dark' }}>
-                            Not available
-                          </Typography>
-                          {n.reason && (
-                            <Typography sx={{ fontSize: 9, color: 'error.dark' }} noWrap>
-                              {n.reason}
-                            </Typography>
+                          {/* Only the piece with room for it carries the label, so a
+                              leave split around a session does not repeat itself. */}
+                          {piece.end - piece.start >= 30 && (
+                            <>
+                              <Typography sx={{ fontSize: 10, fontWeight: 600, color: 'error.dark' }}>
+                                Not available
+                              </Typography>
+                              {n.reason && (
+                                <Typography sx={{ fontSize: 9, color: 'error.dark' }} noWrap>
+                                  {n.reason}
+                                </Typography>
+                              )}
+                            </>
                           )}
                         </Box>
-                      ))}
+                        )),
+                      )}
 
                       {/* §8.2 Draw order: 3. Availability placeholders - dashed emerald */}
                       {availPatterns.map((p) => {
@@ -1713,6 +1855,8 @@ export default function CalendarPage() {
                         const isCompletedSession = isPastSession && !declined;
                         const sColors = isCompletedSession
                           ? { bg: "var(--gl-status-completed-bg)", border: "var(--gl-status-completed-border)", text: "var(--gl-status-completed-text)", sub: "var(--gl-status-completed-text)" }
+                          : cancelRequested
+                            ? pendingCancelColors
                           : sessionColors(declined);
                         const statusLabel = declined
                           ? "Declined"
@@ -1747,10 +1891,11 @@ export default function CalendarPage() {
                               width: `calc(${widthPct}% - ${TILE_INSET_PX * 2}px)`,
                               ...tileBox(s.start, s.end),
                               bgcolor: sColors.bg,
-                              // Pending cancellation: still scheduled, flagged by a red border
-                              // only. The strike-through waits until the PM accepts.
+                              // Pending cancellation: still scheduled, so it takes the amber
+                              // fill and border but keeps upright text. The strike-through
+                              // waits until the PM accepts.
                               border: cancelRequested ? '1px solid' : 'none',
-                              borderColor: 'error.main',
+                              borderColor: pendingCancelColors.border,
                               borderRadius: '8px',
                               zIndex: 5,
                               px: 0.75,
@@ -1797,7 +1942,7 @@ export default function CalendarPage() {
                                   mt: 0.25,
                                   lineHeight: '1.2',
                                   ...(cancelRequested
-                                    ? { color: 'error.main', fontWeight: 600 }
+                                    ? { color: pendingCancelColors.accent, fontWeight: 600 }
                                     : { color: sColors.sub, opacity: 0.8 }),
                                 }}
                                 noWrap
@@ -1903,20 +2048,36 @@ export default function CalendarPage() {
             disableEnforceFocus
             // The conflict step carries a session list and the reason fields, so it
             // needs more room than the date/time step.
-            slotProps={{ paper: { sx: { borderRadius: '12px', p: 1.75, width: spotConflictStep ? 340 : 288, maxWidth: 'calc(100vw - 24px)' } } }}
+            slotProps={{
+              paper: {
+                sx: {
+                  borderRadius: '12px',
+                  p: 1.75,
+                  width: spotConflictStep ? 340 : 288,
+                  maxWidth: 'calc(100vw - 24px)',
+                  // Only the date/time step is held to one size; the conflict
+                  // steps are a different width and size to their own content.
+                  ...(spotConflictStep
+                    ? {}
+                    : { minHeight: SPOT_STEP_MIN_HEIGHT, display: 'flex', flexDirection: 'column' }),
+                },
+              },
+            }}
           >
-            {/* Step 3 — some covered sessions start inside the threshold. */}
-            {pendingSpot && spotConflictStep && spotInstructionsStep && (
+            {/* Step 3 — asked outright, before anyone is contacted. */}
+            {pendingSpot && spotConflictStep && spotConfirmStep && !spotInstructionsStep && (
               <>
-                <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 1 }}>Request cancellation</Typography>
-                <LateCancellationInstructions
+                <FlexBox alignItems="flex-start" justifyContent="space-between" gap={1} sx={{ mb: 1 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Are you sure?</Typography>
+                  <DialogCloseButton onClick={cancelSpot} />
+                </FlexBox>
+                <LateCancellationConfirm
                   compact
-                  sessions={spotLateConflicts}
-                  ack={spotLateAck}
-                  onAckChange={setSpotLateAck}
+                  late={spotLateConflicts.length === spotLeaveConflicts.length}
+                  sessions={spotLeaveConflicts}
                 />
                 <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1.75 }}>
-                  <Button size="small" color="inherit" onClick={() => setSpotInstructionsStep(false)} sx={{ fontSize: 12 }}>
+                  <Button size="small" color="inherit" onClick={() => setSpotConfirmStep(false)} sx={{ fontSize: 12 }}>
                     Back
                   </Button>
                   <Button
@@ -1925,7 +2086,6 @@ export default function CalendarPage() {
                     color="error"
                     disableElevation
                     onClick={confirmSpot}
-                    disabled={!lateAckComplete(spotLateAck)}
                     sx={{ fontSize: 12 }}
                   >
                     Request cancellation
@@ -1934,14 +2094,41 @@ export default function CalendarPage() {
               </>
             )}
 
-            {/* Step 2 — leave covers scheduled sessions, so collect a decline reason. */}
-            {pendingSpot && spotConflictStep && !spotInstructionsStep && (
+            {/* Step 4 — sent, and what still has to happen for it to count. */}
+            {pendingSpot && spotConflictStep && spotInstructionsStep && (
               <>
-                <Typography sx={{ fontSize: 13, fontWeight: 700, mb: 0.25 }}>
-                  {spotLeaveConflicts.length === 1 ? 'This overlaps a session' : `This overlaps ${spotLeaveConflicts.length} sessions`}
-                </Typography>
+                <FlexBox alignItems="flex-start" justifyContent="space-between" gap={1} sx={{ mb: 1 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Cancellation requested</Typography>
+                  <DialogCloseButton onClick={cancelSpot} />
+                </FlexBox>
+                <LateCancellationInstructions compact sessions={spotSentSessions} />
+                {/* No way back: the request has gone. */}
+                <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1.75 }}>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="error"
+                    disableElevation
+                    onClick={cancelSpot}
+                    sx={{ fontSize: 12 }}
+                  >
+                    Done
+                  </Button>
+                </Stack>
+              </>
+            )}
+
+            {/* Step 2 — leave covers scheduled sessions, so collect a decline reason. */}
+            {pendingSpot && spotConflictStep && !spotConfirmStep && !spotInstructionsStep && (
+              <>
+                <FlexBox alignItems="flex-start" justifyContent="space-between" gap={1} sx={{ mb: 0.25 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+                    {spotLeaveConflicts.length === 1 ? 'This overlaps a session' : `This overlaps ${spotLeaveConflicts.length} sessions`}
+                  </Typography>
+                  <DialogCloseButton onClick={cancelSpot} />
+                </FlexBox>
                 <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 1.25 }}>
-                  Marking this leave {spotLateConflicts.length > 0 ? 'cancels' : 'declines'} {spotLeaveConflicts.length === 1 ? 'it' : 'them'}. Please add a reason for the scheduler.
+                  {spotConflictSummary}
                 </Typography>
 
                 <Stack
@@ -1994,11 +2181,7 @@ export default function CalendarPage() {
                     onClick={confirmSpot}
                     sx={{ fontSize: 12 }}
                   >
-                    {spotLateConflicts.length > 0
-                      ? 'Next'
-                      : spotLeaveConflicts.length === 1
-                        ? 'Mark leave & decline'
-                        : `Mark leave & decline ${spotLeaveConflicts.length}`}
+                    Next
                   </Button>
                 </Stack>
               </>
@@ -2115,7 +2298,10 @@ export default function CalendarPage() {
                   )
                 )}
 
-                <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 1.75 }}>
+                {/* `mt: auto` — whichever tab is shorter pads at the bottom, so the
+                    buttons hold the same line on both. `pt` keeps the gap from
+                    closing up when the content does fill the height. */}
+                <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mt: 'auto', pt: 1.75 }}>
                   <Button size="small" color="inherit" onClick={cancelSpot} sx={{ fontSize: 12 }}>
                     Cancel
                   </Button>
@@ -2185,7 +2371,14 @@ export default function CalendarPage() {
                     (s) => s.dateYmd === ymd
                   );
                   const dayRequests = requests.filter((r) => r.dateYmd === ymd);
-                  const dayNA = unavailable.filter((n) => n.dateYmd === ymd);
+                  /* A block created by declining a session carries that session's id.
+                     The session keeps its own chip here whether or not it was declined,
+                     so drawing the block as well would say the same thing twice. The
+                     week grid drops it only while the session is still live, because
+                     there the block is what remains once the session is struck out. */
+                  const dayNA = unavailable.filter(
+                    (n) => n.dateYmd === ymd && !(n.sessionId && daySessions.some((s) => s.id === n.sessionId)),
+                  );
 
                   /* §9.3 Sorting priority: leave first, session/confirmed next, request next, availability last */
                   type EventChip = { key: string; label: string; type: "leave" | "session" | "request" | "availability"; color: string; bg: string; flagged?: boolean };
@@ -2338,7 +2531,7 @@ export default function CalendarPage() {
                             bgcolor: chip.bg,
                             color: chip.color,
                             // Inset ring rather than a border, so a flagged chip keeps the same height.
-                            boxShadow: chip.flagged ? (t) => `inset 0 0 0 1px ${t.palette.error.main}` : undefined,
+                            boxShadow: chip.flagged ? (t) => `inset 0 0 0 1px ${t.palette.warning.main}` : undefined,
                             px: 0.5,
                             fontSize: '0.5625rem',
                             lineHeight: '14px',

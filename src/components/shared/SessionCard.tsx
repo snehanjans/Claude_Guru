@@ -69,6 +69,11 @@ export type SessionCardProps = {
   titleRight?: ReactNode;
   /** Progress stats — rendered as a "12 Submissions · 0 Graded" row */
   stats?: SessionCardStat[];
+  /** A short explanatory line under the meta row — why the guru is unavailable,
+      for instance. Inside the card on purpose: a caller rendering it as a sibling
+      would land below the mobile "View details" strip, which sits outside the
+      padded content. */
+  note?: ReactNode;
   /** Primary action buttons */
   actions?: ReactNode;
   /** Secondary action (right-aligned, e.g. "Group profile") */
@@ -104,6 +109,30 @@ export const STATUS_DECLINED: SessionCardStatus = {
   bg: "var(--gl-status-declined-bg)",
   color: "var(--gl-status-declined-text)",
   border: "var(--gl-status-declined-border)",
+};
+
+/**
+ * A session the guru has stepped off. Named for the action they took — the same
+ * words the confirmation toast uses — rather than for what the scheduler does
+ * with it.
+ */
+export const STATUS_UNAVAILABLE: SessionCardStatus = {
+  label: "Marked unavailable",
+  bg: "var(--gl-status-declined-bg)",
+  color: "var(--gl-status-declined-text)",
+  border: "var(--gl-status-declined-border)",
+};
+
+/**
+ * Asked for, not yet granted. Amber rather than the declined red: the session
+ * is still scheduled and still the guru's until the Program Manager answers,
+ * and red is what a session that is actually gone looks like.
+ */
+export const STATUS_CANCEL_REQUESTED: SessionCardStatus = {
+  label: "Cancellation requested",
+  bg: "var(--gl-status-pending-bg)",
+  color: "var(--gl-status-pending-text)",
+  border: "var(--gl-status-pending-border)",
 };
 
 /* ── Stats row helper ── */
@@ -149,6 +178,7 @@ export function SessionCard({
   eyebrowExtra,
   titleRight,
   stats,
+  note,
   actions,
   secondaryAction,
   onViewDetails,
@@ -427,7 +457,7 @@ export function SessionCard({
               spacing={1}
               flexWrap="wrap"
               useFlexGap
-              sx={{ mb: stats ? 1.25 : (actions || secondaryAction ? 1.5 : 0), color: "text.secondary" }}
+              sx={{ mb: stats || note ? 1.25 : (actions || secondaryAction ? 1.5 : 0), color: "text.secondary" }}
             >
               {metaText && (
                 <Stack direction="row" alignItems="center" spacing={0.5} sx={{ minWidth: 0 }}>
@@ -452,6 +482,14 @@ export function SessionCard({
                 </>
               )}
             </Stack>
+          )}
+
+          {note && (
+            <Box sx={{ mb: stats || actions || secondaryAction ? 1.25 : 0 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontStyle: "italic" }}>
+                {note}
+              </Typography>
+            </Box>
           )}
 
           {/* Stats row */}

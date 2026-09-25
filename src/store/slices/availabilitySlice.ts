@@ -28,6 +28,9 @@ interface AvailabilityState {
   naStartDate: string;
   naEndDate: string;
   naReason: string;
+  /** Set when the calendar hands a dragged leave over: the dialog opens on the
+      overlapping sessions instead of on the dates, which were just chosen. */
+  naOpenAtOverlaps: boolean;
   naStart: string;
   naEnd: string;
   // Remove availability state
@@ -83,6 +86,7 @@ const initialState: AvailabilityState = {
   naStartDate: todayYmd,
   naEndDate: todayYmd,
   naReason: "",
+  naOpenAtOverlaps: false,
   naStart: "10:00",
   naEnd: "12:00",
   availabilityToRemove: null,
@@ -172,6 +176,9 @@ const availabilitySlice = createSlice({
     setNaReason(state, action: PayloadAction<string>) {
       state.naReason = action.payload;
     },
+    setNaOpenAtOverlaps(state, action: PayloadAction<boolean>) {
+      state.naOpenAtOverlaps = action.payload;
+    },
     setNaStart(state, action: PayloadAction<string>) {
       state.naStart = action.payload;
     },
@@ -258,6 +265,7 @@ export const {
   setNaStartDate,
   setNaEndDate,
   setNaReason,
+  setNaOpenAtOverlaps,
   setNaStart,
   setNaEnd,
   setAvailabilityToRemove,
