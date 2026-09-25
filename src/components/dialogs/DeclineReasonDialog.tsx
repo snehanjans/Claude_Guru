@@ -136,10 +136,20 @@ export function DeclineReasonDialog() {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} disableRestoreFocus maxWidth="xs" fullWidth>
+    /* The request has gone and this is the only place the guru is told it still
+       has to be accepted, and by whom. Closing it by accident — a stray click on
+       the backdrop, Escape, an X in the corner — loses that with nothing to bring
+       it back. One way out, and it is the one that says "Done". */
+    <Dialog
+      open={open}
+      onClose={() => { if (!onSent) handleClose(); }}
+      disableRestoreFocus
+      maxWidth="xs"
+      fullWidth
+    >
       <DialogTitle component={FlexBox} alignItems="center" justifyContent="space-between" gap={1}>
         {onSent ? "Cancellation requested" : onConfirm ? "Are you sure?" : "Mark unavailable"}
-        <DialogCloseButton onClick={handleClose} />
+        {!onSent && <DialogCloseButton onClick={handleClose} />}
       </DialogTitle>
       <DialogContent>
         {declineSessionFocus && step === "reason" ? (

@@ -2041,7 +2041,11 @@ export default function CalendarPage() {
             open={!!pendingSpot && !!spotConfirmPos}
             anchorReference="anchorPosition"
             anchorPosition={spotConfirmPos ?? { top: 0, left: 0 }}
-            onClose={cancelSpot}
+            /* The request has gone and this is the only place the guru is told it still
+               has to be accepted, and by whom. Closing it by accident — a stray click on
+               the backdrop, Escape, an X in the corner — loses that with nothing to bring
+               it back. One way out, and it is the one that says "Done". */
+            onClose={() => { if (!spotInstructionsStep) cancelSpot(); }}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
             transformOrigin={{ vertical: 'top', horizontal: 'left' }}
             // The TimePicker lists portal outside this Popover — let them hold focus.
@@ -2099,7 +2103,6 @@ export default function CalendarPage() {
               <>
                 <FlexBox alignItems="flex-start" justifyContent="space-between" gap={1} sx={{ mb: 1 }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 700 }}>Cancellation requested</Typography>
-                  <DialogCloseButton onClick={cancelSpot} />
                 </FlexBox>
                 <LateCancellationInstructions compact sessions={spotSentSessions} />
                 {/* No way back: the request has gone. */}

@@ -313,7 +313,11 @@ export function MarkNotAvailableDialog() {
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      /* The request has gone and this is the only place the guru is told it still
+         has to be accepted, and by whom. Closing it by accident — a stray click on
+         the backdrop, Escape, an X in the corner — loses that with nothing to bring
+         it back. One way out, and it is the one that says "Done". */
+      onClose={() => { if (step !== 4) handleClose(); }}
       maxWidth={false}
       PaperProps={{ sx: { width: { xs: "calc(100vw - 1.5rem)", sm: 420 }, overflow: "hidden" } }}
     >
@@ -346,7 +350,7 @@ export function MarkNotAvailableDialog() {
           )}
         </Stack>
         {/* Bordered square, matching AvailabilityBuilderDialog's close affordance. */}
-        <DialogCloseButton onClick={handleClose} />
+        {step !== 4 && <DialogCloseButton onClick={handleClose} />}
       </Box>
 
       <DialogContent sx={{ px: 2, pt: 0.5, pb: 1.5 }}>
@@ -535,14 +539,16 @@ export function MarkNotAvailableDialog() {
         {/* Sized to match AvailabilityBuilderDialog's footer: same small default type
             (no fontSize override) and the shared DIALOG_ACTION_MIN_WIDTH, so the two
             dialogs' primary buttons render identically despite different labels. */}
-        <Button
-          variant="text"
-          color="inherit"
-          size="small"
-          onClick={step === 3 ? () => setStep(2) : step === 2 ? () => setStep(1) : handleClose}
-        >
-          {step === 1 ? "Cancel" : "Back"}
-        </Button>
+        {step !== 4 && (
+          <Button
+            variant="text"
+            color="inherit"
+            size="small"
+            onClick={step === 3 ? () => setStep(2) : step === 2 ? () => setStep(1) : handleClose}
+          >
+            {step === 1 ? "Cancel" : "Back"}
+          </Button>
+        )}
         {/* The wrapper, not the button, takes the click: a disabled button fires
             no event of its own. MUI already sets `pointer-events: none` on it,
             so the press lands here. */}

@@ -386,6 +386,10 @@ export function LateCancellationInstructions({
           : `Your requests are with ${groups.length} program managers.`}{" "}
         A cancellation isn't final until they accept it, so {one ? "the session stays" : "the sessions stay"}{" "}
         yours until then.
+        <Box component="span" sx={{ display: "block", mt: 1 }}>
+          Calling is what gets it accepted and a replacement found. Message them on WhatsApp if you can't
+          get through.
+        </Box>
       </Typography>
 
       {groups.map((pm) => {
@@ -414,10 +418,6 @@ export function LateCancellationInstructions({
                 })()}
               </Typography>
             )}
-            <Typography variant="body2" sx={{ ...bodySx, mb: 0.75 }}>
-              Calling is what gets it accepted and a replacement found. Message them on WhatsApp if you
-              can't get through.
-            </Typography>
             <FlexBox flexDirection="column" gap={0.5}>
               <FlexBox alignItems="center" gap={0.75}>
                 <PhoneInTalkOutlinedIcon sx={iconSx} />
