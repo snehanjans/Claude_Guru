@@ -23,14 +23,16 @@ import {
   setNaStartDate,
   setNaEndDate,
   setNaReason,
+  setNaOpenAtOverlaps,
   setNaStart,
   setNaEnd,
   setEditingLeaveGroupId,
   removeUnavailableByGroupId,
 } from "@/store/slices/availabilitySlice";
-import { declineSession, requestCancellation } from "@/store/slices/sessionsSlice";
+import { requestCancellation } from "@/store/slices/sessionsSlice";
 import { respondToRequest } from "@/store/slices/requestsSlice";
 import { pushToast } from "@/store/slices/toastsSlice";
+import type { Session } from "@/lib/types";
 import {
   fmtTime12,
   toYmd,
@@ -50,6 +52,7 @@ import { DialogCloseButton } from "@/components/shared/DialogCloseButton";
 import {
   DeclineReasonFields,
   LateCancellationWarning,
+  LateCancellationConfirm,
   LateCancellationInstructions,
   CANCELLATION_REQUESTED_TOAST,
   sessionsTooCloseToDecline,
@@ -95,24 +98,27 @@ export function MarkNotAvailableDialog() {
   const cancellationRequests = useAppSelector((s) => s.sessions.cancellationRequests);
   const requests = useAppSelector((s) => s.requests.items);
   const editingLeaveGroupId = useAppSelector((s) => s.availability.editingLeaveGroupId);
+  const openAtOverlaps = useAppSelector((s) => s.availability.naOpenAtOverlaps);
   const unavailable = useAppSelector((s) => s.availability.unavailable);
 
-  const [autoDecline, setAutoDecline] = useState(true);
-  // 1 dates · 2 overlapping events · 3 late-cancellation instructions (only when needed)
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  // 1 dates · 2 overlapping events · 3 "are you sure" · 4 contact the PM
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   // Why the overlapping sessions are being declined. Required before confirming
   // while auto-decline is on — a decline without a reason tells the scheduler nothing.
   const [declineReasonValue, setDeclineReasonValue] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
   // A leave can cover both kinds at once. The two groups go to different people —
   // one is the guru's own decision, the other is a request the Program Manager has
   // to weigh — so they get a reason each rather than sharing one.
-  const [lateReasonValue, setLateReasonValue] = useState<DeclineReasonValue>(EMPTY_DECLINE_REASON);
   // Ticked on step 3. Survives Back/Next within one dialog visit.
   const [lateAck, setLateAck] = useState<LateCancellationAck>(EMPTY_LATE_ACK);
   /* Pressing the disabled confirm button is a dead click — the browser swallows
      it and the guru gets no answer. Catching it on a wrapper lets the one thing
      still owed point at itself. */
   const [ackMissing, setAckMissing] = useState(false);
+  /* What was just requested. The live conflict list excludes anything already
+     waiting on the Program Manager, so it empties the moment the requests go
+     out and the step reporting them would go blank. */
+  const [sentSessions, setSentSessions] = useState<Session[]>([]);
   const isCareerMentorRole = useAppSelector((s) => s.devPanel.selectedRole) === "Career Mentor";
 
   /* ── Pre-fill when editing existing leave ───────────────────────── */
@@ -133,15 +139,25 @@ export function MarkNotAvailableDialog() {
     }
   }, [open, editingLeaveGroupId]);
 
+  /* Handed over from a drag on the calendar. The dates came from the drag, so
+     there is nothing to fill in — open on what the leave covers. The flag is
+     cleared straight away so reopening the dialog from the Leave button starts
+     where it always did. */
+  useEffect(() => {
+    if (open && openAtOverlaps) {
+      setStep(2);
+      dispatch(setNaOpenAtOverlaps(false));
+    }
+  }, [open, openAtOverlaps, dispatch]);
+
   /* ── Reset step when dialog opens/closes ────────────────────────── */
   useEffect(() => {
     if (!open) {
       setStep(1);
-      setAutoDecline(true);
       setDeclineReasonValue(EMPTY_DECLINE_REASON);
-      setLateReasonValue(EMPTY_DECLINE_REASON);
       setLateAck(EMPTY_LATE_ACK);
       setAckMissing(false);
+      setSentSessions([]);
     }
   }, [open]);
 
@@ -189,30 +205,26 @@ export function MarkNotAvailableDialog() {
   }, [requests, naStartDate, naEndDate, naStartMins, naEndMins]);
 
   const totalConflicts = conflictingSessions.length + conflictingRequests.length;
-  const willDecline = autoDecline && conflictingSessions.length > 0;
-  /** Covered sessions inside the threshold: these become cancellation requests, not declines. */
+  /* Covering a session with leave always asks to be released from it. There was
+     an opt-out here, from when marking leave declined sessions outright and a
+     guru might reasonably not want that fired by a drag. Asking is not
+     destructive — the Program Manager can refuse it and the guru can withdraw
+     it — so the only thing the opt-out still bought was a calendar that said
+     "away" over a session nobody had been told about. */
+  const willDecline = conflictingSessions.length > 0;
+  /* Every covered session becomes a request now. The threshold no longer decides
+     the outcome — it decides the urgency, and whether the guru has to chase the
+     Program Manager rather than simply tell them. */
   const lateSessions = willDecline ? sessionsTooCloseToDecline(conflictingSessions, Date.now()) : [];
-  /** The rest: far enough out that the guru's word is final. */
-  const declinedSessionsList = (() => {
-    const lateIds = new Set(lateSessions.map((s) => s.id));
-    return conflictingSessions.filter((s) => !lateIds.has(s.id));
-  })();
-  const hasBothGroups = willDecline && declinedSessionsList.length > 0 && lateSessions.length > 0;
-
-  /* With one group there is one field, exactly as before. The second field only
-     appears when the leave is genuinely mixed, so the common case is untouched. */
+  /* One reason for the whole leave. The 72-hour split still decides how urgent
+     the wording is, but it no longer changes what happens to a session — every
+     one becomes a request — so asking twice was asking the same thing twice. */
   const declineReasonText = composeDeclineReason(declineReasonValue, isCareerMentorRole);
-  const lateReasonText = composeDeclineReason(
-    hasBothGroups ? lateReasonValue : declineReasonValue,
-    isCareerMentorRole,
-  );
   const canConfirmStep2 =
-    !willDecline ||
-    (canSubmitDeclineReason(declineReasonValue, isCareerMentorRole) &&
-      (!hasBothGroups || canSubmitDeclineReason(lateReasonValue, isCareerMentorRole)));
-  const needsInstructions = lateSessions.length > 0;
+    !willDecline || canSubmitDeclineReason(declineReasonValue, isCareerMentorRole);
+  const needsInstructions = willDecline && conflictingSessions.length > 0;
   /* Step 3 sends the requests, so it also needs both instructions confirmed. */
-  const canConfirmStep3 = canConfirmStep2 && lateAckComplete(lateAck);
+  const canConfirmStep4 = canConfirmStep2 && lateAckComplete(lateAck);
 
   const handleMarkLeave = () => {
     // If there are conflicts, go to step 2 for confirmation
@@ -245,23 +257,19 @@ export function MarkNotAvailableDialog() {
     });
 
     /* §10: on submit with auto-decline */
-    if (autoDecline && totalConflicts > 0) {
-      // Inside the threshold it is only a request (the PM accepts it later); further
-      // out the session is declined straight away.
-      const declinedSessions = declinedSessionsList;
-      lateSessions.forEach((s) => {
-        dispatch(requestCancellation({ id: s.id, dateYmd: todayYmd, reason: lateReasonText }));
-      });
-      declinedSessions.forEach((s) => {
-        dispatch(declineSession({ id: s.id, dateYmd: todayYmd, reason: declineReasonText }));
+    if (totalConflicts > 0) {
+      /* Never a decline from here. The leave is the guru's own statement and takes
+         effect at once; the sessions inside it are someone else's to reassign, so
+         each becomes a request the Program Manager answers. */
+      conflictingSessions.forEach((s) => {
+        dispatch(requestCancellation({ id: s.id, dateYmd: todayYmd, reason: declineReasonText }));
       });
       conflictingRequests.forEach((r) => {
         dispatch(respondToRequest({ id: r.id, response: "unavailable" }));
       });
 
       const parts: string[] = [];
-      if (declinedSessions.length > 0) parts.push(`${declinedSessions.length} session(s) auto-declined`);
-      if (lateSessions.length > 0) parts.push(`${lateSessions.length} cancellation request(s) sent`);
+      if (conflictingSessions.length > 0) parts.push(`${conflictingSessions.length} cancellation request(s) sent`);
       if (conflictingRequests.length > 0) parts.push(`${conflictingRequests.length} request(s) marked unavailable`);
 
       dispatch(
@@ -270,7 +278,10 @@ export function MarkNotAvailableDialog() {
           description: `${naStartDate} to ${naEndDate} • ${parts.join(", ")}`,
         })
       );
-      if (lateSessions.length > 0) dispatch(pushToast(CANCELLATION_REQUESTED_TOAST));
+      if (conflictingSessions.length > 0) {
+        setSentSessions(conflictingSessions);
+        dispatch(pushToast(CANCELLATION_REQUESTED_TOAST));
+      }
     } else {
       dispatch(
         pushToast({
@@ -280,10 +291,15 @@ export function MarkNotAvailableDialog() {
       );
     }
 
+    /* Stay open when there was something to request: step 4 is the only place
+       the guru is told the request still has to be accepted. */
+    if (conflictingSessions.length > 0) {
+      setStep(4);
+      return;
+    }
     dispatch(setOpenNotAvailable(false));
     dispatch(setNaReason(""));
     dispatch(setEditingLeaveGroupId(null));
-    setAutoDecline(true);
     setStep(1);
   };
 
@@ -292,7 +308,6 @@ export function MarkNotAvailableDialog() {
     dispatch(setEditingLeaveGroupId(null));
     dispatch(setNaReason(""));
     setStep(1);
-    setAutoDecline(true);
   };
 
   return (
@@ -308,21 +323,27 @@ export function MarkNotAvailableDialog() {
             CompletedSessionDetailDialog and the other dismissible dialogs. */}
         <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
           <Typography variant="subtitle2" fontWeight={700} sx={{ fontSize: "0.9rem" }} noWrap>
-            {step === 3 ? "Request cancellation" : editingLeaveGroupId ? "Edit leave" : step === 2 ? "Overlapping events" : "Mark leave"}
+            {step === 4 ? "Cancellation requested" : step === 3 ? "Are you sure?" : editingLeaveGroupId ? "Edit leave" : step === 2 ? "Overlapping events" : "Mark leave"}
           </Typography>
-          <Chip
-            label={step === 3 ? `${lateSessions.length} within ${DECLINE_CLOSE_THRESHOLD_HOURS}h` : step === 2 ? `${totalConflicts} overlapping` : "Leave"}
-            size="small"
-            sx={{
-              height: 20,
-              fontSize: "0.65rem",
-              fontWeight: 600,
-              flexShrink: 0,
-              ...(step >= 2
-                ? { bgcolor: "var(--gl-status-declined-bg)", color: "var(--gl-status-declined-text)", border: "1px solid var(--gl-status-declined-border)" }
-                : { bgcolor: "var(--gl-status-pending-bg)", color: "var(--gl-status-pending-text)", border: "1px solid var(--gl-status-pending-border)" }),
-            }}
-          />
+          {/* Only while it is still counting something. The later steps had a
+              "N within 72h" tally that read "0 within 72h" whenever nothing was
+              close, and the sessions inside the window now say so on their own
+              rows anyway. */}
+          {step <= 2 && (
+            <Chip
+              label={step === 2 ? `${totalConflicts} overlapping` : "Leave"}
+              size="small"
+              sx={{
+                height: 20,
+                fontSize: "0.65rem",
+                fontWeight: 600,
+                flexShrink: 0,
+                ...(step === 2
+                  ? { bgcolor: "var(--gl-status-declined-bg)", color: "var(--gl-status-declined-text)", border: "1px solid var(--gl-status-declined-border)" }
+                  : { bgcolor: "var(--gl-status-pending-bg)", color: "var(--gl-status-pending-text)", border: "1px solid var(--gl-status-pending-border)" }),
+              }}
+            />
+          )}
         </Stack>
         {/* Bordered square, matching AvailabilityBuilderDialog's close affordance. */}
         <DialogCloseButton onClick={handleClose} />
@@ -418,37 +439,56 @@ export function MarkNotAvailableDialog() {
 
         {step === 2 && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {/* Warning banner */}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 1.25,
-                p: 1.5,
-                borderRadius: "8px",
-                bgcolor: "var(--gl-status-declined-bg)",
-                border: "1px solid var(--gl-status-declined-border)",
-              }}
-            >
-              <WarningAmberOutlinedIcon sx={{ fontSize: 16, flexShrink: 0, mt: "1px", color: "var(--gl-status-declined-text)" }} />
+            {/* A line, not a banner. The list of sessions directly beneath is the
+                thing to read; a tinted panel above it competed for the same
+                attention and said less. */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              <WarningAmberOutlinedIcon sx={{ fontSize: 16, flexShrink: 0, color: "var(--gl-status-declined-text)" }} />
               <Typography variant="body2" sx={{ fontSize: "0.82rem", color: "var(--gl-status-declined-text)", fontWeight: 500 }}>
-                These events overlap with your leave.
+                These events fall inside your leave.
               </Typography>
             </Box>
 
             {/* Conflict list */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-              {conflictingSessions.map((s) => (
-                <Box key={s.id} sx={{ display: "flex", alignItems: "center", gap: 1.25, px: 1.5, py: 1, borderRadius: "8px", border: 1, borderColor: "divider" }}>
-                  <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "error.main", flexShrink: 0 }} />
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" fontWeight={600} sx={{ fontSize: "0.82rem" }} noWrap>{s.title}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.72rem" }}>
-                      {s.dateYmd} · {fmtTime12(s.start)}–{fmtTime12(s.end)}
-                    </Typography>
+              {conflictingSessions.map((s) => {
+                /* The 72-hour line no longer changes what happens to a session —
+                   every one becomes a request — but it still changes what it costs
+                   whoever has to cover it. Naming the ones inside the window is
+                   what is left of that distinction, and it belongs on the session
+                   rather than in a count above the list. */
+                const isLate = lateSessions.some((l) => l.id === s.id);
+                return (
+                  <Box key={s.id} sx={{ display: "flex", alignItems: "center", gap: 1.25, px: 1.5, py: 1, borderRadius: "8px", border: 1, borderColor: "divider" }}>
+                    <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "error.main", flexShrink: 0 }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="body2" fontWeight={600} sx={{ fontSize: "0.82rem" }} noWrap>{s.title}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.72rem" }}>
+                        {s.dateYmd} · {fmtTime12(s.start)}–{fmtTime12(s.end)}
+                      </Typography>
+                    </Box>
+                    {isLate && (
+                      <Chip
+                        size="small"
+                        icon={<WarningAmberOutlinedIcon sx={{ fontSize: 13 }} />}
+                        label="Late cancellation"
+                        sx={{
+                          flexShrink: 0,
+                          height: 22,
+                          borderRadius: "4px",
+                          fontSize: "0.68rem",
+                          fontWeight: 600,
+                          bgcolor: "var(--gl-status-pending-bg)",
+                          color: "var(--gl-status-pending-text)",
+                          border: "1px solid var(--gl-status-pending-border)",
+                          "& .MuiChip-icon": { color: "var(--gl-status-pending-text)", ml: 0.5, mr: -0.25 },
+                          "& .MuiChip-label": { px: 0.75 },
+                        }}
+                      />
+                    )}
                   </Box>
-                </Box>
-              ))}
+                );
+              })}
               {conflictingRequests.map((r) => (
                 <Box key={r.id} sx={{ display: "flex", alignItems: "center", gap: 1.25, px: 1.5, py: 1, borderRadius: "8px", border: 1, borderColor: "divider" }}>
                   <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "warning.main", flexShrink: 0 }} />
@@ -462,89 +502,31 @@ export function MarkNotAvailableDialog() {
               ))}
             </Box>
 
-            {/* Auto-decline checkbox - highlighted */}
-            <Box
-              sx={{
-                px: 1.5,
-                py: 1,
-                borderRadius: "8px",
-                bgcolor: autoDecline ? "var(--gl-status-pending-bg)" : "action.hover",
-                border: "1px solid",
-                borderColor: autoDecline ? "var(--gl-status-pending-border)" : "divider",
-                transition: "all 0.2s ease",
-              }}
-            >
-              <FormControlLabel
-                sx={{ m: 0 }}
-                control={
-                  <Checkbox
-                    checked={autoDecline}
-                    onChange={(_, c) => setAutoDecline(c)}
-                    size="small"
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body2" sx={{ fontSize: "0.82rem", fontWeight: 600 }}>
-                      Auto-decline overlapping events
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.72rem" }}>
-                      We'll decline them and share your reason.
-                    </Typography>
-                  </Box>
-                }
-              />
-            </Box>
 
             {/* Declining needs a reason, exactly as the session-detail flow asks for
                 one — so it only appears while auto-decline is actually on. */}
-            {autoDecline && conflictingSessions.length > 0 && (
+            {conflictingSessions.length > 0 && (
               <>
                 <LateCancellationWarning count={lateSessions.length} />
-                {hasBothGroups ? (
-                  <>
-                    <DeclineReasonFields
-                      heading={
-                        declinedSessionsList.length === 1
-                          ? "The session you're declining"
-                          : `The ${declinedSessionsList.length} you're declining`
-                      }
-                      isCareerMentor={isCareerMentorRole}
-                      value={declineReasonValue}
-                      onChange={setDeclineReasonValue}
-                    />
-                    <DeclineReasonFields
-                      heading={
-                        lateSessions.length === 1
-                          ? `The session inside ${DECLINE_CLOSE_THRESHOLD_HOURS} hours`
-                          : `The ${lateSessions.length} inside ${DECLINE_CLOSE_THRESHOLD_HOURS} hours`
-                      }
-                      isCareerMentor={isCareerMentorRole}
-                      value={lateReasonValue}
-                      onChange={setLateReasonValue}
-                    />
-                  </>
-                ) : (
-                  <DeclineReasonFields
-                    isCareerMentor={isCareerMentorRole}
-                    value={declineReasonValue}
-                    onChange={setDeclineReasonValue}
-                  />
-                )}
+                <DeclineReasonFields
+                  isCareerMentor={isCareerMentorRole}
+                  value={declineReasonValue}
+                  onChange={setDeclineReasonValue}
+                />
               </>
             )}
           </Box>
         )}
         {step === 3 && (
-          <LateCancellationInstructions
-            sessions={lateSessions}
-            ack={lateAck}
-            onAckChange={(next) => {
-              setLateAck(next);
-              if (next.pm) setAckMissing(false);
-            }}
-            ackMissing={ackMissing}
+          <LateCancellationConfirm
+            /* Only true when every one of them is inside the window; for a mixed
+               set the calmer lead still reads true. */
+            late={lateSessions.length === conflictingSessions.length}
+            sessions={conflictingSessions}
           />
+        )}
+        {step === 4 && (
+          <LateCancellationInstructions sessions={sentSessions} />
         )}
       </DialogContent>
 
@@ -564,26 +546,30 @@ export function MarkNotAvailableDialog() {
         {/* The wrapper, not the button, takes the click: a disabled button fires
             no event of its own. MUI already sets `pointer-events: none` on it,
             so the press lands here. */}
-        <Box onClick={() => { if (step === 3 && !canConfirmStep3) setAckMissing(true); }}>
+        <Box>
           <Button
             variant="contained"
             size="small"
-            color={step === 3 ? "error" : "primary"}
+            color={step >= 3 ? "error" : "primary"}
             onClick={
               step === 1
                 ? handleMarkLeave
                 : step === 2 && needsInstructions
                   ? () => setStep(3)
-                  : handleConfirm
+                  : step === 4
+                    ? handleClose
+                    : handleConfirm
             }
-            disabled={step === 1 ? !isValid : step === 3 ? !canConfirmStep3 : !canConfirmStep2}
+            disabled={step === 1 ? !isValid : step === 4 ? false : !canConfirmStep2}
             sx={{ px: 2, minWidth: DIALOG_ACTION_MIN_WIDTH }}
           >
-            {step === 3
-              ? "Request cancellation"
-              : step === 2
-                ? needsInstructions ? "Next" : "Confirm leave"
-                : editingLeaveGroupId ? "Update" : "Mark leave"}
+            {step === 4
+              ? "Done"
+              : step === 3
+                ? "Request cancellation"
+                : step === 2
+                  ? needsInstructions ? "Next" : "Confirm leave"
+                  : editingLeaveGroupId ? "Update" : "Mark leave"}
           </Button>
         </Box>
       </Box>
