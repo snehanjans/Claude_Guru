@@ -22,6 +22,8 @@ const AccountPage = lazy(() => import("@/pages/Account"));
 const OldDashboardPage = lazy(() => import("@/pages/OldDashboard"));
 const MarketingDashboardPage = lazy(() => import("@/pages/MarketingDashboard"));
 const NinjaAvailabilityPage = lazy(() => import("@/pages/NinjaAvailability"));
+const NinjaManageGuruRequestsPage = lazy(() => import("@/pages/NinjaManageGuruRequests"));
+const NinjaBatchPage = lazy(() => import("@/pages/NinjaBatch"));
 
 /* Shared Recommend scope — one provider (and flow dialog) across the catalog
    and program-detail routes so referrals survive navigation between them. */
@@ -40,6 +42,8 @@ export default function App() {
       <Route path="/old-dashboard" element={<Suspense><OldDashboardPage /></Suspense>} />
       <Route path="/marketing-dashboard" element={<Suspense><MarketingDashboardPage /></Suspense>} />
       <Route path="/ninja-availability" element={<Suspense><NinjaAvailabilityPage /></Suspense>} />
+      <Route path="/ninja-manage-guru-requests" element={<Suspense><NinjaManageGuruRequestsPage /></Suspense>} />
+      <Route path="/ninja-batch/:batchId" element={<Suspense><NinjaBatchPage /></Suspense>} />
       {/* Full-bleed: brings its own top nav, so it sits outside AppLayout. */}
       <Route path="/recommend/courses" element={<Suspense><CourseCatalogPage /></Suspense>} />
       <Route element={<AppLayout />}>

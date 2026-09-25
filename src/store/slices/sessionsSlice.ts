@@ -10,6 +10,15 @@ interface SessionsState {
   sessionDeclinedReasons: Record<string, string>;
   /** Late cancellations awaiting the Program Manager. Still scheduled until approved. */
   cancellationRequests: Record<string, { requestedAtYmd: string; reason: string }>;
+  /**
+   * What Guru Ops decided, kept after the request leaves `cancellationRequests`
+   * so the Ninja queue can still show the row with its outcome. `reason` is the
+   * rejecting note — an approval carries the Guru's own reason instead.
+   */
+  cancellationResolutions: Record<
+    string,
+    { status: "approved" | "rejected"; resolvedAtYmd: string; reason?: string }
+  >;
   sessionFocus: Session | null;
   homeSessionsView: "next" | "completed";
   selectedSessionType: "All" | SessionType;
@@ -38,6 +47,7 @@ const initialState: SessionsState = {
   sessionDeclinedAtYmd: { cx1: "2026-03-17" },
   sessionDeclinedReasons: { cx1: "Personal emergency" },
   cancellationRequests: {},
+  cancellationResolutions: {},
   sessionFocus: null,
   homeSessionsView: "next",
   selectedSessionType: "All",
@@ -90,6 +100,26 @@ const sessionsSlice = createSlice({
       state.sessionDeclined[action.payload.id] = true;
       state.sessionDeclinedAtYmd[action.payload.id] = action.payload.dateYmd;
       if (request.reason) state.sessionDeclinedReasons[action.payload.id] = request.reason;
+      state.cancellationResolutions[action.payload.id] = {
+        status: "approved",
+        resolvedAtYmd: action.payload.dateYmd,
+        reason: request.reason,
+      };
+    },
+    /**
+     * Guru Ops turned the request down. The session was never un-scheduled, so
+     * nothing has to be put back — dropping the request leaves it plain
+     * Scheduled again. The note is required by the flow and is what the Guru is
+     * shown, since they are now expected to take the session after all.
+     */
+    rejectCancellation(state, action: PayloadAction<{ id: string; dateYmd: string; reason: string }>) {
+      if (!state.cancellationRequests[action.payload.id]) return;
+      delete state.cancellationRequests[action.payload.id];
+      state.cancellationResolutions[action.payload.id] = {
+        status: "rejected",
+        resolvedAtYmd: action.payload.dateYmd,
+        reason: action.payload.reason,
+      };
     },
     /** §8.3 Accept from Declined - undecline + re-confirm */
     acceptSession(state, action: PayloadAction<string>) {
@@ -134,6 +164,7 @@ export const {
   requestCancellation,
   withdrawCancellation,
   approveCancellation,
+  rejectCancellation,
   acceptSession,
   setSessionFocus,
   setHomeSessionsView,

@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { useDispatch, useSelector } from "react-redux";
 import sessionsReducer from "./slices/sessionsSlice";
+import opsQueueReducer from "./slices/opsQueueSlice";
 import requestsReducer from "./slices/requestsSlice";
 import availabilityReducer from "./slices/availabilitySlice";
 import calendarReducer from "./slices/calendarSlice";
@@ -20,6 +21,7 @@ export const store = configureStore({
   reducer: {
     // Feature slices (local UI state)
     sessions: sessionsReducer,
+    opsQueue: opsQueueReducer,
     requests: requestsReducer,
     availability: availabilityReducer,
     calendar: calendarReducer,
